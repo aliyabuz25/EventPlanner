@@ -67,7 +67,7 @@ Use:
 Public hostname target:
 
 ```text
-http://127.0.0.1:8080
+http://localhost:8080
 ```
 
 Hostname:
@@ -79,8 +79,8 @@ fastlane.octotech.az
 ## Curl test
 
 ```bash
-curl -H "Host: fastlane.octotech.az" http://127.0.0.1:8080/
-curl -H "Host: fastlane.octotech.az" http://127.0.0.1:8080/api/site-content
+curl -H "Host: fastlane.octotech.az" http://localhost:8080/
+curl -H "Host: fastlane.octotech.az" http://localhost:8080/api/site-content
 docker ps | grep fastlane
 ```
 
