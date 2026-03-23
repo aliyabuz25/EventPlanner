@@ -1,0 +1,7 @@
+{
+  "name": "3nd FORK of 3ILINE - ERP Consulting Excellence",
+  "description": "A high-end corporate landing page for 3ILINE, an SAP consulting firm, featuring AI-powered consultancy and professional service showcase.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

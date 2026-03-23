@@ -1,0 +1,84 @@
+Build a production-ready content management panel inside an existing website project.
+
+Goal:
+Make the site's pages, sections, texts, badges, icons, images, videos, site icon/favicon, SEO title, and similar content editable from an admin panel. Changes made in the panel must actually affect the live site. This should not be a fake demo or a one-off mockup. It must be reusable and portable to other projects.
+
+Core requirements:
+- First analyze the existing project.
+- Understand the routing structure, page components, and where content is currently hardcoded.
+- Do not leave content embedded inside components.
+- Move editable content into a centralized content source.
+- Use SQLite as the content database.
+- Manage content in a sitemap-driven structure.
+- Store page list, custom pages, navigation, footer, section content, icon names, media URLs, and branding fields in the database.
+- Keep the admin panel and the website inside the same project.
+- In development, the site and admin should run together in the same app.
+- Create an admin panel under `/oc-admin`.
+- When content is changed and saved in the panel, the website must reflect it correctly.
+- Use a React context or similar state layer if needed.
+- The document title, favicon, apple touch icon, and related head metadata should come from the content source.
+- If a favicon is uploaded, `/favicon.ico` should serve the latest uploaded file correctly.
+
+Upload requirements:
+- Use `multer` for media upload handling.
+- Save uploaded files into an `uploads`-style folder using safe file names.
+- Support image upload, video upload, and favicon upload.
+- Media fields in the admin panel must show previews.
+- Icon fields must also show previews.
+- When an icon name changes in the admin panel, the actual icon on the site must change too.
+- Use Lucide or the project’s icon system and resolve icons dynamically from string names.
+
+Admin panel UI requirements:
+- The panel should feel similar to a WordPress admin, but cleaner and more modern.
+- Bootstrap can be used, but it must not break the public-facing website.
+- If Bootstrap is used, load it only for the admin panel so the main site layout and navbar are not affected.
+- The left sidebar should have its own independent scroll area.
+- The left side should contain:
+  - a brand area
+  - search
+  - create new page
+  - grouped content sections
+  - editable page list
+- The center area should contain:
+  - the selected document editor
+  - form-based controls for text, textarea, boolean, icon, image, video, gallery, and array items
+- The right side should contain:
+  - a publish/update box
+  - a document summary
+  - editor notes or status area
+- The UI should be clean, professional, and without glow effects.
+- Active states and focus states must be clear.
+
+Functional requirements:
+- The panel must support creating new pages.
+- A newly created page must become a real route on the site.
+- It can start from a generic page template.
+- Newly created pages must also be editable from the admin panel.
+- Site icon / favicon fields must be editable from the admin.
+- Pages such as navbar, footer, solutions, about, team, services, and similar content areas must read from real content data.
+- Icon selection inside the admin should have preview support.
+- Media fields should support both upload and direct URL input.
+- The data model must be easy to extend later.
+
+Quality requirements:
+- Do not use temporary hacks.
+- Assume the worktree may already be dirty and work carefully.
+- Do not destroy the existing design language of the main site.
+- Treat the admin panel like a separate product surface.
+- Keep types consistent.
+- Add fallbacks where needed.
+- Reduce hardcoded values as much as possible.
+- After implementation, run lint and build checks.
+
+Delivery expectations:
+- Create and update the necessary files.
+- Clearly define where the content is stored, which route hosts the admin panel, and how the upload flow works.
+- At the end, give a short and clear summary of what was changed and in which files.
+
+Execution order:
+- First analyze the current project.
+- Then design the content model.
+- Then connect the admin panel.
+- Then add media and favicon upload flow.
+- Then add the new page creation flow.
+- Finally validate everything with lint and build.

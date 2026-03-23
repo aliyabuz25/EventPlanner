@@ -1,0 +1,88 @@
+import type { ComponentType } from 'react';
+import {
+  Award,
+  BarChart,
+  BarChart3,
+  Box,
+  Briefcase,
+  Building2,
+  Calculator,
+  CheckCircle2,
+  ClipboardList,
+  ClipboardCheck,
+  Clock,
+  Cloud,
+  Code,
+  Database,
+  Factory,
+  FileText,
+  Headphones,
+  Heart,
+  HelpCircle,
+  Layout,
+  LifeBuoy,
+  MessageSquare,
+  Package,
+  PieChart,
+  RefreshCw,
+  Shield,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  Smartphone,
+  Target,
+  TrendingUp,
+  UserCog,
+  Users,
+  Wallet,
+  Zap
+} from 'lucide-react';
+
+export type IconComponent = ComponentType<{ className?: string }>;
+
+export const iconRegistry: Record<string, IconComponent> = {
+  Award,
+  BarChart,
+  BarChart3,
+  Box,
+  Briefcase,
+  Building2,
+  Calculator,
+  CheckCircle2,
+  ClipboardList,
+  ClipboardCheck,
+  Clock,
+  Cloud,
+  Code,
+  Database,
+  Factory,
+  FileText,
+  Headphones,
+  Heart,
+  HelpCircle,
+  Layout,
+  LifeBuoy,
+  MessageSquare,
+  Package,
+  PieChart,
+  RefreshCw,
+  Shield,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  Smartphone,
+  Target,
+  TrendingUp,
+  UserCog,
+  Users,
+  Wallet,
+  Zap
+};
+
+export const fallbackIcon = HelpCircle;
+
+export const iconOptions = Object.keys(iconRegistry).filter((name) => name !== 'HelpCircle');
+
+export const resolveIcon = (name?: string) => (name ? iconRegistry[name] ?? fallbackIcon : fallbackIcon);
