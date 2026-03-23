@@ -11,6 +11,8 @@ services:
       PUBLIC_BASE_URL: 'https://fastlane.octotech.az'
       OLLAMA_CHAT_URL: 'http://host.docker.internal:11434/api/chat'
       OLLAMA_MODEL: 'humane:6.1'
+    ports:
+      - '3000:3000'
     volumes:
       - /datastore/fastlane/uploads:/app/data/uploads
       - /datastore/fastlane/data:/app/data
