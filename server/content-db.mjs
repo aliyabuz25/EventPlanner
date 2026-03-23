@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { editableDocumentKeys, normalizeSiteContent, siteContentSeed } from '../shared/siteContentSeed.js';
 
 const dataDir = path.resolve(process.cwd(), 'data');
@@ -62,7 +62,7 @@ function buildContentPayload(rows) {
 
 ensureDir();
 
-const db = new DatabaseSync(dbPath);
+const db = new Database(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS content_documents (
