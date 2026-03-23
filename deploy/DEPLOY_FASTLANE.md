@@ -78,3 +78,4 @@ curl -H "Host: fastlane.octotech.az" http://127.0.0.1:8080/api/site-content
 - API calls are already relative: `/api/...`
 - Ollama inside the container is configured to hit the host via `host.docker.internal:11434`
 - If the Linux host does not support `host-gateway`, replace `OLLAMA_CHAT_URL` with the real host IP
+- Traefik routers are configured for both `web` and `websecure` entrypoints so the host can match behind either HTTP or HTTPS tunnel routing
