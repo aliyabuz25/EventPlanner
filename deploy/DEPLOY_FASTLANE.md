@@ -33,7 +33,7 @@ So splitting frontend/backend would add complexity without benefit.
 ## Build on host
 
 ```bash
-docker build -t fastlane-octotech:latest -f /datastore/fastlane/app/Dockerfile /datastore/fastlane/app
+docker compose -f /datastore/fastlane/app/docker-compose.yml build fastlane
 ```
 
 ## Portainer stack
@@ -45,6 +45,11 @@ Use:
 If Portainer is using the repository/stack file mode, point it to:
 
 - `docker-compose.yml`
+
+Important:
+
+- Do not enable a "pull latest image" style deploy flow for this stack
+- This stack is intended to build from the repository, not pull `fastlane-octotech` from a registry
 
 If Portainer is using the web editor, paste the contents of:
 
