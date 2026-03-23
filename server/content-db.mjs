@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { editableDocumentKeys, normalizeSiteContent, siteContentSeed } from '../shared/siteContentSeed.js';
+import { FASTLANE_CONTENT_VERSION, fastlaneContentDocuments } from '../shared/fastlaneContentImport.js';
 
 const dataDir = path.resolve(process.cwd(), 'data');
 const dbPath = path.join(dataDir, 'site-content.sqlite');
@@ -224,6 +225,53 @@ function summarizeChanges(previousValue, nextValue) {
 
 function createRevision(key, value, timestamp, action, summary) {
   insertRevision.run(key, JSON.stringify(value), timestamp, action, summary || null);
+}
+
+const fastlaneDocumentKeys = [
+  'global',
+  'siteMap',
+  'navigation',
+  'pages.home',
+  'pages.campaign',
+  'pages.about',
+  'pages.corporateStandards',
+  'pages.survey',
+  'pages.services',
+  'pages.team',
+  'pages.solutions',
+  'solutionDetails'
+];
+
+export function syncFastlaneContentIfNeeded() {
+  const currentGlobal = getDocument('global')?.value;
+  const currentVersion = String(currentGlobal?.branding?.contentVersion ?? '').trim();
+
+  if (currentVersion === FASTLANE_CONTENT_VERSION) {
+    return { changed: false, version: currentVersion, updatedKeys: [] };
+  }
+
+  const timestamp = nowIso();
+  const updatedKeys = [];
+
+  for (const key of fastlaneDocumentKeys) {
+    const nextValue = fastlaneContentDocuments[key];
+    if (!nextValue) {
+      continue;
+    }
+
+    const current = getDocument(key);
+    upsertOne.run(key, JSON.stringify(nextValue), timestamp);
+    createRevision(key, nextValue, timestamp, 'update', `FastLane content sync ${FASTLANE_CONTENT_VERSION}`);
+    if (JSON.stringify(current?.value) !== JSON.stringify(nextValue)) {
+      updatedKeys.push(key);
+    }
+  }
+
+  return {
+    changed: updatedKeys.length > 0,
+    version: FASTLANE_CONTENT_VERSION,
+    updatedKeys
+  };
 }
 
 export function getSiteContent() {

@@ -13,6 +13,7 @@ import {
   getSiteContent,
   getSiteMap,
   restoreDocumentRevision,
+  syncFastlaneContentIfNeeded,
   updateDocument
 } from './server/content-db.mjs';
 
@@ -1113,6 +1114,13 @@ Formatregeln:
 }
 
 async function createAppServer() {
+  const syncResult = syncFastlaneContentIfNeeded();
+  if (syncResult.changed) {
+    console.log(
+      `FastLane content synchronized to ${syncResult.version}: ${syncResult.updatedKeys.join(', ')}`
+    );
+  }
+
   let vite;
 
   if (!isProduction) {

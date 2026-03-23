@@ -1,3 +1,5 @@
+export const FASTLANE_CONTENT_VERSION = '2026-03-23-de-v2';
+
 export const fastlaneContentDocuments = {
   global: {
     company: {
@@ -24,6 +26,7 @@ export const fastlaneContentDocuments = {
     },
     branding: {
       siteTitle: 'FastLane | Teilnehmermanagement fuer Events',
+      contentVersion: FASTLANE_CONTENT_VERSION,
       logoUrl: '',
       faviconUrl: '',
       appleTouchIconUrl: ''
