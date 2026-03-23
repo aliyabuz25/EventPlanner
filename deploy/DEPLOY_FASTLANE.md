@@ -60,7 +60,7 @@ If Portainer is using the web editor, paste the contents of:
 Public hostname target:
 
 ```text
-http://127.0.0.1:80
+http://traefik:80
 ```
 
 Hostname:
@@ -72,8 +72,8 @@ fastlane.octotech.az
 ## Curl test
 
 ```bash
-curl -H "Host: fastlane.octotech.az" http://127.0.0.1:80/
-curl -H "Host: fastlane.octotech.az" http://127.0.0.1:80/api/site-content
+curl -H "Host: fastlane.octotech.az" http://traefik:80/
+curl -H "Host: fastlane.octotech.az" http://traefik:80/api/site-content
 ```
 
 ## Important notes
@@ -84,4 +84,5 @@ curl -H "Host: fastlane.octotech.az" http://127.0.0.1:80/api/site-content
 - Ollama inside the container is configured to hit the host via `host.docker.internal:11434`
 - If the Linux host does not support `host-gateway`, replace `OLLAMA_CHAT_URL` with the real host IP
 - Traefik routers are configured for both `web` and `websecure` entrypoints so the host can match behind either HTTP or HTTPS tunnel routing
+- Use the Traefik container/service name on the shared Docker network for Cloudflare or cloudflared upstreams, not `localhost`
 - `127.0.0.1:8080` is commonly the Traefik dashboard/API port, not the public router entrypoint; if Cloudflare points there, you will typically get `404 page not found`
