@@ -40,7 +40,15 @@ docker build -t fastlane-octotech:latest -f /datastore/fastlane/app/Dockerfile /
 
 Use:
 
-- `/datastore/fastlane/app/deploy/fastlane.portainer.yml`
+- `/datastore/fastlane/app/docker-compose.yml`
+
+If Portainer is using the repository/stack file mode, point it to:
+
+- `docker-compose.yml`
+
+If Portainer is using the web editor, paste the contents of:
+
+- `docker-compose.yml`
 
 ## Cloudflared / Zero Trust
 
