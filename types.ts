@@ -9,7 +9,7 @@ export type CustomPageView = `custom:${string}`;
 
 export type ViewType = 
   | 'home' | 'solutions' | 'about' | 'team' | 'services' 
-  | 'corporate-standards' | 'survey' | 'content-admin' | SolutionId | CustomPageView;
+  | 'corporate-standards' | 'survey' | 'contact' | 'content-admin' | SolutionId | CustomPageView;
 
 export interface Partner {
   name: string;

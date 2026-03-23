@@ -11,13 +11,14 @@ interface LogoProps {
 const Logo: React.FC<LogoProps> = ({ theme = 'dark', scrolled = false, className = "h-10 sm:h-12 w-auto" }) => {
   const { content } = useSiteContent();
   const logoUrl = content.global?.branding?.logoUrl;
+  const resolvedClassName = `${className} block shrink-0`;
 
   if (logoUrl) {
-    return <img src={logoUrl} alt={content.global?.company?.name || 'Site logo'} className={className} />;
+    return <img src={logoUrl} alt={content.global?.company?.name || 'Site logo'} className={resolvedClassName} />;
   }
 
   return (
-    <svg viewBox="0 0 600 250" className={className} preserveAspectRatio="xMidYMid meet">
+    <svg viewBox="0 0 420 160" className={resolvedClassName} preserveAspectRatio="xMidYMid meet">
       <defs>
           <linearGradient id="logo_blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" style={{stopColor:'#3498db', stopOpacity:1}} />

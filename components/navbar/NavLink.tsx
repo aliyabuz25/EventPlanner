@@ -21,7 +21,21 @@ const NavLink: React.FC<NavLinkProps> = ({
   hasDropdown, 
   isOpen 
 }) => {
-  const isActive = currentView === view || (name === 'Solutions' && currentView.startsWith('sap-'));
+  const solutionViews = new Set([
+    'sap-s4hana',
+    'sap-ariba',
+    'sap-successfactors',
+    'sap-sam',
+    'sap-fsm',
+    'sap-business-one',
+    'sap-bw4hana',
+    'sap-analytics',
+    'sap-bydesign',
+    'microsoft-power-bi',
+    'opentext',
+    'bimser'
+  ]);
+  const isActive = currentView === view || (view === 'solutions' && solutionViews.has(currentView));
 
   return (
     <a

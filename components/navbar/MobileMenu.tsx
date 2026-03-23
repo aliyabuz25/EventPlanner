@@ -31,7 +31,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             >
               {link.name}
             </a>
-            {link.name === 'Solutions' && (
+            {link.view === 'solutions' && (
               <div className="mt-4 pl-4 space-y-3 border-l-2 border-sap-blue/30">
                  {solutionSublinks.map(s => (
                    <button 

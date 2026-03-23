@@ -86,25 +86,26 @@ interface AdminToastState {
 }
 
 const AI_REPORTS_KEY = 'aiReports';
+const HIDDEN_ADMIN_KEYS = new Set(['pages.sapBusinessOne']);
 
 const OctopusMark: React.FC = () => <GiOctopus size={20} aria-hidden />;
 
 const labels: Record<string, { title: string; description: string; group: string }> = {
-  global: { title: 'Global Settings', description: 'Company data, contact info and shared social links.', group: 'Core' },
-  aiReports: { title: 'AI Reports', description: 'All AI assistant usages with event detail, user-agent and timestamps.', group: 'Core' },
-  siteMap: { title: 'Site Map', description: 'Sidebar pages, titles and page descriptions.', group: 'Core' },
-  navigation: { title: 'Navigation', description: 'Header, footer and solution navigation links.', group: 'Core' },
-  customPages: { title: 'Custom Pages', description: 'Pages created from the admin panel.', group: 'Core' },
-  'pages.home': { title: 'Home Page', description: 'Hero, badges, services, partners and contact section.', group: 'Pages' },
-  'pages.campaign': { title: 'Campaign Section', description: 'Homepage campaign banner and CTA copy.', group: 'Pages' },
-  'pages.about': { title: 'About Page', description: 'Mission, vision, values and company timeline.', group: 'Pages' },
-  'pages.corporateStandards': { title: 'Corporate Standards Page', description: 'Compliance inquiries, policy cards and transparency content.', group: 'Pages' },
-  'pages.survey': { title: 'Survey Page', description: 'Interactive advisor texts, questions and recommendation copy.', group: 'Pages' },
-  'pages.services': { title: 'Services Page', description: 'Service phases and support cards.', group: 'Pages' },
-  'pages.team': { title: 'Team Page', description: 'Team image, principles and recruitment content.', group: 'Pages' },
-  'pages.sapBusinessOne': { title: 'SAP Business One Page', description: 'Hero media gallery, CTA texts and SAP Business One landing content.', group: 'Pages' },
-  'pages.solutions': { title: 'Solutions Catalog', description: 'Solution grid and solution list cards.', group: 'Pages' },
-  solutionDetails: { title: 'Solution Detail Pages', description: 'All solution detail texts, features, benefits and CTA blocks.', group: 'Pages' }
+  global: { title: 'Global Settings', description: 'Company identity, contact channels, branding and shared CTA settings.', group: 'Core' },
+  aiReports: { title: 'AI Explorer Logs', description: 'AI Explorer sessions, extracted briefs, user-agent and timestamps.', group: 'Core' },
+  siteMap: { title: 'Routes & Pages', description: 'Public routes, slugs, titles and page descriptions.', group: 'Core' },
+  navigation: { title: 'Navigation', description: 'Top navbar, footer links and solution dropdown items.', group: 'Core' },
+  customPages: { title: 'Custom Pages', description: 'Extra pages created from the admin panel.', group: 'Core' },
+  'pages.home': { title: 'Home Page', description: 'Homepage hero, services, ecosystem cards and shared contact block.', group: 'Pages' },
+  'pages.campaign': { title: 'Campaign Banner', description: 'Homepage promo band and CTA copy.', group: 'Pages' },
+  'pages.about': { title: 'About Page', description: 'About story, mission, values and process timeline.', group: 'Pages' },
+  'pages.corporateStandards': { title: 'Privacy & Standards', description: 'Trust, privacy and operational standards content.', group: 'Pages' },
+  'pages.survey': { title: 'Event Finder', description: 'Interactive advisor text, quick-match questions and recommendation copy.', group: 'Pages' },
+  'pages.services': { title: 'Services Page', description: 'Delivery phases, setup flow and support cards.', group: 'Pages' },
+  'pages.team': { title: 'OnSite Team Page', description: 'Team image, principles and event-operations CTA content.', group: 'Pages' },
+  'pages.sapBusinessOne': { title: 'Legacy Showcase Page', description: 'Hidden legacy landing page content that still exists in the app.', group: 'Pages' },
+  'pages.solutions': { title: 'Solutions Catalog', description: 'Module grid and solution summary cards.', group: 'Pages' },
+  solutionDetails: { title: 'Solution Detail Pages', description: 'All FastLane module detail texts, benefits and CTA blocks.', group: 'Pages' }
 };
 
 const shortLabels: Record<string, string> = {
@@ -233,7 +234,7 @@ const fieldHelpText = (path: Array<string | number>, key: string) => {
   }
 
   if (pathString.includes('.form.')) {
-    return 'This text appears inside the contact form.';
+    return 'This text appears inside the public inquiry form.';
   }
 
   if (pathString.startsWith('smtp.')) {
@@ -250,7 +251,7 @@ const sectionHelpText = (path: Array<string | number>, key: string) => {
     hero: 'Main hero content shown at the top of the page.',
     about: 'About section content, cards and CTA settings.',
     services: 'Service cards and service section CTA content.',
-    contact: 'Contact section copy and form labels.',
+    contact: 'Shared contact page/form copy and field labels.',
     branding: 'Site title, logo and icon settings.',
     company: 'Company identity, contact and profile details.',
     navigation: 'Header and footer navigation content.',
@@ -259,13 +260,13 @@ const sectionHelpText = (path: Array<string | number>, key: string) => {
     timeline: 'Timeline years, labels and descriptions.',
     transparency: 'Transparency and ethics section text.',
     inquiryCard: 'Contact card content for compliance inquiries.',
-    webInterface: 'SAP Business One interface section content.',
-    analytics: 'Analytics section copy and cards.',
-    innovation: 'Innovation and AI section content.',
-    industries: 'Industry expertise cards and ecosystem labels.',
-    deployment: 'Deployment options, labels and descriptions.',
+    webInterface: 'Legacy showcase section content.',
+    analytics: 'Legacy analytics section copy and cards.',
+    innovation: 'Legacy innovation section content.',
+    industries: 'Legacy industry cards and ecosystem labels.',
+    deployment: 'Legacy deployment options, labels and descriptions.',
     visual: 'Hero visual media for the floating dashboard composition.',
-    form: 'Contact form field labels and placeholders.'
+    form: 'Inquiry form field labels and placeholders.'
   };
 
   if (helpMap[key]) {
@@ -978,7 +979,9 @@ const ContentAdminPage: React.FC = () => {
   const { content, editableDocumentKeys, saveDocument, restoreDocument, lastSavedAt } = useSiteContent();
   const items = useMemo<SearchableAdminItem[]>(
     () =>
-      [AI_REPORTS_KEY, ...editableDocumentKeys].map((key) => {
+      [AI_REPORTS_KEY, ...editableDocumentKeys]
+        .filter((key) => !HIDDEN_ADMIN_KEYS.has(key))
+        .map((key) => {
         const parts = key.split('.');
         let value: any = content;
 
@@ -1035,10 +1038,10 @@ const ContentAdminPage: React.FC = () => {
         label: `${entry.title} (${entry.slug === 'home' ? '/' : `/${entry.slug}`})`,
         value: entry.slug === 'home' ? '/' : `/${entry.slug}`
       })),
-      { label: 'Contact Section (/#contact)', value: '/#contact' },
       { label: 'About Section (/#about)', value: '/#about' },
       { label: 'Services Section (/#services)', value: '/#services' },
       { label: 'Solutions Section (/#solutions)', value: '/#solutions' },
+      { label: 'Contact Page (/kontakt)', value: '/kontakt' },
       { label: 'mailto:', value: 'mailto:' },
       { label: 'https://', value: 'https://' }
     ],

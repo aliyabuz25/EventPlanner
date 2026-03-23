@@ -39,21 +39,14 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
     setMobileMenuOpen(false);
     document.body.style.overflow = 'auto';
 
-    if (link.name === 'Solutions') {
+    if (link.view === 'solutions') {
       e.preventDefault();
       setSolutionsOpen(!solutionsOpen);
       return;
     }
 
-    if (link.view !== 'home' || (link.view === 'home' && currentView !== 'home' && link.href === '#contact')) {
-      if (link.href === '#contact') {
-        setView('home');
-        setTimeout(() => {
-          document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      } else {
-        setView(link.view);
-      }
+    if (link.view !== 'home') {
+      setView(link.view);
       e.preventDefault();
     } else if (link.view === 'home' && currentView === 'home') {
       const targetId = link.href.substring(1);
@@ -74,34 +67,34 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-300 
       ${scrolled || currentView !== 'home' 
-        ? 'bg-sap-paper/90 dark:bg-[#000000]/90 backdrop-blur-md py-3 shadow-md border-b border-slate-300 dark:border-white/[0.08]' 
-        : 'bg-transparent py-6'}`}>
-      <div className="max-w-[1600px] mx-auto px-6 lg:px-12 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        ? 'bg-sap-paper/90 dark:bg-[#000000]/90 backdrop-blur-md py-2 shadow-md border-b border-slate-300 dark:border-white/[0.08]' 
+        : 'bg-transparent py-4'}`}>
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-12 flex min-h-[64px] lg:min-h-[76px] items-center justify-between">
+        <div className="flex h-full items-center">
           <button 
             id="nav-logo-anchor" 
             onClick={() => setView('home')} 
-            className={`group focus:outline-none flex items-center transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}
+            className={`group flex h-full items-center justify-center focus:outline-none transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}
           >
-             <Logo theme={theme} scrolled={scrolled} className="h-14 sm:h-16 lg:h-[4.5rem] w-auto max-w-[250px] sm:max-w-[290px] object-contain" />
+             <Logo theme={theme} scrolled={scrolled} className="h-12 sm:h-14 lg:h-16 w-auto max-w-[250px] sm:max-w-[290px] object-contain" />
           </button>
         </div>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
-            <div key={link.name} className="relative" ref={link.name === 'Solutions' ? dropdownRef : null}>
+            <div key={link.name} className="relative" ref={link.view === 'solutions' ? dropdownRef : null}>
               <NavLink 
                 name={link.name}
                 href={link.href}
                 view={link.view as ViewType}
                 currentView={currentView}
                 onClick={(e) => handleLinkClick(e, link)}
-                hasDropdown={link.name === 'Solutions'}
+                hasDropdown={link.view === 'solutions'}
                 isOpen={solutionsOpen}
               />
               
-              {link.name === 'Solutions' && (
+              {link.view === 'solutions' && (
                 <SolutionDropdown 
                   isOpen={solutionsOpen}
                   currentView={currentView}

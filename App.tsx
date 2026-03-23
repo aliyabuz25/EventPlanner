@@ -162,6 +162,7 @@ const App: React.FC = () => {
       about: content.pages.about?.sections?.heroTitle?.join(' '),
       services: content.pages.services?.sections?.title?.join(' '),
       team: content.pages.team?.sections?.title,
+      contact: content.pages.home?.sections?.contact?.title,
       solutions: content.pages.solutions?.sections?.title,
       'sap-business-one': content.pages.sapBusinessOne?.sections?.hero?.title?.join(' ')
     };
@@ -232,6 +233,7 @@ const App: React.FC = () => {
       case 'team': return <TeamPage />;
       case 'services': return <FullServicesPage />;
       case 'corporate-standards': return <CorporateStandardsPage />;
+      case 'contact': return <Contact />;
       default:
         return (
           <>
@@ -240,7 +242,6 @@ const App: React.FC = () => {
             <About onReadMore={() => setCurrentView('about')} />
             <Partners />
             <Services onExplore={() => setCurrentView('solutions')} />
-            <Contact />
           </>
         );
     }

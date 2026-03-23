@@ -26,7 +26,7 @@ const SolutionDropdown: React.FC<SolutionDropdownProps> = ({
           onClick={onOverview}
           className="w-full text-left px-4 py-3 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-sap-gold dark:hover:text-sap-gold transition-all rounded-md"
         >
-          All Solutions Overview
+          Tum moduleri gor
         </button>
         <div className="h-px bg-slate-200 dark:bg-white/5 my-1 mx-2"></div>
         {solutions.map((s) => (
