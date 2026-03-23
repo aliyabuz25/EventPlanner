@@ -1,6 +1,8 @@
 services:
   fastlane:
-    image: fastlane-octotech:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       NODE_ENV: 'production'

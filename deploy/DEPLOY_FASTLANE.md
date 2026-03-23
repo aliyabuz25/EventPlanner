@@ -56,9 +56,11 @@ Use:
 
 - `/datastore/fastlane/app/docker-compose.yml`
 
-- Build the image on the host first
-- Then deploy the stack from the compose file or paste it into the Portainer web editor
-- If Portainer cannot see `/datastore`, do not use `build:` in the stack; use the prebuilt local image tag instead
+- Preferred: let the stack build from the repository/app path
+- If Portainer is using repository stack mode, use `docker-compose.yml`
+- If Portainer is using the web editor on the server, use `deploy/fastlane.portainer.yml`
+- Do not use a deploy flow that starts with `compose pull` for this stack
+- The `fastlane-octotech` tag is a local build artifact, not a registry image
 
 ## Cloudflared / Zero Trust
 
