@@ -15,14 +15,14 @@ import {
 } from 'lucide-react';
 
 const SUGGESTIONS = [
-  "Migration Services: S/4HANA Upgrade, Cloud Transition, Readiness Assessment",
-  "Technical Audit: System Health, Custom Code Check, Security Review"
+  "Welches Setup passt fuer ein Live-Event mit Check-in und Badge-Druck?",
+  "Welche Module braucht ein hybrides Event mit Teilnehmer-App?"
 ];
 
 const ChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: `Greetings! I'm FastLane Assistant at ${COMPANY_CONFIG.name}. How can I help you navigate your SAP journey today?` }
+    { role: 'assistant', content: `Hallo, ich bin der FastLane Assistant von ${COMPANY_CONFIG.name}. Wie kann ich dir bei Akkreditierung, Einlass oder Event-Apps helfen?` }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -46,14 +46,14 @@ const ChatWidget: React.FC = () => {
       const response = await getGeminiConsultantResponse(messageToSend);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `My apologies, our specialized consulting systems are briefly offline. Please contact us directly at ${COMPANY_CONFIG.contact.email}.` }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Der Assistent ist gerade kurz nicht erreichbar. Bitte schreibe uns direkt an ${COMPANY_CONFIG.contact.email}.` }]);
     } finally {
       setIsTyping(false);
     }
   };
 
   const clearChat = () => {
-    setMessages([{ role: 'assistant', content: `Greetings! I'm FastLane Assistant at ${COMPANY_CONFIG.name}. How can I help you navigate your SAP journey today?` }]);
+    setMessages([{ role: 'assistant', content: `Hallo, ich bin der FastLane Assistant von ${COMPANY_CONFIG.name}. Wie kann ich dir bei Akkreditierung, Einlass oder Event-Apps helfen?` }]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -91,7 +91,7 @@ const ChatWidget: React.FC = () => {
                 <Bot className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sap-blue">KI-AGENT</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sap-blue">KI-ASSISTENT</div>
                 <div className="text-sm font-semibold text-slate-900 dark:text-white">FastLane Assistant</div>
               </div>
             </div>
@@ -177,7 +177,7 @@ const ChatWidget: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask query or describe technical details..." 
+                placeholder="Frage zu Event-Setup, Check-in oder Teilnehmermanagement..." 
                 className="w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-4 pl-5 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none h-20 shadow-sm scrollbar-hide"
               ></textarea>
               <button 

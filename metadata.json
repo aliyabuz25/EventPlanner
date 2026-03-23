@@ -1,6 +1,6 @@
 {
-  "name": "3nd FORK of 3ILINE - ERP Consulting Excellence",
-  "description": "A high-end corporate landing page for 3ILINE, an SAP consulting firm, featuring AI-powered consultancy and professional service showcase.",
+  "name": "FastLane Event Platform",
+  "description": "FastLane website for accreditation, check-in, live badging, event apps and onsite event services.",
   "requestFramePermissions": [
     "camera"
   ]

@@ -1202,8 +1202,8 @@ async function createAppServer() {
       const injectedHtml = fs
         .readFileSync(indexHtml, 'utf-8')
         .replace(
-          '<title>3ILINE | SAP Consulting Company</title>',
-          `<title>${branding.siteTitle || '3ILINE | SAP Consulting Company'}</title>`
+          '<title>FastLane | Teilnehmermanagement fuer Events</title>',
+          `<title>${branding.siteTitle || 'FastLane | Teilnehmermanagement fuer Events'}</title>`
         )
         .replace(
           '</head>',

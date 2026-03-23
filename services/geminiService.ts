@@ -5,7 +5,7 @@ const getGoogleGenAI = async () => {
   return module.GoogleGenAI;
 };
 
-// Standard Chat Widget Service (3ILINE Brand Persona)
+// Standard Chat Widget Service (FastLane event operations persona)
 export const getGeminiConsultantResponse = async (userMessage: string) => {
   if (!API_KEY) return "The consultant is currently offline. Please try again later.";
 
@@ -17,13 +17,12 @@ export const getGeminiConsultantResponse = async (userMessage: string) => {
       model: "gemini-3-flash-preview",
       contents: userMessage,
       config: {
-        systemInstruction: `You are an expert SAP Consultant for 3ILINE. 
-        3ILINE is the premier SAP Gold Partner in Azerbaijan.
-        You specialize in digital transformation, ERP implementation (SAP S/4HANA), HCM (SuccessFactors), Procurement (ARIBA), and Information Management (OpenText).
-        Your tone is professional, technical yet accessible, and helpful. 
-        Always link business challenges to 3ILINE's proven solutions in the region.
-        Mention that 3ILINE serves major industries like Oil & Gas, Public Sector, and Retail in Azerbaijan.
-        If users ask for details not in your training data, use Google Search grounding to find the latest info about 3ILINE's projects.`,
+        systemInstruction: `You are the FastLane event operations assistant.
+        FastLane specializes in participant management, accreditation, live badge printing, entry management, event apps, hybrid events, medical events and onsite event services.
+        Your tone is professional, practical and concise.
+        Focus on event setup, participant flow, check-in operations, onsite logistics and suitable FastLane modules.
+        Do not mention SAP, ERP transformation or unrelated enterprise software unless the user explicitly asks.
+        If users ask for details not in your training data, use Google Search grounding only for FastLane-relevant public information.`,
         tools: [{ googleSearch: {} }],
         temperature: 0.7,
       },
@@ -46,7 +45,7 @@ export const getGeminiConsultantResponse = async (userMessage: string) => {
     return text;
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Our AI consultant is currently synchronizing with the central business intelligence hub. Please try again in a moment.";
+    return "Unser Assistent ist gerade kurz nicht erreichbar. Bitte versuche es gleich erneut.";
   }
 };
 

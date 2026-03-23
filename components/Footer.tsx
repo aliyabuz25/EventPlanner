@@ -27,7 +27,7 @@ const Footer: React.FC<FooterProps> = ({ setView }) => {
                <Logo theme="light" className="h-12 w-auto" />
             </button>
             <p className="text-slate-600 dark:text-slate-500 max-w-lg leading-relaxed mb-10 text-lg font-normal transition-colors">
-              {company.fullName} is a leading technology consulting firm specializing in SAP solutions and digital transformation. Delivering organizational excellence through specialized technology implementations.
+              {company.fullName} begleitet Live-, Hybrid- und Medical-Events mit Akkreditierung, Einlassmanagement, Event-Apps und OnSite-Services.
             </p>
             <div className="flex space-x-8 opacity-60 hover:opacity-100 transition-all duration-300 text-slate-900 dark:text-white">
                {socialLinks.map(social => (
@@ -73,7 +73,7 @@ const Footer: React.FC<FooterProps> = ({ setView }) => {
             <span>{company.phone}</span>
             <span>{company.email}</span>
           </div>
-          <div className="mt-6 md:mt-0 text-slate-500">Premier {company.sapPartnerLevel}</div>
+          <div className="mt-6 md:mt-0 text-slate-500">{company.sapPartnerLevel}</div>
         </div>
       </div>
     </footer>
