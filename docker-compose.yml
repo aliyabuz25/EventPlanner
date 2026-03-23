@@ -1,5 +1,8 @@
 services:
   fastlane:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: fastlane-octotech:latest
     restart: unless-stopped
     environment:
