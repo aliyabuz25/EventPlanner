@@ -1,8 +1,6 @@
 services:
   fastlane:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: fastlane-octotech:latest
     restart: unless-stopped
     environment:
       NODE_ENV: 'production'
@@ -22,10 +20,10 @@ services:
       - 'traefik.enable=true'
       - 'traefik.docker.network=edge'
       - 'traefik.http.routers.fastlane.rule=Host(`fastlane.octotech.az`)'
-      - 'traefik.http.routers.fastlane.entrypoints=web,websecure'
+      - 'traefik.http.routers.fastlane.entrypoints=web'
       - 'traefik.http.services.fastlane.loadbalancer.server.port=3000'
       - 'traefik.http.routers.fastlane-api.rule=(Host(`fastlane.octotech.az`)) && (PathPrefix(`/api`) || PathPrefix(`/uploads`))'
-      - 'traefik.http.routers.fastlane-api.entrypoints=web,websecure'
+      - 'traefik.http.routers.fastlane-api.entrypoints=web'
       - 'traefik.http.routers.fastlane-api.priority=100'
       - 'traefik.http.services.fastlane-api.loadbalancer.server.port=3000'
 
