@@ -89,7 +89,9 @@ docker ps | grep fastlane
 - Port `3000` is published intentionally so the tunnel can target the app directly
 - Upload URLs are already relative: `/uploads/<file>`
 - API calls are already relative: `/api/...`
-- Ollama inside the container is configured to hit the host via `host.docker.internal:11434`
-- If the Linux host does not support `host-gateway`, replace `OLLAMA_CHAT_URL` with the real host IP
+- Ollama generate endpoint for this app is `https://qwen.octotech.az/api/generate`
+- The default Ollama model for this app is `qwen2:0.5b`
+- The default Ollama timeout for this app is `90000ms`
+- The default generation budget for this app is `160` tokens via `OLLAMA_NUM_PREDICT`
 - Traefik labels may remain, but Cloudflare can point directly to `localhost:3000` for this app
 - If new static paths are added later, extend the API router rule, for example with `PathPrefix(`/cdn`)`

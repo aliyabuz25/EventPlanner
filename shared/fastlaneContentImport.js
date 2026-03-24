@@ -350,9 +350,9 @@ export const fastlaneContentDocuments = {
       title: 'Plane dein',
       titleHighlight: 'Event-Setup',
       description:
-        'Nutze den Schnellmodus fuer eine erste Empfehlung oder den AI Explorer fuer ein ausfuehrlicheres OnSite-Briefing.',
+        'Nutze den Schnellmodus fuer eine erste Empfehlung oder den KI-Assistenten fuer ein ausfuehrlicheres OnSite-Briefing.',
       modeQuick: 'Quick Match',
-      modeAdvisor: 'AI Explorer',
+      modeAdvisor: 'KI-Assistent',
       calculatingTitle: 'Passendes Setup wird ermittelt',
       calculatingDescription: 'Wir ordnen dein Event dem naechstliegenden FastLane-Modul zu...',
       recommendationLabel: 'Empfohlenes Modul',

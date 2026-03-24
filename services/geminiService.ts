@@ -7,7 +7,7 @@ const getGoogleGenAI = async () => {
 
 // Standard Chat Widget Service (FastLane event operations persona)
 export const getGeminiConsultantResponse = async (userMessage: string) => {
-  if (!API_KEY) return "The consultant is currently offline. Please try again later.";
+  if (!API_KEY) return "Der Assistent ist momentan offline. Bitte versuche es spaeter erneut.";
 
   const GoogleGenAI = await getGoogleGenAI();
   const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -29,7 +29,7 @@ export const getGeminiConsultantResponse = async (userMessage: string) => {
     });
 
     const citations = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    let text = response.text || "I'm sorry, I couldn't process that request at the moment.";
+    let text = response.text || "Entschuldigung, ich konnte diese Anfrage gerade nicht verarbeiten.";
     
     // Clean up response text if it includes raw grounding data
     if (citations.length > 0) {
@@ -38,7 +38,7 @@ export const getGeminiConsultantResponse = async (userMessage: string) => {
         .filter((uri: string, index: number, self: string[]) => uri && self.indexOf(uri) === index);
       
       if (links.length > 0) {
-        text += "\n\nSources:\n" + links.map(link => `- ${link}`).join('\n');
+        text += "\n\nQuellen:\n" + links.map(link => `- ${link}`).join('\n');
       }
     }
 
@@ -51,7 +51,7 @@ export const getGeminiConsultantResponse = async (userMessage: string) => {
 
 // ERP Selection Advisor Service (Vendor-Agnostic Persona)
 export const getErpAdvisorResponse = async (history: { role: string; parts: { text: string }[] }[], userMessage: string) => {
-  if (!API_KEY) return "The advisor is currently offline.";
+  if (!API_KEY) return "Der Assistent ist momentan offline.";
 
   const GoogleGenAI = await getGoogleGenAI();
   const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -105,6 +105,6 @@ export const getErpAdvisorResponse = async (history: { role: string; parts: { te
 
   } catch (error) {
     console.error("Gemini Advisor Error:", error);
-    return "I apologize, but I am unable to process your specific inputs right now. Please verify your connection.";
+    return "Entschuldigung, ich kann deine Eingaben gerade nicht verarbeiten. Bitte pruefe die Verbindung.";
   }
 };

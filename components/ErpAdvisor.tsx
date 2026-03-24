@@ -40,6 +40,62 @@ type ChatMessage = {
   text: string;
 };
 
+type ManualBriefFields = Pick<AiExplorerBrief, 'customerName' | 'eventName' | 'eventLocation' | 'attendees' | 'budget' | 'checkInScenario' | 'supportLevel'>;
+
+const manualBriefFieldConfig: Array<{ key: keyof ManualBriefFields; label: string; placeholder: string }> = [
+  { key: 'customerName', label: 'KUNDE (PO)', placeholder: 'z.B. Laura Demir' },
+  { key: 'eventName', label: 'EVENTNAME', placeholder: 'z.B. Annual Growth Summit 2026' },
+  { key: 'eventLocation', label: 'ORT (VENUES)', placeholder: 'z.B. Filderhalle in Leinfelden-Echterdingen' },
+  { key: 'attendees', label: 'TEILNEHMER', placeholder: 'z.B. 1200' },
+  { key: 'budget', label: 'BUDGET', placeholder: 'z.B. 25.000 EUR oder 20.000 bis 30.000 EUR' },
+  { key: 'checkInScenario', label: 'SZENARIO', placeholder: 'z.B. Print-on-Demand, 3 Eingaenge, 12 Counter' },
+  { key: 'supportLevel', label: 'SUPPORT-LEVEL', placeholder: 'z.B. Extended' }
+];
+
+const renderInlineMarkdown = (line: string) => {
+  const segments = line.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+
+  return segments.map((segment, index) => {
+    const boldMatch = segment.match(/^\*\*([^*]+)\*\*$/);
+    if (boldMatch) {
+      return <strong key={`${segment}-${index}`} className="font-semibold">{boldMatch[1]}</strong>;
+    }
+
+    return <React.Fragment key={`${segment}-${index}`}>{segment}</React.Fragment>;
+  });
+};
+
+const RenderMessageText: React.FC<{ text: string }> = ({ text }) => {
+  const lines = String(text ?? '').split('\n').filter((line, index, all) => line.trim() || all[index - 1]?.trim());
+
+  return (
+    <div className="space-y-2.5">
+      {lines.map((line, index) => {
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          return <div key={`spacer-${index}`} className="h-1" />;
+        }
+
+        if (/^-\s+/.test(trimmed)) {
+          return (
+            <div key={`bullet-${index}`} className="flex items-start gap-2">
+              <span className="mt-[0.45rem] h-1.5 w-1.5 rounded-full bg-current opacity-70 flex-shrink-0" />
+              <div>{renderInlineMarkdown(trimmed.replace(/^-\s+/, ''))}</div>
+            </div>
+          );
+        }
+
+        return (
+          <p key={`line-${index}`} className="m-0">
+            {renderInlineMarkdown(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 const starterPromptsByPhase: Record<string, string[]> = {
   Basisdaten: [
     'Tech-Konferenz in Berlin, 3 Tage, 1.200 pax, Print-on-Demand an 3 Eingängen, 12 Counter.',
@@ -81,7 +137,7 @@ Zusammengefasst generiere ich daraus:
 - Automatische Angebotsvarianten (Standard / Plus / Premium)
 - Annahmen & Constraints
 
-Starten wir mit **Phase A (Event-Basisdaten)**: Wie heißt das Event, wo findet es statt, Datum, erwartete Teilnehmerzahl, Aufbau/Abbau-Zeiten und wie sieht Ihr Check-in-Szenario aus? (Eingänge, Counter, Walk-ins)`;
+Starten wir mit **Phase A (Event-Basisdaten)**: Wie heißt das Event, wo findet es statt, Datum, erwartete Teilnehmerzahl, Aufbau/Abbau-Zeiten, wie sieht Ihr Check-in-Szenario aus und gibt es bereits ein Budget oder einen Budgetrahmen?`;
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('de-DE', {
@@ -109,6 +165,24 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'model', text: initialMessage }]);
   const [brief, setBrief] = useState<AiExplorerBrief | null>(null);
   const [offer, setOffer] = useState<AiExplorerOffer | null>(null);
+  const [manualBrief, setManualBrief] = useState<ManualBriefFields>({
+    customerName: '',
+    eventName: '',
+    eventLocation: '',
+    attendees: '',
+    budget: '',
+    checkInScenario: '',
+    supportLevel: ''
+  });
+  const [manualBriefTouched, setManualBriefTouched] = useState<Record<keyof ManualBriefFields, boolean>>({
+    customerName: false,
+    eventName: false,
+    eventLocation: false,
+    attendees: false,
+    budget: false,
+    checkInScenario: false,
+    supportLevel: false
+  });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,21 +196,61 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     }
   }, [messages, isTyping, assistantOpen]);
 
-  const summaryItems = useMemo(
-    () => [
-      { label: 'KUNDE (PO)', value: brief?.customerName || 'Noch offen', icon: ClipboardList },
-      { label: 'EVENTNAME', value: brief?.eventName || 'Noch offen', icon: CalendarDays },
-      { label: 'ORT (VENUES)', value: brief?.eventLocation || 'Noch offen', icon: MapPin },
-      { label: 'TEILNEHMER', value: brief?.attendees || 'Noch offen', icon: Users },
-      { label: 'SZENARIO', value: brief?.checkInScenario || 'Noch offen', icon: WandSparkles },
-      { label: 'SUPPORT-LEVEL', value: brief?.supportLevel || 'Noch offen', icon: ShieldCheck }
-    ],
-    [brief]
+  useEffect(() => {
+    if (!assistantOnly) return;
+    document.body.style.overflow = assistantOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [assistantOnly, assistantOpen]);
+
+  useEffect(() => {
+    if (!brief) return;
+
+    setManualBrief((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      for (const field of manualBriefFieldConfig) {
+        const key = field.key;
+        const incoming = String(brief?.[key] ?? '').trim();
+
+        if (!manualBriefTouched[key] && incoming && current[key] !== incoming) {
+          next[key] = incoming;
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, [brief, manualBriefTouched]);
+
+  const mergedBrief = useMemo(
+    () => ({
+      ...brief,
+      ...Object.fromEntries(
+        Object.entries(manualBrief).filter(([, value]) => String(value ?? '').trim())
+      )
+    }),
+    [brief, manualBrief]
   );
 
-  const phases = brief?.phaseOrder ?? ['Basisdaten', 'Software', 'Projektmanagement', 'Miettechnik', 'Verbrauchsmaterial', 'Support', 'Transport'];
-  const currentPhaseIndex = Math.max(0, phases.findIndex((phase) => phase === brief?.currentPhase));
-  const activePhase = brief?.currentPhase || 'Basisdaten';
+  const summaryItems = useMemo(
+    () => [
+      { label: 'KUNDE (PO)', value: mergedBrief?.customerName || 'Noch offen', icon: ClipboardList },
+      { label: 'EVENTNAME', value: mergedBrief?.eventName || 'Noch offen', icon: CalendarDays },
+      { label: 'ORT (VENUES)', value: mergedBrief?.eventLocation || 'Noch offen', icon: MapPin },
+      { label: 'TEILNEHMER', value: mergedBrief?.attendees || 'Noch offen', icon: Users },
+      { label: 'BUDGET', value: mergedBrief?.budget || 'Noch offen', icon: ReceiptText },
+      { label: 'SZENARIO', value: mergedBrief?.checkInScenario || 'Noch offen', icon: WandSparkles },
+      { label: 'SUPPORT-LEVEL', value: mergedBrief?.supportLevel || 'Noch offen', icon: ShieldCheck }
+    ],
+    [mergedBrief]
+  );
+
+  const phases = mergedBrief?.phaseOrder ?? ['Basisdaten', 'Software', 'Projektmanagement', 'Miettechnik', 'Verbrauchsmaterial', 'Support', 'Transport'];
+  const currentPhaseIndex = Math.max(0, phases.findIndex((phase) => phase === mergedBrief?.currentPhase));
+  const activePhase = mergedBrief?.currentPhase || 'Basisdaten';
   const activeStarterPrompts = starterPromptsByPhase[activePhase] || starterPromptsByPhase.Basisdaten;
   const knowledgeCards: AiExplorerKnowledgeCard[] = offer?.knowledgeCards ?? [];
 
@@ -151,8 +265,37 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     setMessages([{ role: 'model', text: initialMessage }]);
     setBrief(null);
     setOffer(null);
+    setManualBrief({
+      customerName: '',
+      eventName: '',
+      eventLocation: '',
+      attendees: '',
+      budget: '',
+      checkInScenario: '',
+      supportLevel: ''
+    });
+    setManualBriefTouched({
+      customerName: false,
+      eventName: false,
+      eventLocation: false,
+      attendees: false,
+      budget: false,
+      checkInScenario: false,
+      supportLevel: false
+    });
     setInput('');
     setError(null);
+  };
+
+  const handleManualBriefChange = (key: keyof ManualBriefFields, value: string) => {
+    setManualBriefTouched((current) => ({
+      ...current,
+      [key]: true
+    }));
+    setManualBrief((current) => ({
+      ...current,
+      [key]: value
+    }));
   };
 
   const handleSend = async (prefill?: string) => {
@@ -189,15 +332,15 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
       <button
         type="button"
         onClick={() => setAssistantOpen(true)}
-        className={`fixed bottom-5 right-5 z-[120] w-14 h-14 rounded-full bg-sap-blue text-white shadow-[0_18px_45px_-15px_rgba(0,143,211,0.7)] hover:bg-sap-blue/90 transition-all flex items-center justify-center ${assistantOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
+        className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 sm:bottom-5 sm:right-5 z-[100000] w-14 h-14 rounded-full bg-sap-blue text-white shadow-[0_18px_45px_-15px_rgba(0,143,211,0.7)] hover:bg-sap-blue/90 transition-all flex items-center justify-center ${assistantOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
         aria-label="Open assistant"
       >
         <Bot className="w-6 h-6" />
       </button>
 
       <div
-        className={`fixed z-[130] flex items-end gap-5 transition-all duration-300 ${
-          assistantMaximized ? 'inset-4 items-stretch justify-end' : 'bottom-5 right-5'
+        className={`fixed z-[100000] flex items-end gap-5 transition-all duration-300 ${
+          assistantMaximized ? 'inset-0 sm:inset-4 items-stretch justify-end' : 'inset-x-0 bottom-0 px-0 sm:bottom-5 sm:right-5 sm:left-auto sm:px-0'
         } ${
           assistantOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-6 opacity-0 pointer-events-none'
         }`}
@@ -216,7 +359,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           
           <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white dark:bg-[#0e1621] scrollbar-hide">
             <div>
-              <h4 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">Event-Brief & Konzept (JSON)</h4>
+              <h4 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">Event-Brief & Konzept</h4>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                 Single Source of Truth: Die Parameter aus dem Kundendialog werden fortlaufend strukturiert und veredelt.
               </p>
@@ -229,6 +372,55 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                   <div className="text-sm font-semibold text-slate-900 dark:text-white break-words">{item.value}</div>
                 </div>
               ))}
+            </div>
+
+            <div className="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white">Widget Data</div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Diese Werte koennen manuell angepasst werden und ueberschreiben die AI-Vorschau.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualBrief({
+                      customerName: '',
+                      eventName: '',
+                      eventLocation: '',
+                      attendees: '',
+                      budget: '',
+                      checkInScenario: '',
+                      supportLevel: ''
+                    });
+                    setManualBriefTouched({
+                      customerName: false,
+                      eventName: false,
+                      eventLocation: false,
+                      attendees: false,
+                      budget: false,
+                      checkInScenario: false,
+                      supportLevel: false
+                    });
+                  }}
+                  className="text-[11px] font-semibold text-sap-blue hover:text-sap-blue/80 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="space-y-3">
+                {manualBriefFieldConfig.map((field) => (
+                  <label key={field.key} className="block">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-1.5">{field.label}</div>
+                    <input
+                      type="text"
+                      value={manualBrief[field.key] || ''}
+                      onChange={(event) => handleManualBriefChange(field.key, event.target.value)}
+                      placeholder={field.placeholder}
+                      className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0f1622] px-3.5 py-3 text-sm text-slate-800 dark:text-white shadow-sm focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all"
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="pt-2">
@@ -259,59 +451,59 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
         </div>
 
         {/* Existing Chat Widget Container */}
-        <div className={`${assistantMaximized ? 'w-full max-w-[min(1040px,100%)] h-full' : 'w-[min(440px,calc(100vw-1.5rem))] h-[min(78vh,860px)]'} rounded-[2rem] border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1622]/95 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-white/[0.03]">
+        <div className={`${assistantMaximized ? 'w-full max-w-[min(1040px,100%)] h-full' : 'w-full sm:w-[min(440px,calc(100vw-1.5rem))] h-[100dvh] max-h-[100dvh] sm:h-[min(78vh,860px)] sm:max-h-[min(78vh,860px)]'} rounded-none sm:rounded-[2rem] border-x-0 border-b-0 sm:border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1622]/95 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col overscroll-contain`}>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-white/[0.03] gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center">
-              <Bot className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center">
+              <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sap-blue">KI-Agent</div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">FastLane Assistant</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">FastLane Assistant</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => setAssistantMaximized((current) => !current)}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
+              className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
               aria-label={assistantMaximized ? 'Minimize assistant' : 'Maximize assistant'}
             >
-              {assistantMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {assistantMaximized ? <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             </button>
             <button
               onClick={handleReset}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
+              className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
               aria-label="Reset session"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => {
                 setAssistantOpen(false);
                 setAssistantMaximized(false);
               }}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
+              className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
               aria-label="Close assistant"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4 bg-white dark:bg-[#0f1622] scrollbar-hide">
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-4 space-y-4 bg-white dark:bg-[#0f1622] scrollbar-hide overscroll-contain">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`flex items-end gap-2 max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-end gap-2 max-w-[96%] sm:max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-sap-gold text-white' : 'bg-sap-blue text-white'}`}>
                   {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                 </div>
-                <div className={`p-4 rounded-[1.75rem] text-[13.5px] leading-relaxed whitespace-pre-wrap shadow-sm transition-all ${
+                <div className={`p-3.5 sm:p-4 rounded-[1.5rem] sm:rounded-[1.75rem] text-[13.5px] leading-relaxed shadow-sm transition-all ${
                   msg.role === 'user' 
                     ? 'bg-sap-blue text-white rounded-br-none font-medium' 
                     : 'bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-white/5 rounded-bl-none'
                 }`}>
-                  {msg.text}
-                  {idx === messages.length - 1 && msg.role === 'model' && !isTyping && activeStarterPrompts && (
+                  <RenderMessageText text={msg.text} />
+                  {idx === messages.length - 1 && msg.role === 'model' && !isTyping && activeStarterPrompts && messages.length === 1 && !brief && (
                     <div className="mt-5 flex flex-col gap-2.5">
                       <div className="flex items-center gap-2 mb-0.5">
                         <Sparkles className="w-3 h-3 text-sap-blue" />
@@ -350,7 +542,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
         </div>
 
-        <div className="border-t border-slate-200 dark:border-white/10 bg-slate-50/95 dark:bg-[#131b28]/95 px-5 py-5 shrink-0">
+        <div className="border-t border-slate-200 dark:border-white/10 bg-slate-50/95 dark:bg-[#131b28]/95 px-4 sm:px-5 pt-3.5 sm:pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0">
           <div className="relative">
             <textarea
               value={input}
@@ -361,8 +553,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                   handleSend();
                 }
               }}
-              placeholder={brief?.currentQuestion || 'Geben Sie die Antwort fuer den aktuellen Schritt ein...'}
-              className="w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-4.5 pl-6 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none h-20 shadow-sm scrollbar-hide"
+              placeholder={mergedBrief?.currentQuestion || 'Geben Sie die Antwort fuer den aktuellen Schritt ein...'}
+              className="w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-3.5 sm:py-4 pl-4 sm:pl-6 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none h-[72px] sm:h-20 shadow-sm scrollbar-hide"
             />
             <button
               onClick={() => handleSend()}
@@ -384,7 +576,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
   return (
     <div
-      className={`flex flex-col w-full max-w-[1680px] mx-auto bg-white dark:bg-[#0e1621] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden transition-all duration-500 ${
+      className={`flex flex-col w-full max-w-[1680px] mx-auto bg-white dark:bg-[#0e1621] rounded-[1.5rem] lg:rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden transition-all duration-500 ${
         embedded ? 'h-full min-h-0' : 'h-full min-h-0'
       }`}
     >
@@ -407,26 +599,26 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-[180px]">
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">
-              <span>{brief?.progressLabel || '0/7 Phasen erfasst'}</span>
-              <span>{brief?.progressPercent || 0}%</span>
+              <span>{mergedBrief?.progressLabel || '0/7 Phasen erfasst'}</span>
+              <span>{mergedBrief?.progressPercent || 0}%</span>
             </div>
             <div className="h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-sap-blue to-sap-gold transition-all duration-500" style={{ width: `${brief?.progressPercent || 0}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-sap-blue to-sap-gold transition-all duration-500" style={{ width: `${mergedBrief?.progressPercent || 0}%` }} />
             </div>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
             <ShieldCheck className="w-4 h-4 text-sap-blue" />
-            Ollama humane:6.1
+            Ollama qwen2:0.5b
           </div>
         </div>
       </div>
 
       <div className="grid xl:grid-cols-[minmax(0,0.92fr)_minmax(540px,1.08fr)] flex-1 min-h-0">
         <section className="min-h-0 flex flex-col border-r border-slate-200 dark:border-white/5 bg-white dark:bg-[#0e1621]">
-          <div className="px-6 md:px-8 pt-6 pb-4 border-b border-slate-200 dark:border-white/5">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="px-4 sm:px-6 md:px-8 pt-5 sm:pt-6 pb-4 border-b border-slate-200 dark:border-white/5">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {phases.map((phase, index) => {
-                const isActive = phase === brief?.currentPhase || (!brief?.currentPhase && index === 0);
+                const isActive = phase === mergedBrief?.currentPhase || (!mergedBrief?.currentPhase && index === 0);
                 const isDone = index < currentPhaseIndex;
                 return (
                   <div key={phase} className={`rounded-[1.25rem] border px-4 py-3 transition-all ${isActive ? 'border-sap-blue bg-sap-blue/5 shadow-sm' : isDone ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10' : 'border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.03]'}`}>
@@ -447,12 +639,12 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 <div className="w-9 h-9 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center flex-shrink-0">
                   <ChevronRight className="w-4 h-4" />
                 </div>
-                <div className="text-sm text-slate-700 dark:text-slate-200">{brief?.currentQuestion || initialMessage}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-200">{mergedBrief?.currentQuestion || initialMessage}</div>
               </div>
             </div>
           </div>
-          <div className="flex-1 min-h-0 p-6 md:p-8 overflow-y-auto">
-            <div className="grid md:grid-cols-2 gap-4">
+          <div className="flex-1 min-h-0 p-4 sm:p-6 md:p-8 overflow-y-auto">
+            <div className="grid sm:grid-cols-2 gap-4">
               {summaryItems.map((item) => (
                 <div key={item.label} className="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/[0.03] p-4 shadow-sm">
                   <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-1">{item.label}</div>
@@ -463,7 +655,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           </div>
         </section>
 
-        <aside className="bg-[linear-gradient(180deg,#f7fafc_0%,#edf4fb_100%)] dark:bg-[linear-gradient(180deg,#101722_0%,#0b1118_100%)] p-6 md:p-7 min-h-0 overflow-y-auto">
+        <aside className="bg-[linear-gradient(180deg,#f7fafc_0%,#edf4fb_100%)] dark:bg-[linear-gradient(180deg,#101722_0%,#0b1118_100%)] p-4 sm:p-6 md:p-7 min-h-0 overflow-y-auto">
           {showPricingOverview ? (
             <div className="rounded-[1.75rem] border border-slate-200 dark:border-white/10 bg-white/90 dark:bg-white/[0.03] p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
@@ -473,6 +665,20 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 {offer?.hasPricing ? offer?.subtotalFormatted || formatPriceValue(offer?.subtotal) : 'Preis offen'}
               </div>
+              {(offer?.budget || offer?.budgetStatus) ? (
+                <div className="mt-3 space-y-1">
+                  {offer?.budget ? (
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                      Budget: {offer.budget}
+                    </div>
+                  ) : null}
+                  {offer?.budgetStatus ? (
+                    <div className={`text-sm font-semibold ${offer.budgetStatus.startsWith('Im Budget') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {offer.budgetStatus}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : (
             <LockedPanel title="Kostenuebersicht" description="Die Kostenuebersicht wird erst nach Technik- und Scope-Angaben freigegeben." />

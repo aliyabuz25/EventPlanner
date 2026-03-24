@@ -34,6 +34,13 @@ const ChatWidget: React.FC = () => {
     }
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleSend = async (text: string = input) => {
     const messageToSend = text.trim();
     if (!messageToSend || isTyping) return;
@@ -64,7 +71,7 @@ const ChatWidget: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[130] font-sans">
+    <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-5 sm:right-5 z-[100000] font-sans pointer-events-none">
       {/* Floating Toggle Button */}
       {!isOpen && (
         <button 
@@ -82,34 +89,34 @@ const ChatWidget: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-[min(440px,calc(100vw-1.5rem))] h-[min(78vh,860px)] rounded-[2rem] border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1622]/95 backdrop-blur-xl shadow-2xl overflow-hidden transition-all duration-300 flex flex-col pointer-events-auto animate-in fade-in slide-in-from-bottom-8 origin-bottom-right">
+        <div className="w-full sm:w-[min(440px,calc(100vw-1.5rem))] h-[100dvh] max-h-[100dvh] sm:h-[min(78vh,860px)] sm:max-h-[min(78vh,860px)] rounded-none sm:rounded-[2rem] border-x-0 border-b-0 sm:border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1622]/95 backdrop-blur-xl shadow-2xl overflow-hidden transition-all duration-300 flex flex-col pointer-events-auto animate-in fade-in slide-in-from-bottom-8 origin-bottom-right overscroll-contain">
           
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-white/[0.03]">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-white/[0.03] gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center">
-                <Bot className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center">
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sap-blue">KI-ASSISTENT</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">FastLane Assistant</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">FastLane Assistent</div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button 
                 onClick={clearChat}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all bg-white dark:bg-transparent"
-                aria-label="Reset session"
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all bg-white dark:bg-transparent"
+                aria-label="Verlauf zuruecksetzen"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-red-500 hover:border-red-500/30 transition-all bg-white dark:bg-transparent"
-                aria-label="Close assistant"
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-red-500 hover:border-red-500/30 transition-all bg-white dark:bg-transparent"
+                aria-label="Assistent schliessen"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
@@ -117,20 +124,20 @@ const ChatWidget: React.FC = () => {
           {/* Messages Area */}
           <div 
             ref={scrollRef} 
-            className="h-[calc(100%-180px)] overflow-y-auto px-5 py-4 space-y-4 bg-white dark:bg-[#0f1622] scrollbar-hide"
+            className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-4 space-y-4 bg-white dark:bg-[#0f1622] scrollbar-hide overscroll-contain"
           >
             {messages.map((msg, idx) => (
               <div 
                 key={idx} 
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
               >
-                <div className={`flex items-end gap-2 max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                <div className={`flex items-end gap-2 max-w-[96%] sm:max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
                     msg.role === 'user' ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900' : 'bg-sap-blue text-white'
                   }`}>
                     {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                   </div>
-                  <div className={`p-3.5 rounded-[1.5rem] text-sm leading-relaxed whitespace-pre-wrap shadow-sm border ${
+                  <div className={`p-3 sm:p-3.5 rounded-[1.35rem] sm:rounded-[1.5rem] text-sm leading-relaxed whitespace-pre-wrap shadow-sm border ${
                     msg.role === 'user' 
                       ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-br-none border-transparent' 
                       : 'bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 border-slate-100 dark:border-white/5 rounded-bl-none'
@@ -157,8 +164,8 @@ const ChatWidget: React.FC = () => {
           </div>
 
           {/* Prompt Area (Fixed 180px height) */}
-          <div className="h-[180px] border-t border-slate-200 dark:border-white/10 bg-slate-50/95 dark:bg-[#131b28]/95 px-5 py-4 shrink-0">
-            <div className="flex flex-wrap gap-2 mb-3 h-16 overflow-y-auto scrollbar-hide content-start">
+          <div className="border-t border-slate-200 dark:border-white/10 bg-slate-50/95 dark:bg-[#131b28]/95 px-4 sm:px-5 pt-3 sm:pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0">
+            <div className="hidden sm:flex flex-wrap gap-2 mb-3 max-h-16 overflow-y-auto scrollbar-hide content-start">
               {SUGGESTIONS.map((suggestion) => (
                 <button 
                   key={suggestion}
@@ -178,12 +185,12 @@ const ChatWidget: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Frage zu Event-Setup, Check-in oder Teilnehmermanagement..." 
-                className="w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-4 pl-5 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none h-20 shadow-sm scrollbar-hide"
+                className="w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-3.5 sm:py-4 pl-4 sm:pl-5 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none h-[72px] sm:h-20 shadow-sm scrollbar-hide"
               ></textarea>
               <button 
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isTyping}
-                className="absolute right-2.5 top-2.5 p-3 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
+                className="absolute right-2.5 top-2.5 p-2.5 sm:p-3 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
               >
                 <Send className="w-4 h-4" />
               </button>

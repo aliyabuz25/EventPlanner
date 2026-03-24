@@ -65,18 +65,18 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-300 
+    <nav className={`fixed top-0 left-0 right-0 z-[220] isolate transition-all duration-300 
       ${scrolled || currentView !== 'home' 
         ? 'bg-sap-paper/90 dark:bg-[#000000]/90 backdrop-blur-md py-2 shadow-md border-b border-slate-300 dark:border-white/[0.08]' 
         : 'bg-transparent py-4'}`}>
-      <div className="max-w-[1600px] mx-auto px-6 lg:px-12 flex min-h-[64px] lg:min-h-[76px] items-center justify-between">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex min-h-[60px] lg:min-h-[76px] items-center justify-between gap-3">
         <div className="flex h-full items-center">
           <button 
             id="nav-logo-anchor" 
             onClick={() => setView('home')} 
             className={`group flex h-full items-center justify-center focus:outline-none transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}
           >
-             <Logo theme={theme} scrolled={scrolled} className="h-12 sm:h-14 lg:h-16 w-auto max-w-[250px] sm:max-w-[290px] object-contain" />
+             <Logo theme={theme} scrolled={scrolled} className="h-10 sm:h-14 lg:h-16 w-auto max-w-[180px] sm:max-w-[290px] object-contain" />
           </button>
         </div>
 
@@ -115,11 +115,11 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
           </button>
         </div>
 
-        <div className="md:hidden flex items-center space-x-4">
+        <div className="md:hidden flex items-center space-x-2">
            <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="bg-slate-200 dark:bg-white/5" />
 
           <button 
-            className="relative z-[70] p-2 text-slate-800 dark:text-white bg-slate-200 dark:bg-white/5 rounded-md transition-all active:scale-95"
+            className="relative z-[100001] p-2 text-slate-800 dark:text-white bg-slate-200 dark:bg-white/5 rounded-md transition-all active:scale-95"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

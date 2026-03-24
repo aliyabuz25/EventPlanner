@@ -46,6 +46,7 @@ export interface AiExplorerBrief {
   eventLocation?: string;
   eventDates?: string;
   attendees?: string;
+  budget?: string;
   currentPhase?: string;
   currentQuestion?: string;
   progressPercent?: number;
@@ -108,6 +109,8 @@ export interface AiExplorerOffer {
   hasPricing: boolean;
   subtotal: number | null;
   subtotalFormatted?: string;
+  budget?: string;
+  budgetStatus?: string;
   modules: AiExplorerOfferModule[];
   variants: AiExplorerOfferVariant[];
   knowledgeCards: AiExplorerKnowledgeCard[];

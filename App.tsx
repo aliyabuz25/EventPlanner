@@ -14,7 +14,6 @@ import TeamPage from './components/TeamPage';
 import FullServicesPage from './components/FullServicesPage';
 import CorporateStandardsPage from './components/CorporateStandardsPage';
 import SolutionDetailPage from './components/SolutionDetailPage';
-import SapBusinessOnePage from './components/SapBusinessOnePage';
 import SurveyPage from './components/SurveyPage';
 import LoadingScreen from './components/LoadingScreen';
 import GenericContentPage from './components/GenericContentPage';
@@ -163,8 +162,7 @@ const App: React.FC = () => {
       services: content.pages.services?.sections?.title?.join(' '),
       team: content.pages.team?.sections?.title,
       contact: content.pages.home?.sections?.contact?.title,
-      solutions: content.pages.solutions?.sections?.title,
-      'sap-business-one': content.pages.sapBusinessOne?.sections?.hero?.title?.join(' ')
+      solutions: content.pages.solutions?.sections?.title
     };
 
     document.title =
@@ -196,10 +194,6 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    if (currentView === 'sap-business-one') {
-      return <SapBusinessOnePage />;
-    }
-
     if (currentView === 'survey') {
       return <SurveyPage onNavigate={(view) => setCurrentView(view)} />;
     }
@@ -217,6 +211,7 @@ const App: React.FC = () => {
     }
 
     const solutionIds: SolutionId[] = [
+      'sap-business-one',
       'sap-s4hana', 'sap-ariba', 'sap-successfactors', 
       'sap-sam', 'sap-fsm', 
       'sap-bw4hana', 'sap-analytics', 'sap-bydesign', 

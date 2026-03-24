@@ -21,8 +21,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
 const uploadsDir = path.resolve(__dirname, 'data', 'uploads');
-const OLLAMA_CHAT_URL = process.env.OLLAMA_CHAT_URL || 'http://127.0.0.1:11434/api/chat';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'humane:6.1';
+const OLLAMA_GENERATE_URL = process.env.OLLAMA_GENERATE_URL || process.env.OLLAMA_CHAT_URL || 'https://qwen.octotech.az/api/generate';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2:0.5b';
+const OLLAMA_TIMEOUT_MS = Math.max(5000, Number(process.env.OLLAMA_TIMEOUT_MS ?? 90000) || 90000);
+const OLLAMA_NUM_PREDICT = Math.max(96, Number(process.env.OLLAMA_NUM_PREDICT ?? 160) || 160);
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -106,8 +108,28 @@ function createSmtpTransporter(config) {
 function extractAiExplorerBrief(content) {
   const match = content.match(/<brief_json>([\s\S]*?)<\/brief_json>/i);
   if (!match) {
+    const rawText = String(content ?? '').trim();
+    const parsedRaw = parseJsonObject(rawText);
+    if (parsedRaw && typeof parsedRaw === 'object') {
+      return {
+        text: '',
+        brief: parsedRaw
+      };
+    }
+
+    const jsonLikeMatch = rawText.match(/(\{[\s\S]*\})/);
+    if (jsonLikeMatch) {
+      const parsedInline = parseJsonObject(jsonLikeMatch[1]);
+      if (parsedInline && typeof parsedInline === 'object') {
+        return {
+          text: rawText.replace(jsonLikeMatch[1], '').trim(),
+          brief: parsedInline
+        };
+      }
+    }
+
     return {
-      text: content.trim(),
+      text: rawText,
       brief: null
     };
   }
@@ -127,6 +149,175 @@ function extractAiExplorerBrief(content) {
   }
 }
 
+function parseJsonObject(content) {
+  try {
+    return JSON.parse(String(content ?? '').trim());
+  } catch {
+    return null;
+  }
+}
+
+function isLikelyEventName(value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return false;
+  if (normalized.length < 4 || normalized.length > 80) return false;
+  if (/^(hotel|briefing|eventdatum|management|daten|support|app|venue|ort)$/i.test(normalized)) return false;
+  if (/\b(waere|wäre|interessant|offen|critical|support-level|single source|phase|assistent|assistant|scoping)\b/i.test(normalized)) return false;
+  return /[a-zA-ZÄÖÜäöüß]/.test(normalized);
+}
+
+function normalizeEventNameValue(value) {
+  const normalized = sanitizeExtractedValue(value)
+    .replace(/\.\s*das event findet.*$/i, '')
+    .replace(/\s+in der\s+[A-ZÄÖÜ].*$/i, '')
+    .replace(/\s+im\s+[A-ZÄÖÜ].*$/i, '')
+    .replace(/\s+am\s+\d{1,2}\..*$/i, '')
+    .trim();
+
+  return isLikelyEventName(normalized) ? normalized : '';
+}
+
+function isLikelyLocation(value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return false;
+  if (/^(eventdatum|management|daten|briefing|support-level|hotel)$/i.test(normalized)) return false;
+  if (/\b(phase|print-on-demand|walk-ins|app waere|daten)\b/i.test(normalized)) return false;
+  return /\b(stra[sß]e|str\.|platz|halle|center|zentrum|venue|istanbul|stuttgart|berlin|m[uü]nchen|hannover|leinfelden|echterdingen|umraniye)\b/i.test(normalized) || /\d/.test(normalized);
+}
+
+function isLikelyAttendeesValue(value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return false;
+  if (cleanNumber(normalized) > 0) return true;
+  return /(\d[\d.,]*)\s*(teilnehmer|teilnehmende|pax|gaeste|gäste|personen)/i.test(normalized);
+}
+
+function shouldAcceptBriefField(key, value) {
+  if (Array.isArray(value)) return true;
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return false;
+
+  switch (key) {
+    case 'eventName':
+      return isLikelyEventName(normalized);
+    case 'eventLocation':
+      return isLikelyLocation(normalized);
+    case 'attendees':
+      return isLikelyAttendeesValue(normalized);
+    case 'eventDates':
+      return /\d/.test(normalized) || /\b(januar|februar|maerz|märz|april|mai|juni|juli|august|september|oktober|november|dezember|tag|tage)\b/i.test(normalized);
+    default:
+      return true;
+  }
+}
+
+async function generateWithOllama(prompt, options = {}) {
+  const ollamaResponse = await fetch(OLLAMA_GENERATE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      prompt,
+      stream: false,
+      keep_alive: '10m',
+      options: {
+        temperature: options.temperature ?? 0.3,
+        num_predict: options.numPredict ?? OLLAMA_NUM_PREDICT
+      }
+    }),
+    signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS)
+  });
+
+  if (!ollamaResponse.ok) {
+    const errorText = await ollamaResponse.text();
+    throw new Error(`Ollama request failed: ${errorText || ollamaResponse.status}`);
+  }
+
+  const result = await ollamaResponse.json();
+  return String(result?.response ?? '').trim();
+}
+
+function coerceBriefScalar(value) {
+  if (Array.isArray(value)) {
+    const scalarCandidate = value.map((item) => sanitizeExtractedValue(item)).find(Boolean);
+    return scalarCandidate || '';
+  }
+  return sanitizeExtractedValue(value);
+}
+
+function normalizeModelBrief(brief) {
+  if (!brief || typeof brief !== 'object') {
+    return null;
+  }
+
+  const normalized = {
+    customerName: coerceBriefScalar(brief.customerName),
+    eventName: normalizeEventNameValue(brief.eventName),
+    eventLocation: coerceBriefScalar(brief.eventLocation),
+    eventDates: coerceBriefScalar(brief.eventDates),
+    attendees: coerceBriefScalar(brief.attendees),
+    budget: coerceBriefScalar(brief.budget),
+    checkInScenario: coerceBriefScalar(brief.checkInScenario),
+    venues: coerceBriefScalar(brief.venues),
+    entryPoints: coerceBriefScalar(brief.entryPoints),
+    onsiteDays: coerceBriefScalar(brief.onsiteDays),
+    supportLevel: coerceBriefScalar(brief.supportLevel),
+    travelScope: coerceBriefScalar(brief.travelScope),
+    badgeType: coerceBriefScalar(brief.badgeType),
+    softwareNeeds: Array.isArray(brief.softwareNeeds) ? brief.softwareNeeds.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    rentalNeeds: Array.isArray(brief.rentalNeeds) ? brief.rentalNeeds.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    integrations: Array.isArray(brief.integrations) ? brief.integrations.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    serviceModules: Array.isArray(brief.serviceModules) ? brief.serviceModules.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    costDrivers: Array.isArray(brief.costDrivers) ? brief.costDrivers.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    assumptions: Array.isArray(brief.assumptions) ? brief.assumptions.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    missingItems: Array.isArray(brief.missingItems) ? brief.missingItems.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
+    nextStep: coerceBriefScalar(brief.nextStep)
+  };
+
+  if (!shouldAcceptBriefField('eventName', normalized.eventName)) normalized.eventName = '';
+  if (!shouldAcceptBriefField('eventLocation', normalized.eventLocation)) normalized.eventLocation = '';
+  if (!shouldAcceptBriefField('attendees', normalized.attendees)) normalized.attendees = '';
+  if (!shouldAcceptBriefField('eventDates', normalized.eventDates)) normalized.eventDates = '';
+  if (/^(assistent|assistant|your name|event|venue|team|standard)$/i.test(normalized.customerName)) normalized.customerName = '';
+  if (/^(standard|counter entry)$/i.test(normalized.checkInScenario)) normalized.checkInScenario = '';
+  if (/^(standard|basic)$/i.test(normalized.supportLevel)) normalized.supportLevel = '';
+  if (/^(budget|offen|standard|n\/a)$/i.test(normalized.budget)) normalized.budget = '';
+
+  return normalized;
+}
+
+function mergeBriefs(...briefs) {
+  const merged = {};
+
+  for (const brief of briefs) {
+    if (!brief || typeof brief !== 'object') continue;
+
+    for (const [key, rawValue] of Object.entries(brief)) {
+      if (Array.isArray(rawValue)) {
+        const nextValues = rawValue.map((value) => sanitizeExtractedValue(value)).filter(Boolean);
+        merged[key] = Array.from(new Set([...(Array.isArray(merged[key]) ? merged[key] : []), ...nextValues]));
+        continue;
+      }
+
+      if (rawValue && typeof rawValue === 'object') {
+        merged[key] = rawValue;
+        continue;
+      }
+
+      const nextValue = sanitizeExtractedValue(rawValue);
+      if (nextValue && shouldAcceptBriefField(key, nextValue)) {
+        merged[key] = key === 'eventName' ? normalizeEventNameValue(nextValue) : nextValue;
+      } else if (!(key in merged) && (rawValue === '' || rawValue == null)) {
+        merged[key] = rawValue;
+      }
+    }
+  }
+
+  return merged;
+}
+
 function cleanNumber(value) {
   if (value == null) return 0;
   const normalized = String(value).replace(/[^\d.,]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
@@ -135,10 +326,19 @@ function cleanNumber(value) {
 }
 
 function sanitizeExtractedValue(value) {
-  const normalized = String(value ?? '').trim();
+  const normalized = String(value ?? '')
+    .replace(/^\s*[-*•]+\s*/, '')
+    .replace(/\*\*/g, '')
+    .replace(/^(eventname|event name|veranstaltung|eventortadresse|eventort|ortadresse|ort|veranstaltungsort|event-?ort|teilnehmerzahl|teilnehmer|pax|check-?in-?szenario|support-?level|transport|reisekosten)\s*:\s*/i, '')
+    .trim();
   if (!normalized) return '';
   if (/^(noch offen|offen|open|n\/a|unbekannt|-|—)$/i.test(normalized)) return '';
   if (/^(beispielantworten|zu beginn|nun m[oö]chten wir wissen)/i.test(normalized)) return '';
+  if (/^(zusammenfassung|naechster schritt)\b/i.test(normalized)) return '';
+  if (/^(briefing|support-level|stationsbedarf|single source of truth|automatische angebotsvarianten|regel-engine|risiken & constraints|knowledge cards)$/i.test(normalized)) return '';
+  if (/^(phase [a-g]|strukturierte datenerfassung)\b/i.test(normalized)) return '';
+  if (/^(du bist ein|customername|eventdates|entrypoints|softwareNeeds|rentalNeeds|travelScope|serviceModules|costDrivers|missingItems|nextStep)\b/i.test(normalized)) return '';
+  if (/->/.test(normalized)) return '';
   return normalized;
 }
 
@@ -182,8 +382,159 @@ function extractMultilineSection(transcript, labels) {
 function normalizeTranscriptForExtraction(transcript) {
   return transcript
     .split('\n')
-    .filter((line) => !/^(BEISPIELANTWORTEN|Zu Beginn haben wir|Nun m[oö]chten wir wissen|Danke der Informationen)/i.test(line.trim()))
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return false;
+      if (/^(KUNDE \(PO\)|EVENTNAME|ORT \(VENUES\)|TEILNEHMER|SZENARIO|SUPPORT-LEVEL)$/i.test(trimmed)) {
+        return false;
+      }
+      if (/^(Single Source of Truth|Strukturierte Datenerfassung|Automatische Angebotsvarianten|Regel-Engine|Regel-Engine & Rechenmodelle|Risiken & Constraints|Knowledge Cards)$/i.test(trimmed)) {
+        return false;
+      }
+      if (/^Phase [A-G]\s+[-—]/i.test(trimmed)) {
+        return false;
+      }
+      if (/^(BEISPIELANTWORTEN|Zu Beginn haben wir|Nun m[oö]chten wir wissen|Danke der Informationen|Zusammenfassung|Naechster Schritt)/i.test(trimmed)) {
+        return false;
+      }
+      if (/^\*\*.*\*\*:/.test(trimmed)) {
+        return false;
+      }
+      if (/^\-\s+\*\*.*\*\*:/.test(trimmed)) {
+        return false;
+      }
+      if (/^\d+\.\s/.test(trimmed)) {
+        return false;
+      }
+      if (/^(Wird anhand|Plausibilit[aä]tschecks|Vorlaufzeiten|Modul-Spezifische Empfehlungen|Agent erzeugt)/i.test(trimmed)) {
+        return false;
+      }
+      if (/^(Tech-Konferenz|Corporate Event|Team reist aus Hannover an|Event ist lokal, keine [Uu]bernachtung)/i.test(trimmed)) {
+        return false;
+      }
+      return true;
+    })
+    .map((line) => line.replace(/\*\*/g, '').trim())
     .join('\n');
+}
+
+function isPromptAuthoringMessage(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  if (!normalized) return false;
+
+  const promptSignals = [
+    'du bist der fastlane assistant',
+    'du bist ein event-scoping-assistent',
+    'wichtige arbeitsregeln',
+    'zu erfassende struktur',
+    'deine aufgabe im chat',
+    'antwortstil',
+    'wenn ausreichend informationen vorliegen',
+    'starte jetzt mit phase a',
+    'phase a — event-basisdaten',
+    'phase b — software-konfiguration',
+    'phase c — projektmanagement',
+    'phase d — miettechnik',
+    'phase e — verbrauchsmaterial',
+    'phase f — support vor ort',
+    'phase g — transport & reise',
+    '"customername":',
+    '"eventname":',
+    '"eventlocation":',
+    '"eventdates":',
+    '"checkinscenario":',
+    '"softwareneeds":',
+    '"rentalneeds":'
+  ];
+
+  const hits = promptSignals.filter((signal) => normalized.includes(signal)).length;
+  const bulletLines = normalized.split('\n').filter((line) => line.trim().startsWith('- ')).length;
+  return hits >= 3 || (hits >= 2 && bulletLines >= 8) || (hits >= 2 && normalized.includes('{') && normalized.includes('}'));
+}
+
+function isConsultingQuestion(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  if (!normalized) return false;
+
+  const signals = [
+    'dienstleister',
+    'teilnehmermanagement-services',
+    'ki-agent',
+    'angebots-agent',
+    'kostenübersicht',
+    'kostenuebersicht',
+    'produktkatalog',
+    'regel-engine',
+    'pricing',
+    'architektur',
+    'interview-flow',
+    'fragebaum',
+    'mvp',
+    'deliverables'
+  ];
+
+  const hits = signals.filter((signal) => normalized.includes(signal)).length;
+  return hits >= 3;
+}
+
+async function extractBriefWithOllama(history, userMessage) {
+  if (isPromptAuthoringMessage(userMessage)) {
+    return null;
+  }
+
+  const userTranscript = [
+    ...history
+      .filter((item) => item?.role === 'user')
+      .filter((item) => !isPromptAuthoringMessage(item?.text))
+      .map((item) => String(item?.text ?? '')),
+    userMessage
+  ].join('\n');
+
+  const transcript = normalizeTranscriptForExtraction(userTranscript);
+  if (!transcript.trim()) {
+    return null;
+  }
+
+  const extractionPrompt = `Du bist ein reiner Extraktionsdienst fuer Event-Scoping.
+Extrahiere nur belastbare Fakten aus dem folgenden Nutzerverlauf.
+Ignoriere Beispielantworten, Prompts, UI-Texte, Fragen des Assistenten und Annahmen.
+Wenn eine Information nicht explizit genannt wurde, gib einen leeren String oder ein leeres Array zurueck.
+Antworte ausschliesslich mit gueltigem JSON ohne Markdown, ohne Erklaerung, ohne Tags.
+
+JSON-Schema:
+{
+  "customerName": "",
+  "eventName": "",
+  "eventLocation": "",
+  "eventDates": "",
+  "attendees": "",
+  "budget": "",
+  "checkInScenario": "",
+  "venues": "",
+  "entryPoints": "",
+  "onsiteDays": "",
+  "softwareNeeds": [],
+  "rentalNeeds": [],
+  "supportLevel": "",
+  "travelScope": "",
+  "integrations": [],
+  "badgeType": "",
+  "serviceModules": [],
+  "costDrivers": [],
+  "assumptions": [],
+  "missingItems": [],
+  "nextStep": ""
+}`;
+
+  try {
+    const content = await generateWithOllama(`${extractionPrompt}\n\nNutzerverlauf:\n${transcript}`, {
+      temperature: 0.1,
+      numPredict: 420
+    });
+    return parseJsonObject(content);
+  } catch {
+    return null;
+  }
 }
 
 function parseIntegrationList(transcript) {
@@ -196,49 +547,241 @@ function parseIntegrationList(transcript) {
   return integrations;
 }
 
+function pickLastMatch(transcript, patterns) {
+  const source = String(transcript ?? '');
+  let selected = '';
+
+  for (const pattern of patterns) {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    const regex = new RegExp(pattern.source, flags);
+    let match;
+    while ((match = regex.exec(source)) !== null) {
+      const candidate = sanitizeExtractedValue(match[1]);
+      if (candidate) {
+        selected = candidate;
+      }
+    }
+  }
+
+  return selected;
+}
+
+function inferEventName(transcript) {
+  return pickLastMatch(transcript, [
+    /\bevent adı\s*:?\s*([^\n,.;]+)/i,
+    /\bevent adi\s*:?\s*([^\n,.;]+)/i,
+    /\bevent name\s*[:=-]\s*([^\n,.;]+)/i,
+    /\beventname\s*[:=-]\s*([^\n,.;]+)/i,
+    /\bveranstaltung\s*[:=-]\s*([^\n,.;]+)/i,
+    /\bevent\s*[:=-]\s*([^\n,.;]+)/i,
+    /\bwir planen\s+(?:den|das)\s+(.+?)\s+als\b/i,
+    /\bwir planen\s+(?:den|das)\s+(.+?)\s+in der\b/i,
+    /\bwir planen\s+(?:den|das)\s+(.+?)\s+im\b/i,
+    /\bwir planen\s+(?:den|das)\s+(.+?)\s+am\b/i,
+    /\b(?:das|unser|mein)\s+event\s+(?:heisst|heißt|ist)\s+([^\n,.;]+)/i,
+    /\bname der veranstaltung\s*:?\s*([^\n,.;]+)/i,
+    /\b(?:event adı|event adi)\s+([^\n,.;]+)/i
+  ]);
+}
+
+function inferLocation(transcript) {
+  return pickLastMatch(transcript, [
+    /\badresi\s*:?\s*([^\n]+)/i,
+    /\badresse\s*:?\s*([^\n]+)/i,
+    /\bveranstaltungsort\s*:\s*([^\n.;]+)/i,
+    /\bevent-?ort\s*:\s*([^\n.;]+)/i,
+    /\bvenue\s*:\s*([^\n.;]+)/i,
+    /\blocation\s*:\s*([^\n.;]+)/i,
+    /\bort\s*:\s*([^\n.;]+)/i,
+    /\bin der\s+([A-ZÄÖÜ][^\n]+?)(?:\.\s|,\s+wir|\s+bei\s+[A-ZÄÖÜ]|\s+das\s+event|\s+statt|$)/i,
+    /\bin\s+der\s+([A-ZÄÖÜ][^\n]+?)(?:\.\s|,\s+das\s+event|,\s+wir|\s+am\s+\d|\s+mit\s+\d|$)/i,
+    /\bim\s+([A-ZÄÖÜ][^\n]+?)(?:\.\s|,\s+das\s+event|,\s+wir|\s+am\s+\d|\s+mit\s+\d|$)/i,
+    /\bfindet\s+in\s+([A-ZÄÖÜ][^\n,.;]+)/i,
+    /\bin\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.\- ]{2,40})\s+statt\b/i
+  ]);
+}
+
+function inferEventDates(transcript) {
+  return pickLastMatch(transcript, [
+    /\beventdatum\s*:?\s*([^\n]+)/i,
+    /\beventdaten\s*:?\s*([^\n]+)/i,
+    /\bdatum\s*:?\s*([^\n]+)/i,
+    /\bam\s+(\d{1,2}\.\s*(?:und|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4})/i,
+    /\bam\s+(\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4}\s*(?:und|bis|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4})/i,
+    /\bvon\s+(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d{1,2}\.\d{2,4})/i,
+    /\b(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d{1,2}\.\d{2,4})/i,
+    /\b(\d+\s*(?:tag|tage))\b/i
+  ]);
+}
+
+function inferAttendees(transcript) {
+  return pickLastMatch(transcript, [
+    /\berwartete teilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
+    /\bteilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
+    /\bteilnehmer\s*:?\s*([^\n,.;]+)/i,
+    /\bpax\s*:?\s*([^\n,.;]+)/i,
+    /\brund\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmende|pax|gaeste|gäste|personen)\b/i,
+    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen)\b/i,
+    /\bmit\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmenden|pax|gaesten|gästen|personen)\b/i
+  ]);
+}
+
+function inferCheckInScenario(transcript, rawBrief = {}) {
+  const explicit = firstNonEmpty(
+    rawBrief.checkInScenario,
+    extractMultilineSection(transcript, ['Check-in-Szenario', 'Checkin-Szenario'])
+  );
+  if (explicit) return explicit;
+
+  const parts = [];
+  if (/print-on-demand|live-badging|badge[-\s]?druck/i.test(transcript)) {
+    parts.push('Print-on-Demand / Live-Badging');
+  } else if (/vorproduziert|vorgefertigt|klassischer check-?in/i.test(transcript)) {
+    parts.push('Klassischer Check-in mit vorproduzierten Badges');
+  } else if (/self-?check-?in|badge2go|kiosk/i.test(transcript)) {
+    parts.push('Self-Check-in / Kiosk-Setup');
+  } else if (/check-?in|einlass|zugang/i.test(transcript)) {
+    parts.push('Check-in / Einlassmanagement');
+  }
+
+  const entrances = pickLastMatch(transcript, [/\b(\d+)\s*(?:eing[aä]nge|eingange|entrances|eingang)\b/i]);
+  if (entrances) {
+    parts.push(`${entrances} Eingaenge`);
+  }
+
+  const counters = pickLastMatch(transcript, [/\b(\d+)\s*(?:counter|counters|desks|schalter)\b/i]);
+  if (counters) {
+    parts.push(`${counters} Counter`);
+  }
+
+  if (/walk-?ins?/i.test(transcript)) {
+    parts.push('Walk-ins eingeplant');
+  }
+
+  return parts.join(', ');
+}
+
+function inferSupportLevel(transcript) {
+  if (/doors?-open critical/i.test(transcript)) return 'Doors-open critical';
+  if (/24\s*\/\s*7/i.test(transcript)) return '24/7';
+  if (/extended/i.test(transcript)) return 'Extended';
+  if (/\bbasic\b/i.test(transcript)) return 'Basic';
+  if (/remote-?helpdesk|remote support/i.test(transcript)) return 'Basic';
+  if (/onsite|vor ort|techniker/i.test(transcript)) return 'Extended';
+  return '';
+}
+
+function inferTravelScope(transcript) {
+  const parts = [];
+  if (/spedition|versand|anlieferung|abholung|transport/i.test(transcript)) {
+    parts.push('Material- / Techniktransport');
+  }
+  if (/hotel|uebernacht|übernacht/i.test(transcript)) {
+    parts.push('Hotel / Uebernachtung');
+  }
+  if (/reise|anreise|flug|bahn|mietwagen/i.test(transcript)) {
+    parts.push('Team-Reise');
+  }
+  return parts.join(', ');
+}
+
+function inferBudget(transcript) {
+  const direct = pickLastMatch(transcript, [
+    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro))\b/i,
+    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?)\b/i
+  ]);
+
+  if (direct) {
+    return direct.replace(/\s+/g, ' ').trim();
+  }
+
+  const freeText = transcript.match(/\bwir haben\s+ein\s+budget\s+von\s+(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro)?)\b/i);
+  return freeText?.[1]?.replace(/\s+/g, ' ').trim() || '';
+}
+
+function parseBudgetValue(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return null;
+
+  const compact = normalized
+    .replace(/ca\.\s*/g, '')
+    .replace(/\s*(eur|euro|€)\s*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!compact) return null;
+
+  const rangeMatch = compact.match(/(\d[\d.,]*)\s*(?:-|bis)\s*(\d[\d.,]*)/i);
+  if (rangeMatch) {
+    const min = cleanNumber(rangeMatch[1]);
+    const max = cleanNumber(rangeMatch[2]);
+    if (min > 0 && max >= min) {
+      return { min, max };
+    }
+  }
+
+  const single = cleanNumber(compact);
+  if (single > 0) {
+    return { min: single, max: single };
+  }
+
+  return null;
+}
+
 function inferBriefFromTranscript(transcript, rawBrief = {}) {
   const normalizedTranscript = normalizeTranscriptForExtraction(transcript);
   const eventName = firstNonEmpty(
     rawBrief.eventName,
-    extractLabeledValue(normalizedTranscript, ['Event Name', 'Eventname', 'Veranstaltung', 'Event'])
+    extractLabeledValue(normalizedTranscript, ['Event Name', 'Eventname', 'Veranstaltung', 'Event']),
+    inferEventName(normalizedTranscript)
   );
   const eventLocation = firstNonEmpty(
     rawBrief.eventLocation,
-    extractLabeledValue(normalizedTranscript, ['Veranstaltungsort', 'Event-Ort', 'Ort', 'Location'])
+    extractLabeledValue(normalizedTranscript, ['Veranstaltungsort', 'Event-Ort', 'Ort', 'Location']),
+    inferLocation(normalizedTranscript)
   );
   const eventDates = firstNonEmpty(
     rawBrief.eventDates,
-    extractLabeledValue(normalizedTranscript, ['Eventdatum', 'Eventdaten', 'Datum', 'Event Date'])
+    extractLabeledValue(normalizedTranscript, ['Eventdatum', 'Eventdaten', 'Datum', 'Event Date']),
+    inferEventDates(normalizedTranscript)
   );
   const attendees = firstNonEmpty(
     rawBrief.attendees,
-    extractLabeledValue(normalizedTranscript, ['Erwartete Teilnehmerzahl', 'Teilnehmerzahl', 'Teilnehmer', 'Attendees', 'Pax'])
+    extractLabeledValue(normalizedTranscript, ['Erwartete Teilnehmerzahl', 'Teilnehmerzahl', 'Teilnehmer', 'Attendees', 'Pax']),
+    inferAttendees(normalizedTranscript)
+  );
+  const budget = firstNonEmpty(
+    rawBrief.budget,
+    extractLabeledValue(normalizedTranscript, ['Budget', 'Rahmenbudget', 'Maximalbudget', 'Budgetrahmen']),
+    inferBudget(normalizedTranscript)
   );
   const supportLevel = firstNonEmpty(
     rawBrief.supportLevel,
-    extractLabeledValue(normalizedTranscript, ['Support-Level', 'Supportlevel'])
+    extractLabeledValue(normalizedTranscript, ['Support-Level', 'Supportlevel']),
+    inferSupportLevel(normalizedTranscript)
   );
   const badgeType = firstNonEmpty(
     rawBrief.badgeType,
-    extractLabeledValue(normalizedTranscript, ['Badge-Typ', 'Badge Typ'])
+    extractLabeledValue(normalizedTranscript, ['Badge-Typ', 'Badge Typ']),
+    /pvc/i.test(normalizedTranscript) ? 'PVC-Badge' : /papier|paper/i.test(normalizedTranscript) ? 'Papier-Badge' : /digital/i.test(normalizedTranscript) ? 'Digital / QR' : ''
   );
   const travelScope = firstNonEmpty(
     rawBrief.travelScope,
-    extractLabeledValue(normalizedTranscript, ['Transport', 'Reisekosten', 'Travel Scope'])
+    extractLabeledValue(normalizedTranscript, ['Transport', 'Reisekosten', 'Travel Scope']),
+    inferTravelScope(normalizedTranscript)
   );
-  const checkInScenario = firstNonEmpty(
-    rawBrief.checkInScenario,
-    extractMultilineSection(normalizedTranscript, ['Check-in-Szenario', 'Checkin-Szenario'])
-  );
+  const checkInScenario = inferCheckInScenario(normalizedTranscript, rawBrief);
   const entryPoints = firstNonEmpty(
     rawBrief.entryPoints,
     extractLabeledValue(normalizedTranscript, ['Eingänge', 'Eingaenge']),
-    (normalizedTranscript.match(/(\d+)\s*(haupt)?eing[aä]nge/i)?.[1] ?? '')
+    (normalizedTranscript.match(/(\d+)\s*(haupt)?eing[aä]nge/i)?.[1] ?? ''),
+    pickLastMatch(normalizedTranscript, [/\b(\d+)\s*(?:eing[aä]nge|eingange|entrances|eingang)\b/i])
   );
   const onsiteDays = firstNonEmpty(
     rawBrief.onsiteDays,
     extractLabeledValue(normalizedTranscript, ['Eventtage', 'Dauer']),
-    (normalizedTranscript.match(/(\d+)\s*(tage|tage\)|tag)/i)?.[1] ?? '')
+    (normalizedTranscript.match(/(\d+)\s*(tage|tage\)|tag)/i)?.[1] ?? ''),
+    pickLastMatch(normalizedTranscript, [/\b(\d+)\s*(?:tage|tag)\b/i])
   );
 
   const softwareNeeds = Array.from(new Set([
@@ -247,7 +790,10 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
     ...( /scan/i.test(normalizedTranscript) ? ['Scanning'] : [] ),
     ...( /lead/i.test(normalizedTranscript) ? ['Lead-Capture'] : [] ),
     ...( /crm/i.test(normalizedTranscript) ? ['CRM-Integration'] : [] ),
-    ...( /reporting/i.test(normalizedTranscript) ? ['Reporting'] : [] )
+    ...( /reporting/i.test(normalizedTranscript) ? ['Reporting'] : [] ),
+    ...( /self-?check-?in|badge2go|kiosk/i.test(normalizedTranscript) ? ['Self-Check-in'] : [] ),
+    ...( /event-app|app\b/i.test(normalizedTranscript) ? ['Event-App'] : [] ),
+    ...( /rollen|rechte|ticketkategorien/i.test(normalizedTranscript) ? ['Rollen & Rechte'] : [] )
   ]));
 
   const rentalNeeds = Array.from(new Set([
@@ -255,7 +801,9 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
     ...( /drucker/i.test(normalizedTranscript) ? ['Badge-Drucker'] : [] ),
     ...( /scanner/i.test(normalizedTranscript) ? ['Scanner'] : [] ),
     ...( /ipad|tablet/i.test(normalizedTranscript) ? ['Tablets / iPads'] : [] ),
-    ...( /router|lte|netzwerk|wifi|wlan/i.test(normalizedTranscript) ? ['Router / LTE Backup'] : [] )
+    ...( /router|lte|netzwerk|wifi|wlan/i.test(normalizedTranscript) ? ['Router / LTE Backup'] : [] ),
+    ...( /kiosk/i.test(normalizedTranscript) ? ['Self-Check-in Kiosk'] : [] ),
+    ...( /laptop/i.test(normalizedTranscript) ? ['Laptops'] : [] )
   ]));
 
   return {
@@ -264,6 +812,7 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
     eventLocation,
     eventDates,
     attendees,
+    budget,
     checkInScenario,
     venues: firstNonEmpty(rawBrief.venues, extractLabeledValue(transcript, ['Venues', 'Standorte']), eventLocation ? '1' : ''),
     entryPoints,
@@ -284,7 +833,22 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
 
 function isStructuredBriefInput(text) {
   const normalized = String(text ?? '');
-  return normalized.length > 350 || /(event name|veranstaltungsort|eventdatum|erwartete teilnehmerzahl|check-?in-szenario|badge-druck|salesforce)/i.test(normalized);
+  const structuredFieldMatches = [
+    /event name/i,
+    /veranstaltungsort/i,
+    /eventdatum/i,
+    /erwartete teilnehmerzahl/i,
+    /check-?in-szenario/i,
+    /badge-druck/i,
+    /salesforce/i
+  ].filter((pattern) => pattern.test(normalized)).length;
+
+  return normalized.length > 500 || structuredFieldMatches >= 3;
+}
+
+function shouldAnswerDirectly(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  return /bitte beantworte|antworte direkt|keine rueckfragen|keine rückfragen|liefere konkrete antworten|als waerst du der kunde|als wärst du der kunde|gib zu jedem punkt eine konkrete antwort|formatiere die antwort sauber nach den phasen|vollstaendige antwort|vollständige antwort/.test(normalized);
 }
 
 function buildDeterministicAssistantReply(brief, offer) {
@@ -311,6 +875,62 @@ function buildDeterministicAssistantReply(brief, offer) {
   return lines.join('\n');
 }
 
+function buildPromptAuthoringHelpReply() {
+  return [
+    'Ich brauche noch echte Eventangaben statt einer Anweisung oder Vorlage.',
+    'Nennen Sie mir bitte jetzt einfach Eventname, Ort, Datum, Teilnehmerzahl und den geplanten Check-in-Ablauf in normalem Text.'
+  ].join('\n');
+}
+
+function looksLikeJsonOnlyReply(text) {
+  const normalized = String(text ?? '').trim();
+  return !normalized || normalized.startsWith('{') || normalized.startsWith('{"') || /^\{[\s\S]*\}$/.test(normalized);
+}
+
+function buildAssistantReplyFromBrief(brief) {
+  const lines = [];
+  const facts = [
+    brief?.eventName ? `Event: ${brief.eventName}` : '',
+    brief?.eventLocation ? `Ort: ${brief.eventLocation}` : '',
+    brief?.eventDates ? `Datum: ${brief.eventDates}` : '',
+    brief?.attendees ? `Teilnehmer: ${brief.attendees}` : '',
+    brief?.budget ? `Budget: ${brief.budget}` : '',
+    brief?.checkInScenario ? `Check-in: ${brief.checkInScenario}` : '',
+    brief?.supportLevel ? `Support: ${brief.supportLevel}` : ''
+  ].filter(Boolean);
+
+  if (facts.length) {
+    lines.push('Ich habe die aktuellen Eckdaten uebernommen.');
+    lines.push(...facts.map((fact) => `- ${fact}`));
+  } else {
+    lines.push('Ich habe noch nicht genug belastbare Eventdaten erkannt.');
+  }
+
+  if (brief?.currentQuestion) {
+    lines.push('');
+    lines.push(brief.currentQuestion);
+  }
+
+  return lines.join('\n');
+}
+
+function briefOrNullIfEmpty(brief) {
+  if (!brief || typeof brief !== 'object') return null;
+
+  const meaningful = [
+    brief.customerName,
+    brief.eventName,
+    brief.eventLocation,
+    brief.eventDates,
+    brief.attendees,
+    brief.budget,
+    brief.checkInScenario,
+    brief.supportLevel
+  ].filter((value) => String(value ?? '').trim());
+
+  return meaningful.length ? brief : null;
+}
+
 function parseAttendees(value, transcript = '') {
   const direct = cleanNumber(value);
   if (direct > 0) return Math.round(direct);
@@ -334,8 +954,18 @@ function parseCountFromText(transcript, patterns, fallback = 0) {
 }
 
 function parseDayCount(value, transcript = '') {
-  const direct = cleanNumber(value);
-  if (direct > 0) return Math.max(1, Math.round(direct));
+  const normalizedValue = String(value ?? '').trim();
+  if (/^\d+$/.test(normalizedValue)) {
+    return Math.max(1, Math.round(cleanNumber(normalizedValue)));
+  }
+
+  if (/\b\d{1,2}\.\s*(und|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4}\b/i.test(normalizedValue)) {
+    return 2;
+  }
+
+  if (/\b\d{4}-\d{2}-\d{2}.*\b\d{4}-\d{2}-\d{2}\b/.test(normalizedValue)) {
+    return 2;
+  }
 
   const explicitDays = transcript.match(/(\d[\d.,]*)\s*(tag|tage)/i);
   if (explicitDays) {
@@ -354,7 +984,8 @@ function formatEuro(value) {
 }
 
 function hasExplicitPricing(transcript) {
-  return /(\d[\d.,]*)\s*(€|eur|euro|usd|\$|pro\s*(tag|stunde|teilnehmer|geraet|gerät|person|nacht|session))/i.test(transcript);
+  return /(\d[\d.,]*)\s*(€|eur|euro|usd|\$|pro\s*(tag|stunde|teilnehmer|geraet|gerät|person|nacht|session))/i.test(transcript)
+    || /\b(budget|rahmenbudget|maximalbudget|budgetrahmen)\b/i.test(transcript);
 }
 
 function createPosition(label, quantity, unit, rate, pricingEnabled) {
@@ -370,7 +1001,14 @@ function createPosition(label, quantity, unit, rate, pricingEnabled) {
 }
 
 function buildAiExplorerOffer(rawBrief, history, userMessage) {
-  const transcript = [...history.map((item) => String(item?.text ?? '')), userMessage].join('\n');
+  const userTranscript = [
+    ...history
+      .filter((item) => item?.role === 'user')
+      .filter((item) => !isPromptAuthoringMessage(item?.text))
+      .map((item) => String(item?.text ?? '')),
+    ...(isPromptAuthoringMessage(userMessage) ? [] : [userMessage])
+  ].join('\n');
+  const transcript = normalizeTranscriptForExtraction(userTranscript);
   const lowerTranscript = transcript.toLowerCase();
   const pricingEnabled = hasExplicitPricing(transcript);
   const inferredBrief = inferBriefFromTranscript(transcript, rawBrief ?? {});
@@ -381,6 +1019,7 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
     eventLocation: String(inferredBrief.eventLocation ?? '').trim(),
     eventDates: String(inferredBrief.eventDates ?? '').trim(),
     attendees: String(inferredBrief.attendees ?? '').trim(),
+    budget: String(inferredBrief.budget ?? '').trim(),
     checkInScenario: String(inferredBrief.checkInScenario ?? '').trim(),
     venues: String(inferredBrief.venues ?? '').trim(),
     entryPoints: String(inferredBrief.entryPoints ?? '').trim(),
@@ -399,6 +1038,8 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   };
 
   const attendees = parseAttendees(brief.attendees, transcript);
+  const budgetText = brief.budget || inferBudget(transcript);
+  const budgetValue = parseBudgetValue(budgetText);
   const eventDays = parseDayCount(brief.onsiteDays || brief.eventDates, transcript);
   const venues = parseCountFromText(transcript, [/\b(\d+)\s*(venues|locations|standorte|locations?)/i, /\b(\d+)\s*(location|venue)\b/i], cleanNumber(brief.venues) || 1) || 1;
   const entryPoints = parseCountFromText(transcript, [/\b(\d+)\s*(eing[aä]nge|eingange|entrances|eingang|counters)\b/i], cleanNumber(brief.entryPoints) || 2) || 2;
@@ -407,7 +1048,15 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   const requiresLeadCapture = /lead/i.test(lowerTranscript);
   const requiresRouter = /lte|router|internet|netzwerk/i.test(lowerTranscript);
   const requiresTravel = /reise|travel|hotel|transport|versand|anlieferung|abholung/i.test(lowerTranscript) || Boolean(brief.travelScope);
-  const supportLevel = brief.supportLevel || (lowerTranscript.includes('24/7') ? '24/7' : lowerTranscript.includes('extended') ? 'Extended' : 'Basic');
+  const inferredSupportLevel =
+    lowerTranscript.includes('24/7')
+      ? '24/7'
+      : lowerTranscript.includes('extended')
+        ? 'Extended'
+        : attendees > 800 || requiresBadgePrint || requiresScanning || requiresTravel
+          ? 'Extended'
+          : 'Basic';
+  const supportLevel = brief.supportLevel || inferredSupportLevel;
   const softwareNeeds = new Set(brief.softwareNeeds);
   const rentalNeeds = new Set(brief.rentalNeeds);
 
@@ -442,6 +1091,7 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   const phaseDefinitions = [
     {
       key: 'Basisdaten',
+      minFilled: 3,
       fields: [
         brief.eventName,
         brief.eventLocation,
@@ -449,41 +1099,47 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
         attendees ? `${attendees}` : brief.attendees,
         brief.checkInScenario
       ],
-      question: 'Wie heisst das Event, wo findet es statt, an welchen Tagen, mit wie vielen Teilnehmern, und wie sieht das Check-in-Szenario aus?'
+      question: 'Wie heisst das Event, wo findet es statt, an welchen Tagen, mit wie vielen Teilnehmern, wie sieht das Check-in-Szenario aus, und gibt es bereits ein Budget oder einen Budgetrahmen?'
     },
     {
       key: 'Software',
+      minFilled: 1,
       fields: [softwareNeeds.size ? 'ok' : '', brief.integrations.length ? 'ok' : '', brief.badgeType],
       question: 'Welche Software-Funktionen werden benoetigt: Teilnehmerimport, Badge-Druck, Check-in, Scanning, Lead-Capture, Reporting oder Integrationen?'
     },
     {
       key: 'Projektmanagement',
+      minFilled: 2,
       fields: [venues > 0 ? `${venues}` : '', entryPoints > 0 ? `${entryPoints}` : '', brief.onsiteDays || `${eventDays}`],
       question: 'Wie komplex ist das Projekt organisatorisch: wie viele Venues, Eingangsbereiche, Stakeholder und Testlaeufe sind einzuplanen?'
     },
     {
       key: 'Miettechnik',
+      minFilled: 1,
       fields: [stations > 0 ? `${stations}` : '', printers > 0 ? `${printers}` : '', scanners > 0 ? `${scanners}` : '', routers > 0 ? `${routers}` : ''],
       question: 'Welche Miettechnik wird konkret benoetigt: Check-in-Stationen, Scanner, Badge-Drucker, Router oder Backup-Geraete?'
     },
     {
       key: 'Verbrauchsmaterial',
+      minFilled: 1,
       fields: [requiresBadgePrint ? `${consumableUnits}` : '', brief.badgeType],
       question: 'Welche Verbrauchsmaterialien werden benoetigt: Badge-Typ, Lanyards, Halter, Etiketten oder Druckerbaender?'
     },
     {
       key: 'Support',
+      minFilled: 1,
       fields: [brief.supportLevel || supportLevel, technicians > 0 ? `${technicians}` : ''],
       question: 'Welches Support-Level wird vor Ort benoetigt: Basic, Extended, 24/7 oder doors-open critical?'
     },
     {
       key: 'Transport',
+      minFilled: 1,
       fields: [brief.travelScope, requiresTravel ? 'ok' : '', eventDays > 1 ? `${eventDays}` : ''],
       question: 'Gibt es Transport-, Reise- oder Hotelbedarf fuer Team, Hardware, Versand oder Logistikpuffer?'
     }
   ];
 
-  const completedPhases = phaseDefinitions.filter((phase) => phase.fields.filter(Boolean).length >= Math.max(1, Math.ceil(phase.fields.length / 2)));
+  const completedPhases = phaseDefinitions.filter((phase) => phase.fields.filter(Boolean).length >= (phase.minFilled ?? Math.max(1, Math.ceil(phase.fields.length / 2))));
   const currentPhaseDefinition = phaseDefinitions.find((phase) => !completedPhases.some((completed) => completed.key === phase.key)) || phaseDefinitions[phaseDefinitions.length - 1];
   const progressPercent = Math.round((completedPhases.length / phaseDefinitions.length) * 100);
 
@@ -646,8 +1302,20 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
       ]
     : [];
 
+  let budgetStatus = '';
+  if (pricingEnabled && subtotal != null && budgetValue) {
+    if (subtotal <= budgetValue.max) {
+      budgetStatus = `Im Budgetrahmen (${formatEuro(budgetValue.max)})`;
+    } else {
+      budgetStatus = `Ueber Budget (${formatEuro(budgetValue.max)})`;
+    }
+  }
+
   const enrichedBrief = {
     ...brief,
+    customerName: brief.customerName || 'Veranstalter',
+    eventName: normalizeEventNameValue(brief.eventName) || brief.eventName,
+    budget: budgetText,
     currentPhase: currentPhaseDefinition.key,
     currentQuestion: currentPhaseDefinition.question,
     progressPercent,
@@ -678,6 +1346,8 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
       hasPricing: pricingEnabled,
       subtotal,
       subtotalFormatted: pricingEnabled && subtotal != null ? formatEuro(subtotal) : undefined,
+      budget: budgetText || undefined,
+      budgetStatus: budgetStatus || undefined,
       modules,
       variants: variants.map((variant) => ({
         ...variant,
@@ -927,16 +1597,18 @@ async function handleApi(req, res) {
       return true;
     }
 
-    if (isStructuredBriefInput(userMessage)) {
-      const computed = buildAiExplorerOffer({}, history, userMessage);
-      const fastText = buildDeterministicAssistantReply(computed.brief, computed.offer);
+    const extractedBrief = null;
+    const consultingMode = isConsultingQuestion(userMessage);
+    if (isPromptAuthoringMessage(userMessage) && !consultingMode) {
+      const computed = buildAiExplorerOffer({}, history, '');
+      const helperText = buildPromptAuthoringHelpReply();
 
       createAiExplorerLog({
-        model: `${OLLAMA_MODEL} (fast-path)`,
+        model: `${OLLAMA_MODEL} (guidance)`,
         userAgent: String(req.headers['user-agent'] ?? ''),
         status: 'success',
         userMessage,
-        assistantText: fastText,
+        assistantText: helperText,
         customerName: computed.brief?.customerName || '',
         eventName: computed.brief?.eventName || '',
         eventLocation: computed.brief?.eventLocation || '',
@@ -947,133 +1619,63 @@ async function handleApi(req, res) {
       });
 
       sendJson(res, 200, {
-        text: fastText,
+        text: helperText,
         brief: computed.brief,
         offer: computed.offer,
-        model: `${OLLAMA_MODEL} (fast-path)`
+        model: `${OLLAMA_MODEL} (guidance)`
       });
       return true;
     }
 
-    const systemPrompt = `Du bist "KI-Agent", ein deutschsprachiger Angebots- und Scoping-Agent fuer Teilnehmermanagement-Services auf Events.
+    const systemPrompt = consultingMode
+      ? `Du bist ein deutschsprachiger Pre-Sales- und Solution-Consulting-Assistent fuer Teilnehmermanagement-Services auf Events.
+Antworte strukturiert, praxisnah und professionell.
+Wenn der Nutzer nach Aufbau, Architektur, Interview-Flow, Preislogik, Produktkatalog, Modulen, MVP oder Regeln fuer einen KI-Agenten fragt, liefere konkrete Beratung statt Rueckfragen.
+Arbeite mit klaren Abschnitten und knappen Bulletpoints.
+Keine Marketingfloskeln, keine Wiederholung des Nutzertexts.
+Wenn sinnvoll, schlage eine robuste Systemarchitektur, Datenstruktur, Logikbausteine und Umsetzungsschritte vor.
+Fuege am Ende nur dann einen JSON-Block zwischen <brief_json> und </brief_json> ein, wenn der Nutzer echte Eventdaten geliefert hat.`
+      : `Du bist ein deutschsprachiger Event-Scoping-Assistent.
+Antworte kurz, professionell und konkret.
+Wenn der Nutzer Eventdetails nennt, fasse sie knapp zusammen und stelle genau eine naechste Frage.
+Wenn der Nutzer verlangt, dass du alles direkt beantwortest, dann antworte direkt ohne Rueckfragen.
+Wiederhole niemals die Nutzervorgaben oder Prompt-Texte wortwoertlich.
+Wenn der Nutzer statt Eventdaten nur eine Anweisung oder Vorlage sendet, sage kurz, dass du echte Eventangaben brauchst, und stelle direkt die Frage nach Eventname, Ort, Datum, Teilnehmerzahl und Check-in-Ablauf.
+Kein Marketing, keine Meta-Kommentare.
+Fuege am Ende immer einen JSON-Block zwischen <brief_json> und </brief_json> ein.
+Nutze nur dieses Schema und lasse unbekannte Werte leer:
+{"customerName":"","eventName":"","eventLocation":"","eventDates":"","attendees":"","budget":"","checkInScenario":"","venues":"","entryPoints":"","onsiteDays":"","softwareNeeds":[],"rentalNeeds":[],"supportLevel":"","travelScope":"","integrations":[],"badgeType":"","serviceModules":[],"costDrivers":[],"assumptions":[],"missingItems":[],"nextStep":""}`;
 
-Ziel:
-- Fuehre mit dem Kunden ein strukturiertes Angebots-Interview.
-- Erfasse alle relevanten Event-Rahmenparameter.
-- Erstelle daraus eine intelligente, modulare Kosten- und Leistungsuebersicht.
-- Nutze die folgenden Angebotsbereiche:
-  1. Software-Tools
-  2. Projektmanagement / Planung / Vorbereitung
-  3. Miettechnik
-  4. Verbrauchsmaterial
-  5. Technischer Support vor Ort
-  6. Transport- und Reisekosten
-
-Arbeitsweise:
-- Stelle pro Antwort genau eine naechste Hauptfrage.
-- Wenn noetig, darfst du maximal 2 sehr kurze Unterpunkte zur gleichen Frage ergaenzen.
-- Arbeite phasenweise: Event-Basisdaten, Software, PM, Miettechnik, Verbrauch, Support, Transport/Reise.
-- Wenn Informationen fehlen, markiere sie sauber als "Offen" oder "Annahme".
-- Wenn genug Informationen vorliegen, liefere eine Angebotsstruktur mit:
-  - Kostenbereichen
-  - Kostentreibern
-  - offenen Punkten
-  - Annahmen
-  - naechstem sinnvollen Schritt
-- Erfasse zusaetzlich, falls erkennbar:
-  - Check-in-Szenario
-  - Anzahl Venues / Eingaenge / Stations
-  - Eventtage
-  - Support-Level
-  - Integrationen
-  - Badge-Typ / Druckbedarf
-- Keine Marketingfloskeln. Schreibe klar, beratend und belastbar.
-- Wenn der Nutzer einen bestehenden Text oder Bedarf beschreibt, fasse zuerst praezise zusammen und leite dann in die naechste Frage ueber.
-- Die Unterhaltung soll sich wie ein step-by-step Onboarding anfuehlen, nicht wie ein freier langer Chat.
-
-Formatregeln:
-- Antworte fuer den Nutzer immer in sauberem Deutsch.
-- Ergaenze am Ende jeder Antwort zusaetzlich einen JSON-Block zwischen <brief_json> und </brief_json>.
-- Der JSON-Block muss gueltig sein und diese Struktur haben:
-{
-  "customerName": "",
-  "eventName": "",
-  "eventLocation": "",
-  "eventDates": "",
-  "attendees": "",
-  "checkInScenario": "",
-  "venues": "",
-  "entryPoints": "",
-  "onsiteDays": "",
-  "softwareNeeds": [],
-  "rentalNeeds": [],
-  "supportLevel": "",
-  "travelScope": "",
-  "integrations": [],
-  "badgeType": "",
-  "serviceModules": [],
-  "costDrivers": [],
-  "assumptions": [],
-  "missingItems": [],
-  "nextStep": ""
-}
-- Trage bekannte Informationen ein, unbekannte Felder als leeren String oder leeres Array.
-- Der JSON-Block ist rein technisch, keine Erklaerung ausserhalb des JSON innerhalb der Tags.
-`;
-
-    const recentHistory = history.slice(-6);
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...recentHistory.map((message) => ({
-        role: message.role === 'model' ? 'assistant' : 'user',
-        content: String(message.text ?? '')
-      })),
-      { role: 'user', content: userMessage }
+    const recentHistory = history.slice(-3);
+    const prompt = [
+      systemPrompt,
+      '',
+      'Bisheriger Verlauf:'
     ];
 
+    for (const message of recentHistory) {
+      const role = message.role === 'model' ? 'Assistent' : 'Nutzer';
+      prompt.push(`${role}: ${String(message.text ?? '')}`);
+    }
+
+    prompt.push(`Nutzer: ${userMessage}`);
+    prompt.push('Assistent:');
+
     try {
-      const ollamaResponse = await fetch(OLLAMA_CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: OLLAMA_MODEL,
-          stream: false,
-          messages,
-          options: {
-            temperature: 0.3,
-            num_predict: 320
-          }
-        }),
-        signal: AbortSignal.timeout(9000)
-      });
-
-      if (!ollamaResponse.ok) {
-        const errorText = await ollamaResponse.text();
-        createAiExplorerLog({
-          model: OLLAMA_MODEL,
-          userAgent: String(req.headers['user-agent'] ?? ''),
-          status: 'error',
-          userMessage,
-          assistantText: '',
-          errorMessage: `Ollama request failed: ${errorText || ollamaResponse.status}`
-        });
-        sendJson(res, 502, { message: `Ollama request failed: ${errorText || ollamaResponse.status}` });
-        return true;
-      }
-
-      const result = await ollamaResponse.json();
-      const content = result?.message?.content ?? '';
+      const content = await generateWithOllama(prompt.join('\n'));
       const parsed = extractAiExplorerBrief(content);
-      const computed = buildAiExplorerOffer(parsed.brief ?? {}, history, userMessage);
+      const mergedBrief = mergeBriefs(normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {});
+      const computed = buildAiExplorerOffer(mergedBrief, history, userMessage);
+      const assistantText = looksLikeJsonOnlyReply(parsed.text)
+        ? buildAssistantReplyFromBrief(computed.brief)
+        : parsed.text || buildAssistantReplyFromBrief(computed.brief);
 
       createAiExplorerLog({
         model: OLLAMA_MODEL,
         userAgent: String(req.headers['user-agent'] ?? ''),
         status: 'success',
         userMessage,
-        assistantText: parsed.text || '',
+        assistantText,
         customerName: computed.brief?.customerName || '',
         eventName: computed.brief?.eventName || '',
         eventLocation: computed.brief?.eventLocation || '',
@@ -1084,9 +1686,9 @@ Formatregeln:
       });
 
       sendJson(res, 200, {
-        text: parsed.text || 'Ich konnte noch keine belastbare Angebotszusammenfassung erzeugen.',
-        brief: computed.brief,
-        offer: computed.offer,
+        text: assistantText,
+        brief: consultingMode ? briefOrNullIfEmpty(computed.brief) : computed.brief,
+        offer: consultingMode ? null : computed.offer,
         model: OLLAMA_MODEL
       });
       return true;
@@ -1098,13 +1700,17 @@ Formatregeln:
         userMessage,
         assistantText: '',
         errorMessage: error instanceof Error
-          ? `Ollama / humane:6.1 is not reachable: ${error.message}`
-          : 'Ollama / humane:6.1 is not reachable.'
+          ? error.name === 'TimeoutError'
+            ? `Ollama / ${OLLAMA_MODEL} timed out after ${OLLAMA_TIMEOUT_MS}ms`
+            : `Ollama / ${OLLAMA_MODEL} is not reachable: ${error.message}`
+          : `Ollama / ${OLLAMA_MODEL} is not reachable.`
       });
       sendJson(res, 503, {
         message: error instanceof Error
-          ? `Ollama / humane:6.1 is not reachable: ${error.message}`
-          : 'Ollama / humane:6.1 is not reachable.'
+          ? error.name === 'TimeoutError'
+            ? `Ollama / ${OLLAMA_MODEL} timed out after ${OLLAMA_TIMEOUT_MS}ms`
+            : `Ollama / ${OLLAMA_MODEL} is not reachable: ${error.message}`
+          : `Ollama / ${OLLAMA_MODEL} is not reachable.`
       });
       return true;
     }

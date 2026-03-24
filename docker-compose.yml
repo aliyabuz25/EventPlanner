@@ -9,8 +9,10 @@ services:
       HOST: '0.0.0.0'
       PORT: '3000'
       PUBLIC_BASE_URL: 'https://fastlane.octotech.az'
-      OLLAMA_CHAT_URL: 'http://host.docker.internal:11434/api/chat'
-      OLLAMA_MODEL: 'humane:6.1'
+      OLLAMA_GENERATE_URL: 'https://qwen.octotech.az/api/generate'
+      OLLAMA_MODEL: 'qwen2:0.5b'
+      OLLAMA_TIMEOUT_MS: '90000'
+      OLLAMA_NUM_PREDICT: '160'
     ports:
       - '3000:3000'
     volumes:

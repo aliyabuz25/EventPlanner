@@ -45,6 +45,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ isFadingOut, transformSty
           z-index: 10;
           text-align: center;
           transform-origin: top left;
+          max-width: min(64vw, 300px);
           animation: ${transformStyle ? 'none' : 'fadeIn 1.2s ease-out'};
           transition: transform 800ms cubic-bezier(0.76, 0, 0.24, 1);
           will-change: transform;
@@ -64,7 +65,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ isFadingOut, transformSty
         className="logo-container px-4"
         style={transformStyle}
       >
-        <Logo theme="dark" className="w-[320px] sm:w-[380px] lg:w-[420px] max-w-full h-auto" />
+        <Logo theme="dark" className="w-[180px] sm:w-[210px] lg:w-[235px] max-w-full h-auto" />
       </div>
     </div>
   );

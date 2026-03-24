@@ -1,39 +1,39 @@
 
 export const COMPANY_CONFIG = {
-  name: '3ILINE',
-  fullName: '3ILINE CONSULTING LLC',
-  sapPartnerLevel: 'SAP Gold Partner',
-  phone: '+994 70 200 97 98',
-  email: 'OFFICE@3ILINE.COM',
+  name: 'FastLane',
+  fullName: 'FastLane GmbH',
+  sapPartnerLevel: 'Teilnehmendenmanagement & OnSite Services',
+  phone: '+49 228 - 91 251 - 300',
+  email: 'service@fastlane-gmbh.de',
   address: {
-    city: 'Baku',
-    country: 'Azerbaijan',
-    full: 'Baku, Azerbaijan'
+    city: 'Bonn',
+    country: 'Germany',
+    full: 'Rochusstrasse 217, 53123 Bonn, Germany'
   },
   contact: {
-    phone: '+994 70 200 97 98',
-    email: 'OFFICE@3ILINE.COM'
+    phone: '+49 228 - 91 251 - 300',
+    email: 'service@fastlane-gmbh.de'
   },
   stats: {
-    experts: '200+',
-    projects: '150+',
-    support: '24/7',
-    experience: '15+ Years'
+    experts: '25+ Years',
+    projects: 'Live + Hybrid',
+    support: 'OnSite',
+    experience: '2nd Gen'
   },
-  projectsCompleted: '200+',
-  supportAvailability: '24/7'
+  projectsCompleted: '25+ Years',
+  supportAvailability: 'OnSite'
 };
 
 export const THEME_CONFIG = {
-  primary: '#008FD3',
-  secondary: '#F0AB00',
-  accent: '#e74c3c'
+  primary: '#16233f',
+  secondary: '#d8a23d',
+  accent: '#7c8aa6'
 };
 
 export const SOCIAL_LINKS = [
-  { name: 'LN', href: '#', label: 'LinkedIn' },
-  { name: 'TW', href: '#', label: 'Twitter' },
-  { name: 'IG', href: '#', label: 'Instagram' }
+  { name: 'LN', href: 'https://www.linkedin.com', label: 'LinkedIn' },
+  { name: 'IG', href: '#', label: 'Instagram' },
+  { name: 'YT', href: '#', label: 'YouTube' }
 ];
 
 export const NAV_LINKS = [

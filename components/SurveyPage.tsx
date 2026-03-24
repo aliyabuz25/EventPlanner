@@ -79,11 +79,11 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
   const currentQ = questions[step];
 
   const getSolutionTitle = (id: SolutionId) => {
-    return section.solutionContent[id]?.title || 'Enterprise Custom Solution';
+    return section.solutionContent[id]?.title || 'Passendes Event-Modul';
   };
 
   const getSolutionDesc = (id: SolutionId) => {
-    return section.solutionContent[id]?.description || 'Based on your needs, a specialized enterprise architecture is recommended.';
+    return section.solutionContent[id]?.description || 'Auf Basis deiner Angaben empfehlen wir das naechstliegende FastLane-Modul fuer dein Event.';
   };
 
   const isAdvisorMode = mode === 'advisor';
