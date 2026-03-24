@@ -64,7 +64,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ isFadingOut, transformSty
         className="logo-container px-4"
         style={transformStyle}
       >
-        <Logo theme="dark" className="w-[600px] max-w-full h-auto" />
+        <Logo theme="dark" className="w-[320px] sm:w-[380px] lg:w-[420px] max-w-full h-auto" />
       </div>
     </div>
   );

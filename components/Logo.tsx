@@ -14,7 +14,18 @@ const Logo: React.FC<LogoProps> = ({ theme = 'dark', scrolled = false, className
   const resolvedClassName = `${className} block shrink-0`;
 
   if (logoUrl) {
-    return <img src={logoUrl} alt={content.global?.company?.name || 'Site logo'} className={resolvedClassName} />;
+    return (
+      <img
+        src={logoUrl}
+        alt={content.global?.company?.name || 'Site logo'}
+        className={resolvedClassName}
+        loading="eager"
+        decoding="sync"
+        fetchPriority="high"
+        referrerPolicy="no-referrer"
+        style={{ imageRendering: 'auto' }}
+      />
+    );
   }
 
   return (
