@@ -1991,11 +1991,11 @@ const ContentAdminPage: React.FC = () => {
     try {
       setIsSaving(true);
       setStatus(null);
-      await saveDocument(selectedKey, draft);
-      const englishBase = englishContent ? cloneJson(englishContent as JsonValue) : cloneJson(content as JsonValue);
-      const nextEnglishContent = normalizeSiteContent(setByPath(englishBase, selectedKey.split('.'), englishDraft) as unknown as SiteContent) as SiteContent;
-      await saveFrontendTranslationDocument('en', selectedKey, englishDraft);
-      setEnglishContent(nextEnglishContent);
+      const [, englishResult] = await Promise.all([
+        saveDocument(selectedKey, draft),
+        saveFrontendTranslationDocument('en', selectedKey, englishDraft)
+      ]);
+      setEnglishContent(normalizeSiteContent(englishResult.copy) as SiteContent);
       handleStatusUpdate(copy.savedSuccessfully, 'success');
     } catch (error) {
       handleStatusUpdate(error instanceof Error ? error.message : copy.saveFailed, 'error');
