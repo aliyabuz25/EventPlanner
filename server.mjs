@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
-import { editableDocumentKeys } from './shared/siteContentSeed.js';
+import { editableDocumentKeys, normalizeSiteContent } from './shared/siteContentSeed.js';
 import {
   createAiExplorerLog,
   getFrontendLocalization,
@@ -26,6 +26,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
 const uploadsDir = path.resolve(__dirname, 'data', 'uploads');
 const adminTranslationsPath = path.resolve(__dirname, 'data', 'admin-translations.json');
+const frontendEnglishLocalePath = path.resolve(__dirname, 'public', 'locales', 'frontend-en.json');
 const OLLAMA_GENERATE_URL = process.env.OLLAMA_GENERATE_URL || process.env.OLLAMA_CHAT_URL || 'https://qwen.octotech.az/api/generate';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2:0.5b';
 const OLLAMA_TIMEOUT_MS = Math.max(5000, Number(process.env.OLLAMA_TIMEOUT_MS ?? 90000) || 90000);
@@ -68,6 +69,15 @@ function readJsonFile(filePath, fallbackValue) {
   } catch {
     return fallbackValue;
   }
+}
+
+function loadStaticFrontendTranslation(target) {
+  if (target !== 'en') {
+    return null;
+  }
+
+  const value = readJsonFile(frontendEnglishLocalePath, null);
+  return value && typeof value === 'object' ? normalizeSiteContent(value) : null;
 }
 
 function writeJsonFile(filePath, value) {
@@ -2705,6 +2715,16 @@ async function handleApi(req, res) {
     const entry = getFrontendTranslationEntry(target);
     const copy = getFrontendTranslation(target);
     if (!entry || !copy) {
+      const staticCopy = loadStaticFrontendTranslation(target);
+      if (staticCopy) {
+        saveFrontendTranslation(target, staticCopy, {
+          seededFromStaticLocale: true
+        });
+        const staticEntry = getFrontendTranslationEntry(target);
+        sendJson(res, 200, { target, copy: getFrontendTranslation(target), meta: staticEntry?.meta ?? null });
+        return true;
+      }
+
       sendJson(res, 404, { message: 'Frontend localization not found.' });
       return true;
     }
@@ -2759,7 +2779,7 @@ async function handleApi(req, res) {
       return true;
     }
 
-    const currentCopy = getFrontendTranslation(target) ?? getSiteContent();
+    const currentCopy = getFrontendTranslation(target) ?? loadStaticFrontendTranslation(target) ?? getSiteContent();
     const nextCopy = normalizeSiteContent(setValueAtPath(currentCopy, key.split('.'), nextValue));
     saveFrontendTranslation(target, nextCopy, {
       manual: true,
