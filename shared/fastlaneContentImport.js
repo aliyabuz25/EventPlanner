@@ -1,4 +1,4 @@
-export const FASTLANE_CONTENT_VERSION = '2026-03-23-de-v2';
+export const FASTLANE_CONTENT_VERSION = '2026-03-24-de-palette-v1';
 
 export const fastlaneContentDocuments = {
   global: {
@@ -27,9 +27,9 @@ export const fastlaneContentDocuments = {
     branding: {
       siteTitle: 'FastLane | Teilnehmermanagement fuer Events',
       contentVersion: FASTLANE_CONTENT_VERSION,
-      logoUrl: '',
-      faviconUrl: '',
-      appleTouchIconUrl: ''
+      logoUrl: 'https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png',
+      faviconUrl: 'https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png',
+      appleTouchIconUrl: 'https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png'
     },
     smtp: {
       enabled: false,

@@ -5,9 +5,9 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-sap-blue: #008FD3;
-  --color-sap-gold: #F0AB00;
-  --color-sap-paper: #f8fafc;
+  --color-sap-blue: #16233f;
+  --color-sap-gold: #d8a23d;
+  --color-sap-paper: #f7f4ed;
 }
 
 @layer base {
@@ -22,6 +22,6 @@
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-sap-blue to-blue-600;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-sap-blue to-slate-700;
   }
 }
