@@ -11,7 +11,8 @@ import {
   Sparkles,
   User,
   RotateCcw,
-  Bot
+  Bot,
+  ArrowUpRight
 } from 'lucide-react';
 
 const SUGGESTIONS = [
@@ -104,6 +105,13 @@ const ChatWidget: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <a
+                href="/studio"
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all bg-white dark:bg-transparent"
+                aria-label="Studio oeffnen"
+              >
+                <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </a>
               <button 
                 onClick={clearChat}
                 className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all bg-white dark:bg-transparent"
@@ -137,7 +145,7 @@ const ChatWidget: React.FC = () => {
                   }`}>
                     {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                   </div>
-                  <div className={`p-3 sm:p-3.5 rounded-[1.35rem] sm:rounded-[1.5rem] text-sm leading-relaxed whitespace-pre-wrap shadow-sm border ${
+                  <div className={`min-w-0 break-words overflow-hidden p-3 sm:p-3.5 rounded-[1.35rem] sm:rounded-[1.5rem] text-sm leading-relaxed whitespace-pre-wrap shadow-sm border ${
                     msg.role === 'user' 
                       ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-br-none border-transparent' 
                       : 'bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 border-slate-100 dark:border-white/5 rounded-bl-none'

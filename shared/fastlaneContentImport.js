@@ -70,6 +70,7 @@ export const fastlaneContentDocuments = {
     { slug: 'kontakt', view: 'contact', title: 'Kontakt', description: 'Direct consultation and event inquiry page.' },
     { slug: 'privacy-compliance', view: 'corporate-standards', title: 'Datenschutz & Compliance', description: 'Trust, privacy and operational standards.' },
     { slug: 'event-finder', view: 'survey', title: 'Event Finder', description: 'Interactive recommendation flow for the right event setup.' },
+    { slug: 'studio', view: 'studio', title: 'FastLane Studio', description: 'Full briefing and offer workspace for event scoping.' },
     { slug: 'content-admin', view: 'content-admin', title: 'Content Admin', description: 'JSON editor for site content.' }
   ],
   navigation: {
@@ -99,6 +100,7 @@ export const fastlaneContentDocuments = {
       corporateLinks: [
         { label: 'Ueber Uns', view: 'about' },
         { label: 'Services', view: 'services' },
+        { label: 'Studio', view: 'studio' },
         { label: 'Datenschutz', view: 'corporate-standards' },
         { label: 'Kontakt', view: 'contact' }
       ]

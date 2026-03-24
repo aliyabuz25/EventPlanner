@@ -15,6 +15,7 @@ import FullServicesPage from './components/FullServicesPage';
 import CorporateStandardsPage from './components/CorporateStandardsPage';
 import SolutionDetailPage from './components/SolutionDetailPage';
 import SurveyPage from './components/SurveyPage';
+import StudioPage from './components/StudioPage';
 import LoadingScreen from './components/LoadingScreen';
 import GenericContentPage from './components/GenericContentPage';
 import ErpAdvisor from './components/ErpAdvisor';
@@ -162,6 +163,7 @@ const App: React.FC = () => {
       services: content.pages.services?.sections?.title?.join(' '),
       team: content.pages.team?.sections?.title,
       contact: content.pages.home?.sections?.contact?.title,
+      studio: 'FastLane Studio',
       solutions: content.pages.solutions?.sections?.title
     };
 
@@ -196,6 +198,10 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (currentView === 'survey') {
       return <SurveyPage onNavigate={(view) => setCurrentView(view)} />;
+    }
+
+    if (currentView === 'studio') {
+      return <StudioPage />;
     }
 
     if (currentView === 'content-admin') {
@@ -243,6 +249,7 @@ const App: React.FC = () => {
   };
 
   const isSurveyView = currentView === 'survey';
+  const isStudioView = currentView === 'studio';
 
   return (
     <div className="min-h-screen bg-sap-paper dark:bg-[#050505] selection:bg-sap-gold/30 selection:text-black dark:selection:text-white transition-colors duration-500">
@@ -270,7 +277,7 @@ const App: React.FC = () => {
         </main>
 
         {currentView !== 'content-admin' && !isSurveyView && <Footer setView={setCurrentView} />}
-        {currentView !== 'content-admin' && !isSurveyView && <ErpAdvisor assistantOnly />}
+        {currentView !== 'content-admin' && !isSurveyView && !isStudioView && <ErpAdvisor assistantOnly />}
       </div>
     </div>
   );

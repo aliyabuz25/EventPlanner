@@ -40,6 +40,8 @@ export interface AiExplorerMessagePayload {
   text: string;
 }
 
+export type AiExplorerInputMode = 'easy' | 'prompt' | 'consulting';
+
 export interface AiExplorerBrief {
   customerName?: string;
   eventName?: string;
@@ -239,13 +241,13 @@ export async function sendSmtpTestEmail(config: SmtpConfigPayload) {
   return result as Promise<{ ok: true; message: string }>;
 }
 
-export async function getAiExplorerResponse(history: AiExplorerMessagePayload[], userMessage: string) {
+export async function getAiExplorerResponse(history: AiExplorerMessagePayload[], userMessage: string, mode: AiExplorerInputMode = 'easy') {
   const response = await fetch('/api/ai-explorer/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ history, userMessage })
+    body: JSON.stringify({ history, userMessage, mode })
   });
 
   const result = await response.json().catch(() => ({}));
@@ -260,6 +262,24 @@ export async function getAiExplorerResponse(history: AiExplorerMessagePayload[],
     offer?: AiExplorerOffer | null;
     model: string;
   }>;
+}
+
+export async function generateAiExplorerPrompt(source: string, intent: 'structured-brief' | 'phase-completion' = 'structured-brief') {
+  const response = await fetch('/api/ai-explorer/promptize', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ source, intent })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `AI prompt generation failed: ${response.status}`);
+  }
+
+  return result as Promise<{ text: string; model: string }>;
 }
 
 export async function fetchAiExplorerReports(limit = 100) {

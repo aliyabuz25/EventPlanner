@@ -11,6 +11,12 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    @apply max-w-full overflow-x-hidden;
+  }
+
   body {
     @apply bg-sap-paper dark:bg-[#050505] text-slate-900 dark:text-slate-100 antialiased transition-colors duration-500;
   }
@@ -23,5 +29,28 @@
   
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-sap-blue to-slate-700;
+  }
+
+  .studio-progress-track {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .studio-progress-bar {
+    position: absolute;
+    inset: 0;
+    width: 42%;
+    background: linear-gradient(90deg, rgba(22, 35, 63, 0) 0%, rgba(22, 35, 63, 0.45) 18%, rgba(22, 35, 63, 0.92) 48%, rgba(22, 35, 63, 0.45) 82%, rgba(22, 35, 63, 0) 100%);
+    animation: studio-progress-slide 1.45s ease-in-out infinite;
+    will-change: transform;
+  }
+}
+
+@keyframes studio-progress-slide {
+  0% {
+    transform: translateX(-115%);
+  }
+  100% {
+    transform: translateX(265%);
   }
 }

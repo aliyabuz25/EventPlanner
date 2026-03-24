@@ -161,14 +161,25 @@ function isLikelyEventName(value) {
   const normalized = sanitizeExtractedValue(value);
   if (!normalized) return false;
   if (normalized.length < 4 || normalized.length > 80) return false;
+  if (/^(noch zu bestaetigen|noch zu bestätigen|noch nicht bestaetigt|noch nicht bestätigt|tbd|to be confirmed)$/i.test(normalized)) return false;
   if (/^(hotel|briefing|eventdatum|management|daten|support|app|venue|ort)$/i.test(normalized)) return false;
+  if (/\b(wir planen|es handelt sich|der eintritt|check-in|badge|scanner|drucker|teilnehmern|support vor ort|gib folgende felder)\b/i.test(normalized)) return false;
   if (/\b(waere|wäre|interessant|offen|critical|support-level|single source|phase|assistent|assistant|scoping)\b/i.test(normalized)) return false;
   return /[a-zA-ZÄÖÜäöüß]/.test(normalized);
 }
 
 function normalizeEventNameValue(value) {
-  const normalized = sanitizeExtractedValue(value)
+  const raw = sanitizeExtractedValue(value);
+  const quotedMatch = raw.match(/[„"]([^"\n“”]{3,80})[“”"]/);
+  const normalized = (quotedMatch ? quotedMatch[1] : raw)
+    .replace(/^[„"']+|[“”"']+$/g, '')
     .replace(/\.\s*das event findet.*$/i, '')
+    .replace(/\.\s*es handelt sich.*$/i, '')
+    .replace(/\.\s*der eintritt.*$/i, '')
+    .replace(/\.\s*f[üu]r den check-?in.*$/i, '')
+    .replace(/\.\s*geplante ausstattung.*$/i, '')
+    .replace(/\.\s*wir ben[oö]tigen.*$/i, '')
+    .replace(/\.\s*gib folgende felder.*$/i, '')
     .replace(/\s+in der\s+[A-ZÄÖÜ].*$/i, '')
     .replace(/\s+im\s+[A-ZÄÖÜ].*$/i, '')
     .replace(/\s+am\s+\d{1,2}\..*$/i, '')
@@ -181,8 +192,8 @@ function isLikelyLocation(value) {
   const normalized = sanitizeExtractedValue(value);
   if (!normalized) return false;
   if (/^(eventdatum|management|daten|briefing|support-level|hotel)$/i.test(normalized)) return false;
-  if (/\b(phase|print-on-demand|walk-ins|app waere|daten)\b/i.test(normalized)) return false;
-  return /\b(stra[sß]e|str\.|platz|halle|center|zentrum|venue|istanbul|stuttgart|berlin|m[uü]nchen|hannover|leinfelden|echterdingen|umraniye)\b/i.test(normalized) || /\d/.test(normalized);
+  if (/\b(phase|print-on-demand|walk-ins|app waere|daten|angebot|enthalten|eingeplant|beruecksichtigt|berücksichtigt|scope|support|materialreserven|mittelpunkt|besuchererlebnis|einlass|ausgestellte|fahrzeuge)\b/i.test(normalized)) return false;
+  return /\b(stra[sß]e|str\.|platz|halle|center|zentrum|venue|avm|istanbul|galata|stuttgart|berlin|m[uü]nchen|hannover|leinfelden|echterdingen|umraniye|palladium)\b/i.test(normalized) || /\d/.test(normalized);
 }
 
 function isLikelyAttendeesValue(value) {
@@ -237,6 +248,53 @@ async function generateWithOllama(prompt, options = {}) {
 
   const result = await ollamaResponse.json();
   return String(result?.response ?? '').trim();
+}
+
+async function generateStudioPromptFromStructuredSource(source) {
+  const prompt = `Du bist ein deutschsprachiger Event-Scoping-Assistent.
+Formuliere aus den folgenden strukturierten Event- und Angebotsdaten einen natuerlichen, professionellen deutschen Briefing-Text fuer einen KI-Agenten.
+Der Text soll wie eine echte Nachricht eines Kunden oder Projektverantwortlichen klingen.
+Kein JSON. Keine Aufzaehlung mit Bindestrichen. Kein Meta-Kommentar. Kein Hinweis auf Prompt, Schema oder Felder.
+Nutze die vorhandenen Angaben sinnvoll und fasse sie in 1 bis 3 kompakten Absaetzen zusammen.
+Formuliere bei jeder Antwort leicht neu, damit der Text nicht jedes Mal identisch klingt.
+Wenn einzelne Angaben fehlen, lasse sie einfach weg statt Platzhalter zu benutzen.
+
+Quelle:
+${source}
+
+Antwort:`;
+
+  return generateWithOllama(prompt, {
+    temperature: 0.8,
+    numPredict: 280
+  });
+}
+
+async function generateStudioPromptFromEasySeed(source) {
+  const prompt = `Du bist ein deutschsprachiger Event-Scoping-Assistent.
+Aus einer kurzen oder unvollstaendigen Nutzerangabe sollst du einen deutlich vollstaendigeren deutschen Briefing-Text formulieren.
+Ziel: ein natuerlicher, professioneller Text, der moeglichst viele Angebotsphasen fuer Event-Scoping vorbereitet.
+
+Regeln:
+- Schreibe wie ein echter Kunde oder Projektverantwortlicher.
+- Kein JSON.
+- Keine Listen mit Bindestrichen.
+- Keine Meta-Kommentare.
+- Keine Erwaehnung von "Phase", "Prompt", "Schema" oder "Format".
+- Behalte alle vorhandenen Fakten exakt bei.
+- Verdichte den Text so, dass Event-Basisdaten, Check-in, Software, Projektmanagement, Technik, Verbrauchsmaterial, Support und Logistik sinnvoll mitgedacht werden.
+- Wenn Angaben fehlen, formuliere neutrale operative Anschlussbedarfe statt erfundene konkrete Fakten.
+- Antworte in 1 bis 3 kompakten Absaetzen.
+
+Nutzereingabe:
+${source}
+
+Antwort:`;
+
+  return generateWithOllama(prompt, {
+    temperature: 0.85,
+    numPredict: 320
+  });
 }
 
 function coerceBriefScalar(value) {
@@ -333,6 +391,7 @@ function sanitizeExtractedValue(value) {
     .trim();
   if (!normalized) return '';
   if (/^(noch offen|offen|open|n\/a|unbekannt|-|—)$/i.test(normalized)) return '';
+  if (/^(noch zu bestaetigen|noch zu bestätigen|noch nicht bestaetigt|noch nicht bestätigt|tbd|to be confirmed)\.?$/i.test(normalized)) return '';
   if (/^(beispielantworten|zu beginn|nun m[oö]chten wir wissen)/i.test(normalized)) return '';
   if (/^(zusammenfassung|naechster schritt)\b/i.test(normalized)) return '';
   if (/^(briefing|support-level|stationsbedarf|single source of truth|automatische angebotsvarianten|regel-engine|risiken & constraints|knowledge cards)$/i.test(normalized)) return '';
@@ -529,7 +588,7 @@ JSON-Schema:
   try {
     const content = await generateWithOllama(`${extractionPrompt}\n\nNutzerverlauf:\n${transcript}`, {
       temperature: 0.1,
-      numPredict: 420
+      numPredict: 260
     });
     return parseJsonObject(content);
   } catch {
@@ -568,12 +627,18 @@ function pickLastMatch(transcript, patterns) {
 
 function inferEventName(transcript) {
   return pickLastMatch(transcript, [
+    /\barbeitstitel\s+(?:des\s+events\s+)?lautet\s+[„"]?([^"\n“”]+)[“”"]?/i,
+    /\bunter\s+dem\s+arbeitstitel\s+[„"]?([^"\n“”]+)[“”"]?/i,
+    /\beventtitel\s*[:=-]\s*([^\n,.;]+)/i,
+    /\bevent\s*:\s*wir planen das event\s+[„"]([^"\n“”]+)[“”"]/i,
+    /\bwir planen das event\s+[„"]([^"\n“”]+)[“”"]/i,
+    /\bdas event\s+[„"]([^"\n“”]+)[“”"]/i,
     /\bevent adı\s*:?\s*([^\n,.;]+)/i,
     /\bevent adi\s*:?\s*([^\n,.;]+)/i,
     /\bevent name\s*[:=-]\s*([^\n,.;]+)/i,
     /\beventname\s*[:=-]\s*([^\n,.;]+)/i,
     /\bveranstaltung\s*[:=-]\s*([^\n,.;]+)/i,
-    /\bevent\s*[:=-]\s*([^\n,.;]+)/i,
+    /\bevent\s*[:=-]\s*([A-ZÄÖÜ0-9][^\n,.;]{2,80})/i,
     /\bwir planen\s+(?:den|das)\s+(.+?)\s+als\b/i,
     /\bwir planen\s+(?:den|das)\s+(.+?)\s+in der\b/i,
     /\bwir planen\s+(?:den|das)\s+(.+?)\s+im\b/i,
@@ -593,6 +658,9 @@ function inferLocation(transcript) {
     /\bvenue\s*:\s*([^\n.;]+)/i,
     /\blocation\s*:\s*([^\n.;]+)/i,
     /\bort\s*:\s*([^\n.;]+)/i,
+    /\bin\s+(Galata,\s*Istanbul(?:,\s*(?:Tuerkei|Türkei))?)(?:\.\s|,\s+wir|,\s+die|$)/i,
+    /\bin\s+(Galata\s+in\s+Istanbul(?:,\s*(?:Tuerkei|Türkei))?)(?:\.\s|,\s+wir|,\s+die|$)/i,
+    /\bin\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß.\- ]{2,40}\s+in\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.\- ]{2,40})(?:\.\s|,\s+wir|,\s+die|$)/i,
     /\bin der\s+([A-ZÄÖÜ][^\n]+?)(?:\.\s|,\s+wir|\s+bei\s+[A-ZÄÖÜ]|\s+das\s+event|\s+statt|$)/i,
     /\bin\s+der\s+([A-ZÄÖÜ][^\n]+?)(?:\.\s|,\s+das\s+event|,\s+wir|\s+am\s+\d|\s+mit\s+\d|$)/i,
     /\bim\s+([A-ZÄÖÜ][^\n]+?)(?:\.\s|,\s+das\s+event|,\s+wir|\s+am\s+\d|\s+mit\s+\d|$)/i,
@@ -667,7 +735,7 @@ function inferSupportLevel(transcript) {
   if (/extended/i.test(transcript)) return 'Extended';
   if (/\bbasic\b/i.test(transcript)) return 'Basic';
   if (/remote-?helpdesk|remote support/i.test(transcript)) return 'Basic';
-  if (/onsite|vor ort|techniker/i.test(transcript)) return 'Extended';
+  if (/onsite|vor ort|techniker|technischer support|support vor ort/i.test(transcript)) return 'Extended';
   return '';
 }
 
@@ -1586,19 +1654,53 @@ async function handleApi(req, res) {
     return true;
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/ai-explorer/promptize') {
+    const rawBody = await readBody(req);
+    const body = rawBody ? JSON.parse(rawBody) : {};
+    const source = String(body.source ?? '').trim();
+    const intent = body.intent === 'phase-completion' ? 'phase-completion' : 'structured-brief';
+
+    if (!source) {
+      sendJson(res, 400, { message: 'source is required.' });
+      return true;
+    }
+
+    try {
+      const text = intent === 'phase-completion'
+        ? await generateStudioPromptFromEasySeed(source)
+        : await generateStudioPromptFromStructuredSource(source);
+      sendJson(res, 200, {
+        text,
+        model: `${OLLAMA_MODEL} (promptize:${intent})`
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        message: error instanceof Error ? error.message : 'Prompt generation failed.'
+      });
+    }
+
+    return true;
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/ai-explorer/chat') {
     const rawBody = await readBody(req);
     const body = rawBody ? JSON.parse(rawBody) : {};
     const history = Array.isArray(body.history) ? body.history : [];
     const userMessage = String(body.userMessage ?? '').trim();
+    const requestedMode = ['easy', 'prompt', 'consulting'].includes(String(body.mode ?? ''))
+      ? String(body.mode)
+      : '';
 
     if (!userMessage) {
       sendJson(res, 400, { message: 'userMessage is required.' });
       return true;
     }
 
-    const extractedBrief = null;
-    const consultingMode = isConsultingQuestion(userMessage);
+    const consultingMode = requestedMode === 'consulting' || isConsultingQuestion(userMessage);
+    const shouldUseAiExtraction = !consultingMode && (requestedMode === 'prompt' || userMessage.length >= 180);
+    const extractedBrief = shouldUseAiExtraction
+      ? normalizeModelBrief(await extractBriefWithOllama(history, userMessage))
+      : null;
     if (isPromptAuthoringMessage(userMessage) && !consultingMode) {
       const computed = buildAiExplorerOffer({}, history, '');
       const helperText = buildPromptAuthoringHelpReply();
@@ -1664,7 +1766,7 @@ Nutze nur dieses Schema und lasse unbekannte Werte leer:
     try {
       const content = await generateWithOllama(prompt.join('\n'));
       const parsed = extractAiExplorerBrief(content);
-      const mergedBrief = mergeBriefs(normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {});
+      const mergedBrief = mergeBriefs(extractedBrief ?? {}, normalizeModelBrief(parsed.brief) ?? {});
       const computed = buildAiExplorerOffer(mergedBrief, history, userMessage);
       const assistantText = looksLikeJsonOnlyReply(parsed.text)
         ? buildAssistantReplyFromBrief(computed.brief)

@@ -46,7 +46,7 @@ const GenericContentPage: React.FC<GenericContentPageProps> = ({ view }) => {
             {page.sections.map((section, index) => (
               <section key={`${page.slug}-${index}`} className="rounded-[2rem] border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111] p-8 lg:p-10 shadow-sm">
                 <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-4">{section.title}</h2>
-                <p className="text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{section.body}</p>
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap break-words overflow-hidden">{section.body}</p>
               </section>
             ))}
           </div>

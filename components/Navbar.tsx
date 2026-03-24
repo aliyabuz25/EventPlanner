@@ -64,6 +64,13 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
     setMobileMenuOpen(false);
   };
 
+  const handleStudioOpen = () => {
+    setView('studio');
+    setSolutionsOpen(false);
+    setMobileMenuOpen(false);
+    document.body.style.overflow = 'auto';
+  };
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-[220] isolate transition-all duration-300 
       ${scrolled || currentView !== 'home' 
@@ -108,6 +115,14 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
 
           <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
+          <button
+            type="button"
+            onClick={handleStudioOpen}
+            className="px-5 py-2 bg-sap-blue text-white rounded-md text-[12px] font-bold hover:bg-sap-blue/90 transition-all uppercase tracking-wide shadow-sm"
+          >
+            Event Studio
+          </button>
+
           <button 
             className="px-5 py-2 border border-[#F0AB00] bg-[#F0AB00]/10 text-slate-800 dark:text-[#F0AB00] rounded-md text-[12px] font-bold hover:bg-[#F0AB00] hover:text-[#000000] transition-all uppercase tracking-wide"
           >
@@ -140,6 +155,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
           solutionSublinks={solutionLinks as any}
           onLinkClick={handleLinkClick}
           onSolutionSelect={handleSolutionSelect}
+          onStudioOpen={handleStudioOpen}
         />
       </nav>
   );
