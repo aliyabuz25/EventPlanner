@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
@@ -13,6 +13,55 @@ const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
   const heroVisual = hero.visual;
   const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false);
   const backgroundVideoUrl = BLOCKED_BACKGROUND_VIDEO_URLS.has(heroVisual.backgroundVideoUrl) ? '' : heroVisual.backgroundVideoUrl;
+
+  // Typewriter and processing animation logic
+  const [displayText, setDisplayText] = useState('');
+  const [phase, setPhase] = useState<'typing' | 'thinking' | 'result'>('typing');
+  const fullText = "Architect a global ERP Migration for Fortune 500 client with automated ROI reporting...";
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    if (phase === 'typing') {
+      if (displayText.length < fullText.length) {
+        timeout = setTimeout(() => {
+          setDisplayText(fullText.slice(0, displayText.length + 1));
+        }, 50);
+      } else {
+        timeout = setTimeout(() => setPhase('thinking'), 1000);
+      }
+    } else if (phase === 'thinking') {
+      timeout = setTimeout(() => setPhase('result'), 2000);
+    } else if (phase === 'result') {
+      timeout = setTimeout(() => {
+        setPhase('typing');
+        setDisplayText('');
+      }, 5000);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayText, phase]);
+
+  // Mouse Move Tilt Logic
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Calculate rotation (-12 to 12 degrees)
+    const rotateX = ((y - centerY) / centerY) * -12;
+    const rotateY = ((x - centerX) / centerX) * 12;
+    
+    setTilt({ x: rotateX, y: rotateY });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
 
   return (
     <div id="home" className="relative flex items-center pt-24 pb-16 sm:pb-20 lg:min-h-screen overflow-hidden bg-sap-paper dark:bg-dark-base transition-colors duration-500">
@@ -83,98 +132,201 @@ const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
         </div>
 
         {/* Media Side - 3D Floating Glass Dashboard Composition */}
-        <div className="relative mt-4 sm:mt-8 lg:mt-0 flex justify-center lg:justify-end [perspective:2000px] group/scene">
-           <div className="relative w-full max-w-[340px] sm:max-w-[520px] lg:max-w-[650px] h-[320px] sm:h-[420px] lg:h-[500px] [transform-style:preserve-3d] sm:[transform:rotateY(-10deg)_rotateX(4deg)] group-hover/scene:sm:[transform:rotateY(-4deg)_rotateX(2deg)] transition-all duration-1000 ease-out">
+        <div 
+          className="relative mt-4 sm:mt-8 lg:mt-0 flex justify-center lg:justify-end [perspective:2000px] group/scene"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
+           <div 
+             className={`relative w-full max-w-[340px] sm:max-w-[520px] lg:max-w-[650px] h-[340px] sm:h-[450px] lg:h-[520px] [transform-style:preserve-3d] transition-all duration-300 ease-out sm:animate-float-dashboard group-hover/scene:animation-pause`}
+             style={{
+               transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`
+             }}
+           >
               
               {/* Secondary Card (Background) */}
-              <div className="absolute right-0 top-0 sm:top-[-15px] w-[180px] sm:w-[240px] lg:w-[280px] h-[300px] sm:h-[400px] lg:h-[480px] bg-white/20 dark:bg-white/[0.02] backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl sm:[transform:translateZ(-50px)] flex flex-col overflow-hidden transition-all duration-700">
+              <div className="absolute right-0 top-0 sm:top-[-15px] w-[200px] sm:w-[260px] lg:w-[320px] h-[300px] sm:h-[400px] lg:h-[480px] bg-white/20 dark:bg-white/[0.02] backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl sm:[transform:translateZ(-50px)] flex flex-col overflow-hidden transition-all duration-700">
+                 {/* Scan light effect */}
+                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-sap-blue/10 to-transparent h-20 w-full animate-scan pointer-events-none"></div>
+
                  <div className="p-5 h-full flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 mb-6">
-                        <div className="w-2 h-2 rounded-full bg-sap-gold animate-pulse"></div>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Core Engine</span>
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-sap-gold animate-pulse shadow-[0_0_8px_rgba(203,155,66,0.5)]"></div>
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Neural Engine</span>
+                        </div>
+                        <span className="text-[8px] font-mono text-slate-400">v4.2.0</span>
                       </div>
                       <div className="space-y-6">
                         {[
                           { label: 'Intelligence', val: '88%', color: 'from-sap-blue to-sap-accent' },
-                          { label: 'Security', val: '100%', color: 'from-emerald-400 to-emerald-600' },
+                          { label: 'Reliability', val: '99.9%', color: 'from-emerald-400 to-emerald-600' },
                           { label: 'Performance', val: '94%', color: 'from-sap-gold to-orange-400' }
                         ].map(item => (
                           <div key={item.label}>
-                            <div className="flex justify-between text-[10px] font-bold mb-2 text-slate-700 dark:text-white/80 uppercase">
+                            <div className="flex justify-between text-[9px] font-bold mb-2 text-slate-700 dark:text-white/80 uppercase tracking-wider">
                               <span>{item.label}</span>
-                              <span className="text-sap-accent">{item.val}</span>
+                              <span className="text-sap-accent animate-data-pulse">{item.val}</span>
                             </div>
                             <div className="h-1.5 w-full bg-slate-200/50 dark:bg-white/5 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full bg-gradient-to-r ${item.color}`} style={{ width: item.val }}></div>
+                              <div className={`h-full rounded-full bg-gradient-to-r ${item.color} shadow-[0_0_8px_rgba(0,143,211,0.3)] animate-progress-indefinite`} style={{ width: phase === 'result' ? item.val : '10%' }}></div>
                             </div>
                           </div>
                         ))}
                       </div>
+
+                      <div className="mt-8 pt-6 border-t border-slate-200/30 dark:border-white/5">
+                        <div className="text-[9px] font-bold text-slate-400 uppercase mb-3 tracking-widest flex items-center justify-between">
+                          <span>Active Threads</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        </div>
+                        <div className="space-y-2 font-mono text-[8px] text-slate-500 dark:text-slate-400 leading-tight">
+                          <div className="flex justify-between"><span>Cluster_A</span><span className="text-emerald-500">Connected</span></div>
+                          <div className="flex justify-between font-bold text-slate-700 dark:text-slate-300"><span>Latency</span><span>14ms</span></div>
+                          <div className="flex justify-between"><span>Traffic</span><span className="animate-data-pulse">{phase === 'result' ? '2.4k req/s' : '0.1k req/s'}</span></div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="rounded-2xl bg-white/40 dark:bg-white/[0.05] p-4 border border-white/20">
-                      <div className="text-[9px] font-bold text-slate-400 uppercase mb-2">System Status</div>
-                      <div className="text-xs font-bold text-slate-800 dark:text-white">Workspace Ready</div>
+                    
+                    <div className="rounded-2xl bg-white/40 dark:bg-white/[0.05] p-4 border border-white/20 backdrop-blur-md">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[9px] font-bold text-slate-400 uppercase">System Status</div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                      </div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-white flex items-baseline gap-1">
+                        Workspace <span className="text-[10px] text-emerald-500">{phase === 'result' ? 'Ready' : 'Analyzing'}</span>
+                      </div>
                     </div>
                  </div>
               </div>
 
               {/* Main Card (Foreground) */}
-              <div className="absolute left-0 top-[40px] w-full sm:w-[420px] lg:w-[480px] h-[240px] sm:h-[340px] lg:h-[380px] bg-white/70 dark:bg-[#080808]/80 backdrop-blur-3xl border border-white dark:border-white/10 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.15)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden sm:[transform:translateZ(60px)] transition-all duration-700">
-                 <div className="h-14 bg-white/40 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5 flex items-center px-6 justify-between">
-                    <div className="flex space-x-2">
-                       <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-white/10"></div>
-                       <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-white/10"></div>
-                       <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-white/10"></div>
+              <div className="absolute left-0 top-[40px] w-full sm:w-[500px] lg:w-[600px] h-[300px] sm:h-[400px] lg:h-[460px] bg-white/80 dark:bg-[#050505]/90 backdrop-blur-3xl border border-white dark:border-white/10 rounded-3xl shadow-[0_32px_128px_-32px_rgba(0,0,0,0.25)] dark:shadow-[0_32px_128px_-32px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden sm:[transform:translateZ(80px)] transition-all duration-700">
+                 {/* Secondary Scanning Laser */}
+                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-sap-gold/5 to-transparent w-20 h-full animate-scan-horizontal pointer-events-none"></div>
+
+                 <div className="h-16 bg-white/50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5 flex items-center px-8 justify-between shrink-0">
+                    <div className="flex space-x-2.5">
+                       <div className="w-3.5 h-3.5 rounded-full bg-[#ff5f57] shadow-[0_0_12px_rgba(255,95,87,0.5)]"></div>
+                       <div className="w-3.5 h-3.5 rounded-full bg-[#febc2e] shadow-[0_0_12px_rgba(254,188,46,0.5)]"></div>
+                       <div className="w-3.5 h-3.5 rounded-full bg-[#28c840] shadow-[0_0_12px_rgba(40,200,64,0.5)]"></div>
                     </div>
-                    <div className="text-xs font-bold text-sap-blue dark:text-white tracking-widest uppercase opacity-80">AI Workspace</div>
-                    <div className="w-6 h-6 rounded-full bg-sap-gold/20 flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-sap-gold"></div>
+                    <div className="text-[11px] font-black text-sap-blue dark:text-white tracking-[0.3em] uppercase opacity-90 px-4">FastLane Core Terminal</div>
+                    <div className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-white shadow-xl transition-all duration-500 scale-95 origin-right ${phase === 'result' ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-sap-blue shadow-sap-blue/30'}`}>
+                      <div className={`w-2 h-2 rounded-full bg-white ${phase !== 'result' ? 'animate-pulse' : ''}`}></div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.15em] shrink-0">
+                        {phase === 'typing' ? 'Waiting' : phase === 'thinking' ? 'Processing' : 'Completed'}
+                      </span>
                     </div>
                  </div>
 
-                 <div className="flex-1 p-6 flex flex-col justify-between">
-                   <div className="grid grid-cols-2 gap-6">
-                     <div className="space-y-4">
-                       <div className="text-[9px] font-black text-sap-accent uppercase tracking-[0.25em]">Live Briefing</div>
-                       <div className="space-y-3">
-                         <div className="h-4 w-3/4 bg-slate-100 dark:bg-white/5 rounded animate-pulse"></div>
-                         <div className="h-4 w-1/2 bg-slate-100 dark:bg-white/5 rounded"></div>
-                         <div className="h-4 w-2/3 bg-slate-100 dark:bg-white/5 rounded"></div>
+                 <div className="flex-1 p-8 flex flex-col gap-8 overflow-hidden relative">
+                   {/* Prompt Input Visualization */}
+                   <div className="rounded-2xl bg-slate-50 dark:bg-white/[0.03] p-5 border border-sap-blue/15 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] relative group/prompt overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-full bg-gradient-to-l from-sap-blue/5 to-transparent"></div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-5 h-5 rounded-lg bg-sap-gold flex items-center justify-center shadow-md">
+                          <div className="w-2.5 h-2.5 text-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M12 20h9M3 20h.01M3 4l9 16L21 4" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                        </div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Incoming Strategy</span>
+                      </div>
+                      <div className="text-[13px] leading-relaxed text-slate-700 dark:text-white/90 font-medium font-mono min-h-[3em]">
+                        "{displayText}"
+                        {phase === 'typing' && <span className="inline-block w-2 h-5 bg-sap-blue dark:bg-sap-accent ml-1 align-middle animate-pulse"></span>}
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-10 flex-1 min-h-0">
+                     <div className="space-y-5 flex flex-col">
+                       <div className="text-[10px] font-black text-sap-accent uppercase tracking-[0.3em] flex items-center gap-2">
+                         <span className="w-1 h-1 rounded-full bg-sap-accent"></span>
+                         Computation Logic
+                       </div>
+                       <div className="flex-1 space-y-4 font-mono text-[10px] leading-tight overflow-hidden">
+                         {[
+                           { text: 'IDENTIFY_STAKEHOLDERS', resultPhase: 'thinking' },
+                           { text: 'MAPPING_SYSTEM_NODES', resultPhase: 'thinking' },
+                           { text: 'ANALYZE_PHASE_COSTS', resultPhase: 'result' },
+                           { text: 'GENERATE_SOW_MODULES', resultPhase: 'result' },
+                         ].map((log, i) => {
+                           const isDone = (phase === 'thinking' && i < 2) || phase === 'result';
+                           const isCurrent = (phase === 'thinking' && i >= 2 && i < 4);
+                           return (
+                             <div key={i} className={`flex items-center gap-3 transition-all duration-500 ${isDone || isCurrent ? 'opacity-100' : 'opacity-20'}`}>
+                               <div className={`w-1.5 h-1.5 rounded-full ${isDone ? 'bg-emerald-500 brightness-125' : isCurrent ? 'bg-sap-gold animate-pulse' : 'bg-slate-300'}`}></div>
+                               <span className="text-slate-600 dark:text-slate-400 truncate">{log.text}</span>
+                               <span className={`ml-auto font-black text-[9px] tracking-tighter ${isDone ? 'text-emerald-500' : isCurrent ? 'text-sap-gold' : 'text-slate-400'}`}>
+                                 {isDone ? 'SUCCESS' : isCurrent ? 'ACTIVE' : 'WAITING'}
+                               </span>
+                             </div>
+                           );
+                         })}
                        </div>
                      </div>
-                     <div className="space-y-4">
-                       <div className="text-[9px] font-black text-sap-gold uppercase tracking-[0.25em]">Deliverables</div>
-                       <div className="flex flex-wrap gap-2">
-                         {['JSON', 'PDF', 'XLS'].map(tag => (
-                           <div key={tag} className="px-2 py-1 rounded-md bg-sap-blue/5 dark:bg-white/5 text-[9px] font-bold text-sap-blue dark:text-white/60 border border-sap-blue/10 dark:border-white/5">
-                             {tag}
-                           </div>
-                         ))}
+                     <div className="space-y-5">
+                       <div className="text-[10px] font-black text-sap-gold uppercase tracking-[0.3em] flex items-center gap-2">
+                         <span className="w-1 h-1 rounded-full bg-sap-gold"></span>
+                         Deliverables
+                       </div>
+                       <div className="space-y-3">
+                         {[
+                           { name: 'Architecture_Plan.v2', type: 'PDF', color: 'bg-emerald-500' },
+                           { name: 'Cost_Logic_Matrix', type: 'XLSX', color: 'bg-sap-blue' },
+                           { name: 'Knowledge_Cards', type: 'JSON', color: 'bg-sap-gold' }
+                         ].map((file, i) => {
+                           const isVisible = (phase === 'result') || (phase === 'thinking' && i === 0);
+                           return (
+                             <div key={file.name} className={`flex items-center gap-4 p-3 rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-100 dark:border-white/5 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                               <div className={`w-8 h-8 rounded-xl ${file.color} bg-opacity-15 flex items-center justify-center shrink-0`}>
+                                 <div className={`w-3.5 h-3.5 ${file.color} rounded shadow-[0_0_10px_${file.color}] opacity-70`}></div>
+                               </div>
+                               <div className="flex flex-col min-w-0">
+                                 <span className="text-[10px] font-black text-slate-800 dark:text-white truncate tracking-tight">{file.name}</span>
+                                 <span className="text-[8px] font-mono text-slate-400 uppercase tracking-widest">{file.type}</span>
+                               </div>
+                             </div>
+                           );
+                         })}
                        </div>
                      </div>
                    </div>
 
-                   <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sap-blue to-sap-accent flex items-center justify-center shadow-lg">
-                          <div className="w-4 h-4 border-2 border-white/50 rounded-sm rotate-45"></div>
+                   <div className="mt-auto pt-8 border-t border-slate-100 dark:border-white/5 flex items-center justify-between shrink-0">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-[1.25rem] bg-gradient-to-br from-sap-blue to-sap-accent flex items-center justify-center shadow-2xl transform active:scale-95 transition-all hover:scale-105 group/bot">
+                           <div className={`w-5 h-5 border-2 border-white/60 rounded rotate-45 flex items-center justify-center transition-transform duration-700 ${phase === 'thinking' ? 'animate-spin' : ''}`}>
+                             <div className="w-2 h-2 bg-white rounded-full"></div>
+                           </div>
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-slate-800 dark:text-white">Assistant Active</div>
-                          <div className="text-[10px] text-slate-400 font-medium">Listening to requirements...</div>
+                          <div className="text-sm font-black text-slate-900 dark:text-white tracking-tight">GenAI System</div>
+                          <div className={`text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5 transition-colors duration-500 ${phase === 'result' ? 'text-emerald-500' : 'text-sap-blue dark:text-sap-accent'}`}>
+                            <span className="relative flex h-2 w-2">
+                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${phase === 'result' ? 'bg-emerald-400' : 'bg-sap-blue'}`}></span>
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${phase === 'result' ? 'bg-emerald-500' : 'bg-sap-blue'}`}></span>
+                            </span>
+                            {phase === 'typing' ? 'Idle' : phase === 'thinking' ? 'Reasoning...' : 'Task Completed'}
+                          </div>
                         </div>
                      </div>
-                     <div className="flex h-1.5 w-24 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full w-2/3 bg-sap-gold rounded-full"></div>
+                     <div className="flex flex-col items-end gap-2.5 bg-slate-50 dark:bg-white/[0.03] px-4 py-3 rounded-2xl border border-slate-100 dark:border-white/5">
+                       <div className="flex items-baseline gap-2">
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Efficiency</span>
+                         <span className="text-[15px] font-black text-sap-blue dark:text-sap-accent tabular-nums">
+                           {phase === 'result' ? '98.4%' : phase === 'thinking' ? '82.1%' : '0.0%'}
+                         </span>
+                       </div>
+                       <div className="flex h-2 w-32 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">
+                          <div className={`h-full bg-gradient-to-r from-sap-blue via-sap-accent to-emerald-400 transition-all duration-1000 ${phase === 'result' ? 'w-[98%]' : phase === 'thinking' ? 'w-[82%]' : 'w-0'}`}></div>
+                       </div>
                      </div>
                    </div>
                  </div>
               </div>
-
               {/* Decorative blobs */}
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-sap-blue/10 rounded-full blur-[80px] pointer-events-none"></div>
-              <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-sap-gold/10 rounded-full blur-[100px] pointer-events-none"></div>
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-sap-blue/10 rounded-full blur-[80px] pointer-events-none animate-pulse"></div>
+              <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-sap-gold/10 rounded-full blur-[100px] pointer-events-none animate-pulse delay-700"></div>
            </div>
         </div>
       </div>

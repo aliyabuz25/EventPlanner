@@ -152,6 +152,32 @@ const App: React.FC = () => {
   }, [theme]);
 
   useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.15
+    };
+
+    const handleIntersect = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+          // Optionally unobserve after revealing
+          // observer.unobserve(entry.target);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersect, observerOptions);
+    const revealElements = document.querySelectorAll('.reveal');
+    revealElements.forEach(el => observer.observe(el));
+
+    return () => {
+      revealElements.forEach(el => observer.unobserve(el));
+    };
+  }, [currentView, loading]);
+
+  useEffect(() => {
     const activeCustomPage = String(currentView).startsWith('custom:')
       ? content.customPages.find((page) => page.view === currentView)
       : null;
