@@ -6,16 +6,17 @@ import { useSiteContent } from '../contexts/SiteContentContext';
 
 interface FooterProps {
   setView?: (view: ViewType) => void;
+  theme?: 'light' | 'dark';
 }
 
-const Footer: React.FC<FooterProps> = ({ setView }) => {
+const Footer: React.FC<FooterProps> = ({ setView, theme = 'light' }) => {
   const { content } = useSiteContent();
   const currentYear = new Date().getFullYear();
   const company = content.global.company;
   const socialLinks = content.global.socialLinks;
 
   return (
-    <footer className="bg-[#f8fafc] dark:bg-[#050505] border-t border-slate-200 dark:border-white/[0.08] py-20 transition-colors duration-300">
+    <footer className="bg-sap-paper dark:bg-[#050505] border-t border-slate-200 dark:border-white/[0.08] py-20 transition-colors duration-300">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-12 w-full">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
           <div className="col-span-1 md:col-span-2">
@@ -24,7 +25,7 @@ const Footer: React.FC<FooterProps> = ({ setView }) => {
               className="group focus:outline-none flex items-center mb-8"
               aria-label={`${company.name} Home`}
             >
-               <Logo theme="light" className="h-12 w-auto" />
+               <Logo theme={theme} className="h-12 w-auto" />
             </button>
             <p className="text-slate-600 dark:text-slate-500 max-w-lg leading-relaxed mb-10 text-lg font-normal transition-colors">
               {company.fullName} begleitet Live-, Hybrid- und Medical-Events mit Akkreditierung, Einlassmanagement, Event-Apps und OnSite-Services.

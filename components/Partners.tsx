@@ -4,6 +4,34 @@ import { Partner } from '../types';
 import PartnerIcon from './PartnerIcon';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
+const PARTNER_ICON_NAMES = new Set([
+  'SAP',
+  'Microsoft',
+  'Bimser',
+  'OpenText',
+  'SUSE',
+  'RedHat',
+  'ARIS',
+  'CodeTwo',
+  'Bentley',
+  'Adobe'
+]);
+
+const renderPartnerFallback = (name: string) => {
+  if (PARTNER_ICON_NAMES.has(name)) {
+    return <PartnerIcon name={name} />;
+  }
+
+  const compactName = name.replace(/\.(de|ai|com)$/i, '');
+  return (
+    <div className="flex h-full w-full items-center justify-center px-2 text-center">
+      <span className="text-lg sm:text-[1.35rem] font-black uppercase tracking-[0.12em] leading-tight text-slate-700 dark:text-white/90">
+        {compactName}
+      </span>
+    </div>
+  );
+};
+
 const Partners: React.FC = () => {
   const { content } = useSiteContent();
   const section = content.pages.home.sections.partners;
@@ -33,7 +61,7 @@ const Partners: React.FC = () => {
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <PartnerIcon name={partner.name} />
+                  renderPartnerFallback(partner.name)
                 )}
               </div>
             </div>

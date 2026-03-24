@@ -28,6 +28,9 @@ export const siteContentSeed = {
       faviconUrl: '',
       appleTouchIconUrl: ''
     },
+    localization: {
+      frontendThirdLanguage: ''
+    },
     smtp: {
       enabled: false,
       host: 'smtp.your-provider.com',

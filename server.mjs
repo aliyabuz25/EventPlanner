@@ -1,12 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
 import { editableDocumentKeys } from './shared/siteContentSeed.js';
 import {
   createAiExplorerLog,
+  getFrontendLocalization,
+  getFrontendLocalizations,
   getAiExplorerLogs,
   getDocument,
   getDocumentRevisions,
@@ -14,6 +17,7 @@ import {
   getSiteMap,
   restoreDocumentRevision,
   syncFastlaneContentIfNeeded,
+  upsertFrontendLocalizationEntry,
   updateDocument
 } from './server/content-db.mjs';
 
@@ -21,10 +25,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
 const uploadsDir = path.resolve(__dirname, 'data', 'uploads');
+const adminTranslationsPath = path.resolve(__dirname, 'data', 'admin-translations.json');
 const OLLAMA_GENERATE_URL = process.env.OLLAMA_GENERATE_URL || process.env.OLLAMA_CHAT_URL || 'https://qwen.octotech.az/api/generate';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2:0.5b';
 const OLLAMA_TIMEOUT_MS = Math.max(5000, Number(process.env.OLLAMA_TIMEOUT_MS ?? 90000) || 90000);
 const OLLAMA_NUM_PREDICT = Math.max(96, Number(process.env.OLLAMA_NUM_PREDICT ?? 160) || 160);
+const LIBRETRANSLATE_URL = String(process.env.LIBRETRANSLATE_URL ?? '').trim().replace(/\/$/, '');
+const LIBRETRANSLATE_API_KEY = String(process.env.LIBRETRANSLATE_API_KEY ?? '').trim();
+const MYMEMORY_TRANSLATE_URL = String(process.env.MYMEMORY_TRANSLATE_URL ?? 'https://api.mymemory.translated.net/get').trim();
+const ADMIN_TRANSLATE_ALLOWED_TARGETS = new Set(['tr', 'fr', 'es', 'it', 'pt', 'nl', 'pl', 'ru', 'ar', 'az']);
+const FRONTEND_TRANSLATE_ALLOWED_TARGETS = new Set(['de', 'en', 'tr', 'fr', 'es', 'it', 'pt', 'nl', 'pl', 'ru', 'ar', 'az']);
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -46,6 +56,22 @@ const mimeTypes = {
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(payload));
+}
+
+function readJsonFile(filePath, fallbackValue) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return fallbackValue;
+    }
+
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch {
+    return fallbackValue;
+  }
+}
+
+function writeJsonFile(filePath, value) {
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
 }
 
 function readBody(req) {
@@ -157,6 +183,717 @@ function parseJsonObject(content) {
   }
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function collectTranslatableStrings(value, currentPath = [], entries = []) {
+  if (typeof value === 'string') {
+    entries.push({ path: currentPath, value });
+    return entries;
+  }
+
+  if (!isPlainObject(value)) {
+    return entries;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    collectTranslatableStrings(child, [...currentPath, key], entries);
+  }
+
+  return entries;
+}
+
+function assignNestedValue(target, pathParts, value) {
+  let cursor = target;
+
+  for (let index = 0; index < pathParts.length - 1; index += 1) {
+    const part = pathParts[index];
+    cursor[part] = isPlainObject(cursor[part]) ? cursor[part] : {};
+    cursor = cursor[part];
+  }
+
+  cursor[pathParts[pathParts.length - 1]] = value;
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function isNumericPathPart(value) {
+  return /^\d+$/.test(String(value ?? ''));
+}
+
+function assignNestedValueDeep(target, pathParts, value) {
+  if (!pathParts.length) {
+    return value;
+  }
+
+  let cursor = target;
+
+  for (let index = 0; index < pathParts.length - 1; index += 1) {
+    const part = pathParts[index];
+    const nextPart = pathParts[index + 1];
+    const currentKey = isNumericPathPart(part) ? Number(part) : part;
+
+    if (cursor[currentKey] === undefined) {
+      cursor[currentKey] = isNumericPathPart(nextPart) ? [] : {};
+    }
+
+    cursor = cursor[currentKey];
+  }
+
+  const lastPart = pathParts[pathParts.length - 1];
+  cursor[isNumericPathPart(lastPart) ? Number(lastPart) : lastPart] = value;
+  return target;
+}
+
+function createContentHash(value) {
+  return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+function getIstanbulDateParts() {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    day: `${lookup.year}-${lookup.month}-${lookup.day}`,
+    hour: Number(lookup.hour ?? '0')
+  };
+}
+
+function shouldSkipFrontendTranslation(pathParts, value) {
+  const key = String(pathParts[pathParts.length - 1] ?? '').toLowerCase();
+  const pathString = pathParts.join('.').toLowerCase();
+  const normalized = String(value ?? '').trim();
+
+  if (!normalized) {
+    return true;
+  }
+
+  if (
+    key === 'slug' ||
+    key === 'view' ||
+    key === 'href' ||
+    key === 'id' ||
+    key === 'icon' ||
+    key === 'email' ||
+    key === 'phone' ||
+    key.endsWith('url') ||
+    pathString.startsWith('global.smtp')
+  ) {
+    return true;
+  }
+
+  if (
+    normalized.startsWith('/') ||
+    normalized.startsWith('http://') ||
+    normalized.startsWith('https://') ||
+    normalized.startsWith('mailto:') ||
+    normalized.startsWith('tel:') ||
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function collectFrontendTranslatableStrings(value, currentPath = [], entries = []) {
+  if (typeof value === 'string') {
+    if (!shouldSkipFrontendTranslation(currentPath, value)) {
+      entries.push({ path: currentPath, value });
+    }
+
+    return entries;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((child, index) => collectFrontendTranslatableStrings(child, [...currentPath, String(index)], entries));
+    return entries;
+  }
+
+  if (!isPlainObject(value)) {
+    return entries;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    collectFrontendTranslatableStrings(child, [...currentPath, key], entries);
+  }
+
+  return entries;
+}
+
+function getValueAtPath(value, pathParts) {
+  let cursor = value;
+
+  for (const part of pathParts) {
+    if (cursor === undefined || cursor === null) {
+      return undefined;
+    }
+
+    cursor = cursor[isNumericPathPart(part) ? Number(part) : part];
+  }
+
+  return cursor;
+}
+
+function sanitizeTranslatedText(value) {
+  return String(value ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sanitizeTranslationObject(value) {
+  if (typeof value === 'string') {
+    return sanitizeTranslatedText(value);
+  }
+
+  if (!isPlainObject(value)) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, sanitizeTranslationObject(child)])
+  );
+}
+
+const adminTranslationCache = readJsonFile(adminTranslationsPath, {});
+const adminTranslationJobs = new Map();
+const frontendTranslationJobs = new Map();
+
+function createAdminTranslationJob(target) {
+  return {
+    id: crypto.randomUUID(),
+    target,
+    status: 'pending',
+    progress: 0,
+    message: 'Preparing translation job...',
+    copy: null,
+    error: ''
+  };
+}
+
+function getAdminTranslation(target) {
+  return isPlainObject(adminTranslationCache[target]) ? sanitizeTranslationObject(adminTranslationCache[target]) : null;
+}
+
+function saveAdminTranslation(target, copy) {
+  adminTranslationCache[target] = sanitizeTranslationObject(copy);
+  writeJsonFile(adminTranslationsPath, adminTranslationCache);
+}
+
+function createFrontendTranslationJob(target) {
+  return {
+    id: crypto.randomUUID(),
+    target,
+    status: 'pending',
+    progress: 0,
+    message: 'Preparing frontend localization...',
+    copy: null,
+    error: ''
+  };
+}
+
+function getFrontendTranslationEntry(target) {
+  const entry = getFrontendLocalization(target);
+  return entry && isPlainObject(entry.copy)
+    ? {
+        copy: entry.copy,
+        meta: entry.meta ?? {},
+        updatedAt: entry.updatedAt
+      }
+    : null;
+}
+
+function getFrontendTranslation(target) {
+  const entry = getFrontendTranslationEntry(target);
+  if (!entry || !isPlainObject(entry.copy)) {
+    return null;
+  }
+
+  return sanitizeTranslationObject(entry.copy);
+}
+
+function saveFrontendTranslation(target, copy, meta = {}) {
+  const now = new Date().toISOString();
+  const source = getSiteContent();
+  const currentEntry = getFrontendTranslationEntry(target);
+  const currentSourceHash = createContentHash(source);
+  upsertFrontendLocalizationEntry(target, sanitizeTranslationObject(copy), {
+    ...currentEntry?.meta,
+    ...meta,
+    createdAt: currentEntry?.meta?.createdAt ?? now,
+    updatedAt: now,
+    sourceHash: meta?.sourceHash ?? currentSourceHash
+  });
+}
+
+function countLeafStrings(value) {
+  if (typeof value === 'string') {
+    return 1;
+  }
+
+  if (Array.isArray(value)) {
+    return value.reduce((total, child) => total + countLeafStrings(child), 0);
+  }
+
+  if (!isPlainObject(value)) {
+    return 0;
+  }
+
+  return Object.values(value).reduce((total, child) => total + countLeafStrings(child), 0);
+}
+
+function setValueAtPath(value, path, nextValue) {
+  const root = structuredClone(value);
+  let cursor = root;
+
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const key = path[index];
+    const upcoming = path[index + 1];
+    const fallback = typeof upcoming === 'number' ? [] : {};
+    cursor[key] = isPlainObject(cursor[key]) || Array.isArray(cursor[key]) ? structuredClone(cursor[key]) : fallback;
+    cursor = cursor[key];
+  }
+
+  cursor[path[path.length - 1]] = nextValue;
+  return root;
+}
+
+function collectUploadReferences(value, currentPath = [], refs = []) {
+  if (typeof value === 'string' && value.startsWith('/uploads/')) {
+    refs.push({
+      path: currentPath.join('.'),
+      url: value
+    });
+    return refs;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((child, index) => collectUploadReferences(child, [...currentPath, String(index)], refs));
+    return refs;
+  }
+
+  if (!isPlainObject(value)) {
+    return refs;
+  }
+
+  Object.entries(value).forEach(([key, child]) => collectUploadReferences(child, [...currentPath, key], refs));
+  return refs;
+}
+
+function getAdminTranslationsOverview() {
+  const cacheStat = fs.existsSync(adminTranslationsPath) ? fs.statSync(adminTranslationsPath) : null;
+  const siteContent = getSiteContent();
+  const uploadRefs = collectUploadReferences(siteContent);
+  const uploadFiles = fs.existsSync(uploadsDir)
+    ? fs.readdirSync(uploadsDir)
+        .map((fileName) => {
+          const filePath = path.join(uploadsDir, fileName);
+          const stat = fs.statSync(filePath);
+          return {
+            fileName,
+            size: stat.size,
+            updatedAt: stat.mtime.toISOString(),
+            url: `/uploads/${fileName}`
+          };
+        })
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    : [];
+
+  const locales = Object.entries(adminTranslationCache)
+    .filter(([, value]) => isPlainObject(value))
+    .map(([target, copy]) => ({
+      target,
+      keys: countLeafStrings(copy),
+      updatedAt: cacheStat?.mtime.toISOString() ?? null
+    }))
+    .sort((left, right) => left.target.localeCompare(right.target));
+
+  return {
+    file: {
+      path: adminTranslationsPath,
+      exists: Boolean(cacheStat),
+      size: cacheStat?.size ?? 0,
+      updatedAt: cacheStat?.mtime.toISOString() ?? null
+    },
+    locales,
+    uploads: {
+      referenced: uploadRefs,
+      files: uploadFiles
+    }
+  };
+}
+
+async function translateViaLibreTranslate(text, target) {
+  if (!LIBRETRANSLATE_URL) {
+    throw new Error('LibreTranslate is not configured.');
+  }
+
+  const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      q: text,
+      source: 'en',
+      target,
+      format: 'text',
+      api_key: LIBRETRANSLATE_API_KEY || undefined
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result?.error || `LibreTranslate request failed: ${response.status}`);
+  }
+
+  return sanitizeTranslatedText(result?.translatedText ?? text);
+}
+
+async function translateViaMyMemory(text, target) {
+  const endpoint = `${MYMEMORY_TRANSLATE_URL}?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(`en|${target}`)}`;
+  const response = await fetch(endpoint);
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(`MyMemory request failed: ${response.status}`);
+  }
+
+  return sanitizeTranslatedText(result?.responseData?.translatedText ?? text);
+}
+
+async function translateAdminText(text, target) {
+  const normalized = String(text ?? '');
+
+  if (!normalized.trim() || target === 'en') {
+    return sanitizeTranslatedText(normalized);
+  }
+
+  try {
+    if (LIBRETRANSLATE_URL) {
+      return await translateViaLibreTranslate(normalized, target);
+    }
+  } catch (error) {
+    console.warn('LibreTranslate fallback triggered:', error instanceof Error ? error.message : error);
+  }
+
+  try {
+    return await translateViaMyMemory(normalized, target);
+  } catch (error) {
+    console.warn('MyMemory translation fallback failed:', error instanceof Error ? error.message : error);
+    return normalized;
+  }
+}
+
+async function translateFrontendText(text, target) {
+  const normalized = String(text ?? '');
+
+  if (!normalized.trim() || target === 'de') {
+    return sanitizeTranslatedText(normalized);
+  }
+
+  try {
+    if (LIBRETRANSLATE_URL) {
+      const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          q: normalized,
+          source: 'de',
+          target,
+          format: 'text',
+          api_key: LIBRETRANSLATE_API_KEY || undefined
+        })
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.error || `LibreTranslate request failed: ${response.status}`);
+      }
+
+      return sanitizeTranslatedText(result?.translatedText ?? normalized);
+    }
+  } catch (error) {
+    console.warn('Frontend LibreTranslate fallback triggered:', error instanceof Error ? error.message : error);
+  }
+
+  try {
+    const endpoint = `${MYMEMORY_TRANSLATE_URL}?q=${encodeURIComponent(normalized)}&langpair=${encodeURIComponent(`de|${target}`)}`;
+    const response = await fetch(endpoint);
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(`MyMemory request failed: ${response.status}`);
+    }
+
+    return sanitizeTranslatedText(result?.responseData?.translatedText ?? normalized);
+  } catch (error) {
+    console.warn('Frontend MyMemory translation fallback failed:', error instanceof Error ? error.message : error);
+    return normalized;
+  }
+}
+
+async function translateAdminBundle(bundle, target, onProgress = null) {
+  const entries = collectTranslatableStrings(bundle);
+  const uniqueTexts = [...new Set(entries.map((entry) => entry.value))];
+  const translationMap = new Map();
+  const total = Math.max(1, uniqueTexts.length);
+
+  for (let index = 0; index < uniqueTexts.length; index += 1) {
+    const text = uniqueTexts[index];
+    translationMap.set(text, await translateAdminText(text, target));
+    if (onProgress) {
+      onProgress({
+        completed: index + 1,
+        total,
+        progress: Math.max(1, Math.round(((index + 1) / total) * 100))
+      });
+    }
+  }
+
+  const translated = {};
+  for (const entry of entries) {
+    assignNestedValue(translated, entry.path, translationMap.get(entry.value) ?? entry.value);
+  }
+
+  return translated;
+}
+
+async function runAdminTranslationJob(job, bundle) {
+  job.status = 'running';
+  job.message = 'Translation started...';
+  job.progress = 1;
+
+  try {
+    const existing = getAdminTranslation(job.target);
+    if (existing) {
+      job.status = 'completed';
+      job.progress = 100;
+      job.message = 'Translation already available.';
+      job.copy = existing;
+      return;
+    }
+
+    const translated = await translateAdminBundle(bundle, job.target, ({ progress, completed, total }) => {
+      job.progress = progress;
+      job.message = `Downloading localization ${completed}/${total}`;
+    });
+
+    saveAdminTranslation(job.target, translated);
+    job.status = 'completed';
+    job.progress = 100;
+    job.message = 'Localization added.';
+    job.copy = translated;
+  } catch (error) {
+    job.status = 'error';
+    job.error = error instanceof Error ? error.message : 'Admin translation failed.';
+    job.message = job.error;
+  }
+}
+
+async function translateFrontendBundle(bundle, target, onProgress = null) {
+  const entries = collectFrontendTranslatableStrings(bundle);
+  const uniqueTexts = [...new Set(entries.map((entry) => entry.value))];
+  const translationMap = new Map();
+  const total = Math.max(1, uniqueTexts.length);
+
+  for (let index = 0; index < uniqueTexts.length; index += 1) {
+    const text = uniqueTexts[index];
+    translationMap.set(text, await translateFrontendText(text, target));
+    if (onProgress) {
+      onProgress({
+        completed: index + 1,
+        total,
+        progress: Math.max(1, Math.round(((index + 1) / total) * 100))
+      });
+    }
+  }
+
+  const translated = cloneJson(bundle);
+  for (const entry of entries) {
+    assignNestedValueDeep(translated, entry.path, translationMap.get(entry.value) ?? entry.value);
+  }
+
+  return translated;
+}
+
+function validateFrontendTranslation(target) {
+  const entry = getFrontendTranslationEntry(target);
+  if (!entry || !isPlainObject(entry.copy)) {
+    return null;
+  }
+
+  const source = getSiteContent();
+  const sourceEntries = collectFrontendTranslatableStrings(source);
+  const translatedEntries = collectFrontendTranslatableStrings(entry.copy);
+  const total = sourceEntries.length;
+  let missingCount = 0;
+  let identicalCount = 0;
+
+  for (const sourceEntry of sourceEntries) {
+    const translatedValue = getValueAtPath(entry.copy, sourceEntry.path);
+    const normalizedTarget = sanitizeTranslatedText(translatedValue ?? '');
+    const normalizedSource = sanitizeTranslatedText(sourceEntry.value);
+
+    if (!normalizedTarget) {
+      missingCount += 1;
+      continue;
+    }
+
+    if (target !== 'en' && normalizedTarget === normalizedSource) {
+      identicalCount += 1;
+    }
+  }
+
+  const stale = entry?.meta?.sourceHash !== createContentHash(source);
+  const issues = [];
+
+  if (stale) {
+    issues.push('Source content changed since last localization build.');
+  }
+  if (missingCount > 0) {
+    issues.push(`${missingCount} translated strings are missing.`);
+  }
+  if (identicalCount > 0) {
+    issues.push(`${identicalCount} strings still match the source text exactly.`);
+  }
+  if (translatedEntries.length < sourceEntries.length) {
+    issues.push('Translation bundle covers fewer text nodes than the source content.');
+  }
+
+  const validation = {
+    missingCount,
+    identicalCount,
+    total,
+    coverage: total > 0 ? Number((((total - missingCount) / total) * 100).toFixed(2)) : 100,
+    stale,
+    issues
+  };
+
+  saveFrontendTranslation(target, entry.copy, {
+    ...entry.meta,
+    lastValidatedAt: new Date().toISOString(),
+    lastValidationDay: getIstanbulDateParts().day,
+    validation
+  });
+
+  return validation;
+}
+
+async function runFrontendTranslationJob(job, bundle) {
+  job.status = 'running';
+  job.message = 'Frontend localization started...';
+  job.progress = 1;
+
+  try {
+    const existing = getFrontendTranslationEntry(job.target);
+    const currentSourceHash = createContentHash(getSiteContent());
+    if (existing?.meta?.sourceHash === currentSourceHash && isPlainObject(existing.copy)) {
+      job.status = 'completed';
+      job.progress = 100;
+      job.message = 'Frontend localization already available.';
+      job.copy = sanitizeTranslationObject(existing.copy);
+      return;
+    }
+
+    const translated = await translateFrontendBundle(bundle, job.target, ({ progress, completed, total }) => {
+      job.progress = progress;
+      job.message = `Downloading frontend localization ${completed}/${total}`;
+    });
+
+    saveFrontendTranslation(job.target, translated, {
+      sourceHash: currentSourceHash
+    });
+    validateFrontendTranslation(job.target);
+    job.status = 'completed';
+    job.progress = 100;
+    job.message = 'Frontend localization added.';
+    job.copy = sanitizeTranslationObject(translated);
+  } catch (error) {
+    job.status = 'error';
+    job.error = error instanceof Error ? error.message : 'Frontend translation failed.';
+    job.message = job.error;
+  }
+}
+
+async function ensureNightlyFrontendTranslationValidation() {
+  const { day } = getIstanbulDateParts();
+  const targets = getFrontendLocalizations().map((entry) => entry.target);
+
+  for (const target of targets) {
+    const entry = getFrontendTranslationEntry(target);
+    if (!entry) {
+      continue;
+    }
+
+    if (entry?.meta?.lastValidationDay === day) {
+      continue;
+    }
+
+    const validation = validateFrontendTranslation(target);
+    if (!validation) {
+      continue;
+    }
+
+    if ((validation.stale || validation.missingCount > 0) && ![...frontendTranslationJobs.values()].some((job) => job.target === target && (job.status === 'pending' || job.status === 'running'))) {
+      const job = createFrontendTranslationJob(target);
+      frontendTranslationJobs.set(job.id, job);
+      void runFrontendTranslationJob(job, getSiteContent());
+    }
+  }
+}
+
+function getFrontendTranslationsOverview() {
+  const locales = getFrontendLocalizations()
+    .filter((entry) => isPlainObject(entry?.copy))
+    .map((entry) => ({
+      target: entry.target,
+      strings: countLeafStrings(entry?.copy ?? {}),
+      updatedAt: entry?.meta?.updatedAt ?? entry.updatedAt ?? null,
+      lastValidatedAt: entry?.meta?.lastValidatedAt ?? null,
+      coverage: entry?.meta?.validation?.coverage ?? null,
+      stale: Boolean(entry?.meta?.validation?.stale)
+    }))
+    .sort((left, right) => left.target.localeCompare(right.target));
+
+  return {
+    file: {
+      path: 'sqlite:data/site-content.sqlite#frontend_localizations',
+      size: locales.length,
+      updatedAt: locales[0]?.updatedAt ?? null
+    },
+    locales
+  };
+}
+
+setInterval(() => {
+  void ensureNightlyFrontendTranslationValidation().catch((error) => {
+    console.warn('Frontend translation validation failed:', error instanceof Error ? error.message : error);
+  });
+}, 15 * 60 * 1000);
+
+void ensureNightlyFrontendTranslationValidation().catch((error) => {
+  console.warn('Frontend translation validation bootstrap failed:', error instanceof Error ? error.message : error);
+});
+
 function isLikelyEventName(value) {
   const normalized = sanitizeExtractedValue(value);
   if (!normalized) return false;
@@ -203,6 +940,29 @@ function isLikelyAttendeesValue(value) {
   return /(\d[\d.,]*)\s*(teilnehmer|teilnehmende|pax|gaeste|gäste|personen)/i.test(normalized);
 }
 
+function isLikelyBudgetValue(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return false;
+  if (/^noch offen\.?$/i.test(normalized)) return true;
+  return Boolean(parseBudgetValue(normalized));
+}
+
+function isLikelyCustomerName(value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return false;
+  if (/^(assistent|assistant|ki|ai|your name|team|event|venue)$/i.test(normalized)) return false;
+  if (/\b(check-?in|support|badge|scanner|drucker|teilnehmer|budget)\b/i.test(normalized)) return false;
+  return /[a-zA-ZÄÖÜäöüß]/.test(normalized);
+}
+
+function isLikelyScenarioValue(value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return false;
+  if (normalized.length > 180) return false;
+  if (/\b(budget|reise|hotel|transport|projektmanagement)\b/i.test(normalized)) return false;
+  return /\b(check-?in|badge|walk-?in|einlass|scann|lead|besuchersteuerung|print-on-demand|live-badging)\b/i.test(normalized);
+}
+
 function shouldAcceptBriefField(key, value) {
   if (Array.isArray(value)) return true;
   const normalized = sanitizeExtractedValue(value);
@@ -217,6 +977,14 @@ function shouldAcceptBriefField(key, value) {
       return isLikelyAttendeesValue(normalized);
     case 'eventDates':
       return /\d/.test(normalized) || /\b(januar|februar|maerz|märz|april|mai|juni|juli|august|september|oktober|november|dezember|tag|tage)\b/i.test(normalized);
+    case 'budget':
+      return isLikelyBudgetValue(normalized);
+    case 'supportLevel':
+      return Boolean(normalizeSupportLevelValue(normalized));
+    case 'customerName':
+      return isLikelyCustomerName(normalized);
+    case 'checkInScenario':
+      return isLikelyScenarioValue(normalized);
     default:
       return true;
   }
@@ -321,7 +1089,7 @@ function normalizeModelBrief(brief) {
     venues: coerceBriefScalar(brief.venues),
     entryPoints: coerceBriefScalar(brief.entryPoints),
     onsiteDays: coerceBriefScalar(brief.onsiteDays),
-    supportLevel: coerceBriefScalar(brief.supportLevel),
+    supportLevel: normalizeSupportLevelValue(brief.supportLevel),
     travelScope: coerceBriefScalar(brief.travelScope),
     badgeType: coerceBriefScalar(brief.badgeType),
     softwareNeeds: Array.isArray(brief.softwareNeeds) ? brief.softwareNeeds.map((item) => sanitizeExtractedValue(item)).filter(Boolean) : [],
@@ -338,10 +1106,10 @@ function normalizeModelBrief(brief) {
   if (!shouldAcceptBriefField('eventLocation', normalized.eventLocation)) normalized.eventLocation = '';
   if (!shouldAcceptBriefField('attendees', normalized.attendees)) normalized.attendees = '';
   if (!shouldAcceptBriefField('eventDates', normalized.eventDates)) normalized.eventDates = '';
-  if (/^(assistent|assistant|your name|event|venue|team|standard)$/i.test(normalized.customerName)) normalized.customerName = '';
-  if (/^(standard|counter entry)$/i.test(normalized.checkInScenario)) normalized.checkInScenario = '';
-  if (/^(standard|basic)$/i.test(normalized.supportLevel)) normalized.supportLevel = '';
-  if (/^(budget|offen|standard|n\/a)$/i.test(normalized.budget)) normalized.budget = '';
+  if (!shouldAcceptBriefField('customerName', normalized.customerName)) normalized.customerName = '';
+  if (!shouldAcceptBriefField('checkInScenario', normalized.checkInScenario)) normalized.checkInScenario = '';
+  if (!shouldAcceptBriefField('supportLevel', normalized.supportLevel)) normalized.supportLevel = '';
+  if (!shouldAcceptBriefField('budget', normalized.budget)) normalized.budget = '';
 
   return normalized;
 }
@@ -381,6 +1149,171 @@ function cleanNumber(value) {
   const normalized = String(value).replace(/[^\d.,]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+const STRUCTURED_FIELD_ALIASES = {
+  veranstalter: 'customerName',
+  'kunde': 'customerName',
+  'kunde (po)': 'customerName',
+  eventname: 'eventName',
+  'event name': 'eventName',
+  eventtitel: 'eventName',
+  veranstaltungstitel: 'eventName',
+  arbeitstitel: 'eventName',
+  ort: 'eventLocation',
+  'ort / venue': 'eventLocation',
+  'ort (venue)': 'eventLocation',
+  'ort (venues)': 'eventLocation',
+  veranstaltungsort: 'eventLocation',
+  'ort / venues': 'eventLocation',
+  teilnehmer: 'attendees',
+  teilnehmerzahl: 'attendees',
+  pax: 'attendees',
+  budget: 'budget',
+  budgetrahmen: 'budget',
+  rahmenbudget: 'budget',
+  szenario: 'checkInScenario',
+  'check-in-szenario': 'checkInScenario',
+  'checkin-szenario': 'checkInScenario',
+  'support-level': 'supportLevel',
+  supportlevel: 'supportLevel'
+};
+
+function normalizeFieldHeader(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/\*\*/g, '')
+    .replace(/[：:]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getStructuredFieldKey(line) {
+  const trimmed = String(line ?? '').trim();
+  if (!trimmed) return '';
+
+  const direct = normalizeFieldHeader(trimmed);
+  if (STRUCTURED_FIELD_ALIASES[direct]) {
+    return STRUCTURED_FIELD_ALIASES[direct];
+  }
+
+  const inlineHeader = trimmed.match(/^([^:]{2,40})\s*:\s*(.+)?$/);
+  if (inlineHeader) {
+    const inlineKey = normalizeFieldHeader(inlineHeader[1]);
+    return STRUCTURED_FIELD_ALIASES[inlineKey] || '';
+  }
+
+  return '';
+}
+
+function normalizeSupportLevelValue(value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) return '';
+  if (/doors?-open critical/i.test(normalized)) return 'Doors-open critical';
+  if (/24\s*\/\s*7/i.test(normalized)) return '24/7';
+  if (/extended/i.test(normalized)) return 'Extended';
+  if (/\bbasic\b|remote-?helpdesk|remote support/i.test(normalized)) return 'Basic';
+  if (/premium/i.test(normalized)) return 'Premium';
+  if (/standard/i.test(normalized)) return 'Standard';
+  return '';
+}
+
+function isPlaceholderFieldValue(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return true;
+  return /^(noch offen|offen|open|n\/a|unbekannt|noch zu bestaetigen|noch zu bestätigen|noch nicht bestaetigt|noch nicht bestätigt|tbd|to be confirmed|wird noch abgestimmt)\.?$/i.test(normalized);
+}
+
+function validateStructuredFieldValue(field, value) {
+  const normalized = sanitizeExtractedValue(value);
+  if (!normalized) {
+    return { valid: false, normalized: '' };
+  }
+
+  switch (field) {
+    case 'customerName':
+      if (/^(assistent|assistant|ki|ai|event-assistent|event assistant|scoping-assistent)$/i.test(normalized)) {
+        return { valid: false, normalized: '' };
+      }
+      if (/\b(support|vor-?ort|check-?in|badge|scanner|drucker|teilnehmer)\b/i.test(normalized)) {
+        return { valid: false, normalized: '' };
+      }
+      return { valid: /[a-zA-ZÄÖÜäöüß]/.test(normalized), normalized };
+    case 'eventName': {
+      const eventName = normalizeEventNameValue(normalized);
+      return { valid: Boolean(eventName), normalized: eventName };
+    }
+    case 'eventLocation':
+      if (/\b(support|technisch|vor-?ort|besucheraufkommen|dimensionieren|badge|check-?in)\b/i.test(normalized)) {
+        return { valid: false, normalized: '' };
+      }
+      return { valid: isLikelyLocation(normalized), normalized };
+    case 'attendees':
+      return { valid: isLikelyAttendeesValue(normalized), normalized };
+    case 'budget':
+      return { valid: Boolean(parseBudgetValue(normalized) || /noch offen/i.test(normalized)), normalized };
+    case 'checkInScenario':
+      if (/\b(transport|reise|hotel|budget|technischer support passend)\b/i.test(normalized)) {
+        return { valid: false, normalized: '' };
+      }
+      return { valid: normalized.length <= 180, normalized };
+    case 'supportLevel': {
+      const supportLevel = normalizeSupportLevelValue(normalized);
+      return { valid: Boolean(supportLevel), normalized: supportLevel };
+    }
+    default:
+      return { valid: true, normalized };
+  }
+}
+
+function parseStructuredFieldBlocks(transcript) {
+  const lines = String(transcript ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const values = {};
+  const unassignedLines = [];
+  const validationErrors = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const field = getStructuredFieldKey(line);
+    if (!field) continue;
+
+    const inlineMatch = line.match(/^([^:]{2,40})\s*:\s*(.+)?$/);
+    const collected = [];
+
+    if (inlineMatch?.[2]?.trim()) {
+      collected.push(inlineMatch[2].trim());
+    }
+
+    while (index + 1 < lines.length) {
+      const nextLine = lines[index + 1];
+      if (getStructuredFieldKey(nextLine)) break;
+      if (/^(assistant|assistent|ihre eingabe|workspace|activity|live brief|offer console)$/i.test(nextLine)) break;
+      collected.push(nextLine);
+      index += 1;
+    }
+
+    const rawValue = collected.join(' ').replace(/\s+/g, ' ').trim();
+    if (!rawValue || isPlaceholderFieldValue(rawValue)) {
+      continue;
+    }
+    const validation = validateStructuredFieldValue(field, rawValue);
+    if (validation.valid && validation.normalized) {
+      values[field] = validation.normalized;
+    } else if (rawValue) {
+      validationErrors.push({ field, value: rawValue });
+      unassignedLines.push(rawValue);
+    }
+  }
+
+  return {
+    values,
+    unassignedLines,
+    validationErrors
+  };
 }
 
 function sanitizeExtractedValue(value) {
@@ -557,6 +1490,10 @@ async function extractBriefWithOllama(history, userMessage) {
   const extractionPrompt = `Du bist ein reiner Extraktionsdienst fuer Event-Scoping.
 Extrahiere nur belastbare Fakten aus dem folgenden Nutzerverlauf.
 Ignoriere Beispielantworten, Prompts, UI-Texte, Fragen des Assistenten und Annahmen.
+Ignoriere Platzhalter wie "Noch offen", "Noch zu bestaetigen" oder generische Rollen wie "Assistent".
+Wenn im Text ein echter Eventtitel in Anfuehrungszeichen oder nach "Eventname", "Eventtitel" oder "Arbeitstitel" genannt wird, uebernimm nur diesen Titel und nicht den restlichen Satz.
+Uebernimm als Budget nur konkrete Zahlen, Bereiche oder eindeutig "Noch offen".
+Uebernimm als Support-Level nur Basic, Standard, Extended, Premium, 24/7 oder Doors-open critical.
 Wenn eine Information nicht explizit genannt wurde, gib einen leeren String oder ein leeres Array zurueck.
 Antworte ausschliesslich mit gueltigem JSON ohne Markdown, ohne Erklaerung, ohne Tags.
 
@@ -635,6 +1572,9 @@ function inferEventName(transcript) {
     /\bdas event\s+[„"]([^"\n“”]+)[“”"]/i,
     /\bevent adı\s*:?\s*([^\n,.;]+)/i,
     /\bevent adi\s*:?\s*([^\n,.;]+)/i,
+    /\betkinlik adı\s*:?\s*([^\n,.;]+)/i,
+    /\betkinlik adi\s*:?\s*([^\n,.;]+)/i,
+    /\betkinlik\s*[:=-]\s*([^\n,.;]+)/i,
     /\bevent name\s*[:=-]\s*([^\n,.;]+)/i,
     /\beventname\s*[:=-]\s*([^\n,.;]+)/i,
     /\bveranstaltung\s*[:=-]\s*([^\n,.;]+)/i,
@@ -645,7 +1585,7 @@ function inferEventName(transcript) {
     /\bwir planen\s+(?:den|das)\s+(.+?)\s+am\b/i,
     /\b(?:das|unser|mein)\s+event\s+(?:heisst|heißt|ist)\s+([^\n,.;]+)/i,
     /\bname der veranstaltung\s*:?\s*([^\n,.;]+)/i,
-    /\b(?:event adı|event adi)\s+([^\n,.;]+)/i
+    /\b(?:event adı|event adi|etkinlik adı|etkinlik adi)\s+([^\n,.;]+)/i
   ]);
 }
 
@@ -653,6 +1593,8 @@ function inferLocation(transcript) {
   return pickLastMatch(transcript, [
     /\badresi\s*:?\s*([^\n]+)/i,
     /\badresse\s*:?\s*([^\n]+)/i,
+    /\byer\s*:?\s*([^\n]+)/i,
+    /\bmekan\s*:?\s*([^\n]+)/i,
     /\bveranstaltungsort\s*:\s*([^\n.;]+)/i,
     /\bevent-?ort\s*:\s*([^\n.;]+)/i,
     /\bvenue\s*:\s*([^\n.;]+)/i,
@@ -673,12 +1615,13 @@ function inferEventDates(transcript) {
   return pickLastMatch(transcript, [
     /\beventdatum\s*:?\s*([^\n]+)/i,
     /\beventdaten\s*:?\s*([^\n]+)/i,
+    /\btarih\s*:?\s*([^\n]+)/i,
     /\bdatum\s*:?\s*([^\n]+)/i,
     /\bam\s+(\d{1,2}\.\s*(?:und|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4})/i,
     /\bam\s+(\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4}\s*(?:und|bis|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4})/i,
-    /\bvon\s+(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d{1,2}\.\d{2,4})/i,
+    /\bvon\s+(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d.1,2}\.\d{2,4})/i,
     /\b(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d{1,2}\.\d{2,4})/i,
-    /\b(\d+\s*(?:tag|tage))\b/i
+    /\b(\d+\s*(?:tag|tage|gün|gun))\b/i
   ]);
 }
 
@@ -686,11 +1629,17 @@ function inferAttendees(transcript) {
   return pickLastMatch(transcript, [
     /\berwartete teilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
     /\bteilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
+    /\bkatılımcı sayısı\s*:?\s*([^\n,.;]+)/i,
+    /\bkatilimci sayisi\s*:?\s*([^\n,.;]+)/i,
     /\bteilnehmer\s*:?\s*([^\n,.;]+)/i,
+    /\bkatılımcı\s*:?\s*([^\n,.;]+)/i,
+    /\bkatilimci\s*:?\s*([^\n,.;]+)/i,
     /\bpax\s*:?\s*([^\n,.;]+)/i,
-    /\brund\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmende|pax|gaeste|gäste|personen)\b/i,
-    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen)\b/i,
-    /\bmit\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmenden|pax|gaesten|gästen|personen)\b/i
+    /\bkişi\s*:?\s*([^\n,.;]+)/i,
+    /\bkisi\s*:?\s*([^\n,.;]+)/i,
+    /\brund\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmende|pax|gaeste|gäste|personen|kişi|kisi)\b/i,
+    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen|kişi|kisi)\b/i,
+    /\bmit\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmenden|pax|gaesten|gästen|personen|kişi|kisi)\b/i
   ]);
 }
 
@@ -755,15 +1704,15 @@ function inferTravelScope(transcript) {
 
 function inferBudget(transcript) {
   const direct = pickLastMatch(transcript, [
-    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro))\b/i,
-    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?)\b/i
+    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen|bütçe|butce)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro|tl|try))\b/i,
+    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen|bütçe|butce)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?)\b/i
   ]);
 
   if (direct) {
     return direct.replace(/\s+/g, ' ').trim();
   }
 
-  const freeText = transcript.match(/\bwir haben\s+ein\s+budget\s+von\s+(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro)?)\b/i);
+  const freeText = transcript.match(/\bwir haben\s+ein\s+budget\s+von\s+(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro|tl|try)?)\b/i);
   return freeText?.[1]?.replace(/\s+/g, ' ').trim() || '';
 }
 
@@ -798,14 +1747,17 @@ function parseBudgetValue(value) {
 
 function inferBriefFromTranscript(transcript, rawBrief = {}) {
   const normalizedTranscript = normalizeTranscriptForExtraction(transcript);
+  const structured = parseStructuredFieldBlocks(normalizedTranscript);
   const eventName = firstNonEmpty(
     rawBrief.eventName,
-    extractLabeledValue(normalizedTranscript, ['Event Name', 'Eventname', 'Veranstaltung', 'Event']),
+    structured.values.eventName,
+    normalizeEventNameValue(extractLabeledValue(normalizedTranscript, ['Event Name', 'Eventname', 'Veranstaltungstitel', 'Eventtitel', 'Arbeitstitel'])),
     inferEventName(normalizedTranscript)
   );
   const eventLocation = firstNonEmpty(
     rawBrief.eventLocation,
-    extractLabeledValue(normalizedTranscript, ['Veranstaltungsort', 'Event-Ort', 'Ort', 'Location']),
+    structured.values.eventLocation,
+    extractLabeledValue(normalizedTranscript, ['Veranstaltungsort', 'Event-Ort', 'Ort', 'Ort / Venue', 'Ort / Venues', 'Location', 'Venue']),
     inferLocation(normalizedTranscript)
   );
   const eventDates = firstNonEmpty(
@@ -815,16 +1767,19 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
   );
   const attendees = firstNonEmpty(
     rawBrief.attendees,
+    structured.values.attendees,
     extractLabeledValue(normalizedTranscript, ['Erwartete Teilnehmerzahl', 'Teilnehmerzahl', 'Teilnehmer', 'Attendees', 'Pax']),
     inferAttendees(normalizedTranscript)
   );
   const budget = firstNonEmpty(
     rawBrief.budget,
+    structured.values.budget,
     extractLabeledValue(normalizedTranscript, ['Budget', 'Rahmenbudget', 'Maximalbudget', 'Budgetrahmen']),
     inferBudget(normalizedTranscript)
   );
   const supportLevel = firstNonEmpty(
     rawBrief.supportLevel,
+    structured.values.supportLevel,
     extractLabeledValue(normalizedTranscript, ['Support-Level', 'Supportlevel']),
     inferSupportLevel(normalizedTranscript)
   );
@@ -875,7 +1830,7 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
   ]));
 
   return {
-    customerName: firstNonEmpty(rawBrief.customerName, extractLabeledValue(normalizedTranscript, ['Kunde', 'Customer', 'Ansprechpartner', 'KUNDE \\(PO\\)'])),
+    customerName: firstNonEmpty(rawBrief.customerName, structured.values.customerName, extractLabeledValue(normalizedTranscript, ['Kunde', 'Customer', 'Ansprechpartner', 'KUNDE \\(PO\\)'])),
     eventName,
     eventLocation,
     eventDates,
@@ -887,14 +1842,17 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
     onsiteDays,
     softwareNeeds,
     rentalNeeds,
-    supportLevel: supportLevel || (/24\/7/i.test(normalizedTranscript) ? '24/7' : /extended/i.test(normalizedTranscript) ? 'Extended' : ''),
+    supportLevel: normalizeSupportLevelValue(supportLevel || (/24\/7/i.test(normalizedTranscript) ? '24/7' : /extended/i.test(normalizedTranscript) ? 'Extended' : '')),
     travelScope,
     integrations: Array.from(new Set([...(Array.isArray(rawBrief.integrations) ? rawBrief.integrations : []), ...parseIntegrationList(normalizedTranscript)])),
     badgeType,
     serviceModules: Array.isArray(rawBrief.serviceModules) ? rawBrief.serviceModules : [],
     costDrivers: Array.isArray(rawBrief.costDrivers) ? rawBrief.costDrivers : [],
     assumptions: Array.isArray(rawBrief.assumptions) ? rawBrief.assumptions : [],
-    missingItems: Array.isArray(rawBrief.missingItems) ? rawBrief.missingItems : [],
+    missingItems: Array.from(new Set([
+      ...(Array.isArray(rawBrief.missingItems) ? rawBrief.missingItems : []),
+      ...structured.validationErrors.map(({ field }) => `Unklare Feldzuordnung fuer ${field}`)
+    ])),
     nextStep: String(rawBrief.nextStep ?? '').trim()
   };
 }
@@ -1052,8 +2010,8 @@ function formatEuro(value) {
 }
 
 function hasExplicitPricing(transcript) {
-  return /(\d[\d.,]*)\s*(€|eur|euro|usd|\$|pro\s*(tag|stunde|teilnehmer|geraet|gerät|person|nacht|session))/i.test(transcript)
-    || /\b(budget|rahmenbudget|maximalbudget|budgetrahmen)\b/i.test(transcript);
+  return /(\d[\d.,]*)\s*(€|eur|euro|tl|try|usd|\$|pro\s*(tag|stunde|teilnehmer|geraet|gerät|person|nacht|session))/i.test(transcript)
+    || /\b(budget|rahmenbudget|maximalbudget|budgetrahmen|bütçe|butce)\b/i.test(transcript);
 }
 
 function createPosition(label, quantity, unit, rate, pricingEnabled) {
@@ -1654,6 +2612,231 @@ async function handleApi(req, res) {
     return true;
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/admin/translations') {
+    const target = String(url.searchParams.get('target') ?? '').trim().toLowerCase();
+
+    if (!ADMIN_TRANSLATE_ALLOWED_TARGETS.has(target)) {
+      sendJson(res, 400, { message: 'Unsupported admin locale target.' });
+      return true;
+    }
+
+    const copy = getAdminTranslation(target);
+    if (!copy) {
+      sendJson(res, 404, { message: 'Translation not found.' });
+      return true;
+    }
+
+    sendJson(res, 200, { target, copy });
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/admin/translations/overview') {
+    sendJson(res, 200, {
+      admin: getAdminTranslationsOverview(),
+      frontend: getFrontendTranslationsOverview()
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/admin/translate-jobs') {
+    const rawBody = await readBody(req);
+    const body = rawBody ? JSON.parse(rawBody) : {};
+    const target = String(body.target ?? '').trim().toLowerCase();
+    const bundle = body.bundle;
+
+    if (!ADMIN_TRANSLATE_ALLOWED_TARGETS.has(target)) {
+      sendJson(res, 400, { message: 'Unsupported admin locale target.' });
+      return true;
+    }
+
+    if (!isPlainObject(bundle)) {
+      sendJson(res, 400, { message: 'bundle is required.' });
+      return true;
+    }
+
+    try {
+      const existing = getAdminTranslation(target);
+      if (existing) {
+        const job = createAdminTranslationJob(target);
+        job.status = 'completed';
+        job.progress = 100;
+        job.message = 'Localization already available.';
+        job.copy = existing;
+        adminTranslationJobs.set(job.id, job);
+        sendJson(res, 200, { job });
+        return true;
+      }
+
+      const job = createAdminTranslationJob(target);
+      adminTranslationJobs.set(job.id, job);
+      void runAdminTranslationJob(job, bundle);
+      sendJson(res, 202, { job });
+    } catch (error) {
+      sendJson(res, 500, {
+        message: error instanceof Error ? error.message : 'Admin translation failed.'
+      });
+    }
+
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname.startsWith('/api/admin/translate-jobs/')) {
+    const jobId = decodeURIComponent(url.pathname.replace('/api/admin/translate-jobs/', ''));
+    const job = adminTranslationJobs.get(jobId);
+
+    if (!job) {
+      sendJson(res, 404, { message: 'Translation job not found.' });
+      return true;
+    }
+
+    sendJson(res, 200, { job });
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/frontend/translations') {
+    await ensureNightlyFrontendTranslationValidation();
+    const target = String(url.searchParams.get('target') ?? '').trim().toLowerCase();
+
+    if (!FRONTEND_TRANSLATE_ALLOWED_TARGETS.has(target)) {
+      sendJson(res, 400, { message: 'Unsupported frontend locale target.' });
+      return true;
+    }
+
+    const entry = getFrontendTranslationEntry(target);
+    const copy = getFrontendTranslation(target);
+    if (!entry || !copy) {
+      sendJson(res, 404, { message: 'Frontend localization not found.' });
+      return true;
+    }
+
+    sendJson(res, 200, { target, copy, meta: entry.meta ?? null });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/frontend/translations') {
+    const target = String(url.searchParams.get('target') ?? '').trim().toLowerCase();
+    const rawBody = await readBody(req);
+    const body = rawBody ? JSON.parse(rawBody) : {};
+    const copy = body.copy;
+
+    if (!FRONTEND_TRANSLATE_ALLOWED_TARGETS.has(target)) {
+      sendJson(res, 400, { message: 'Unsupported frontend locale target.' });
+      return true;
+    }
+
+    if (!isPlainObject(copy)) {
+      sendJson(res, 400, { message: 'copy is required.' });
+      return true;
+    }
+
+    saveFrontendTranslation(target, copy, {
+      manual: true
+    });
+
+    const entry = getFrontendTranslationEntry(target);
+    sendJson(res, 200, {
+      target,
+      copy: getFrontendTranslation(target),
+      meta: entry?.meta ?? null
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/frontend/translations/document') {
+    const target = String(url.searchParams.get('target') ?? '').trim().toLowerCase();
+    const rawBody = await readBody(req);
+    const body = rawBody ? JSON.parse(rawBody) : {};
+    const key = String(body.key ?? '').trim();
+    const nextValue = body.value;
+
+    if (!FRONTEND_TRANSLATE_ALLOWED_TARGETS.has(target)) {
+      sendJson(res, 400, { message: 'Unsupported frontend locale target.' });
+      return true;
+    }
+
+    if (!key) {
+      sendJson(res, 400, { message: 'key is required.' });
+      return true;
+    }
+
+    const currentCopy = getFrontendTranslation(target) ?? getSiteContent();
+    const nextCopy = normalizeSiteContent(setValueAtPath(currentCopy, key.split('.'), nextValue));
+    saveFrontendTranslation(target, nextCopy, {
+      manual: true,
+      updatedDocumentKey: key
+    });
+
+    const entry = getFrontendTranslationEntry(target);
+    sendJson(res, 200, {
+      target,
+      copy: getFrontendTranslation(target),
+      meta: entry?.meta ?? null
+    });
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/frontend/translations/overview') {
+    await ensureNightlyFrontendTranslationValidation();
+    sendJson(res, 200, getFrontendTranslationsOverview());
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/frontend/translate-jobs') {
+    const rawBody = await readBody(req);
+    const body = rawBody ? JSON.parse(rawBody) : {};
+    const target = String(body.target ?? '').trim().toLowerCase();
+    const bundle = body.bundle;
+
+    if (!FRONTEND_TRANSLATE_ALLOWED_TARGETS.has(target)) {
+      sendJson(res, 400, { message: 'Unsupported frontend locale target.' });
+      return true;
+    }
+
+    if (!isPlainObject(bundle)) {
+      sendJson(res, 400, { message: 'bundle is required.' });
+      return true;
+    }
+
+    try {
+      const existing = getFrontendTranslationEntry(target);
+      const currentSourceHash = createContentHash(getSiteContent());
+      if (existing?.meta?.sourceHash === currentSourceHash && isPlainObject(existing.copy)) {
+        const job = createFrontendTranslationJob(target);
+        job.status = 'completed';
+        job.progress = 100;
+        job.message = 'Frontend localization already available.';
+        job.copy = sanitizeTranslationObject(existing.copy);
+        frontendTranslationJobs.set(job.id, job);
+        sendJson(res, 200, { job });
+        return true;
+      }
+
+      const job = createFrontendTranslationJob(target);
+      frontendTranslationJobs.set(job.id, job);
+      void runFrontendTranslationJob(job, bundle);
+      sendJson(res, 202, { job });
+      return true;
+    } catch (error) {
+      sendJson(res, 500, {
+        message: error instanceof Error ? error.message : 'Frontend localization failed.'
+      });
+      return true;
+    }
+  }
+
+  if (req.method === 'GET' && url.pathname.startsWith('/api/frontend/translate-jobs/')) {
+    const jobId = decodeURIComponent(url.pathname.replace('/api/frontend/translate-jobs/', ''));
+    const job = frontendTranslationJobs.get(jobId);
+
+    if (!job) {
+      sendJson(res, 404, { message: 'Frontend translation job not found.' });
+      return true;
+    }
+
+    sendJson(res, 200, { job });
+    return true;
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/ai-explorer/promptize') {
     const rawBody = await readBody(req);
     const body = rawBody ? JSON.parse(rawBody) : {};
@@ -1853,6 +3036,10 @@ async function createAppServer() {
           res.end(fs.readFileSync(faviconPath));
           return;
         }
+
+        res.writeHead(204);
+        res.end();
+        return;
       }
 
       if ((req.url ?? '').startsWith('/api/')) {

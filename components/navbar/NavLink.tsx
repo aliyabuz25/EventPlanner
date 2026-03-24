@@ -41,16 +41,18 @@ const NavLink: React.FC<NavLinkProps> = ({
     <a
       href={href}
       onClick={onClick}
-      className={`text-[14px] font-semibold transition-all flex items-center tracking-tight ${
+      className={`relative py-1 text-[15px] lg:text-[16px] font-semibold transition-all flex items-center tracking-tight group ${
         isActive
-        ? 'text-sap-blue dark:text-white' 
-        : 'text-slate-600 dark:text-slate-400 hover:text-sap-gold dark:hover:text-sap-gold'
+        ? 'text-sap-blue dark:text-dark-text-primary' 
+        : 'text-slate-600 dark:text-dark-text-secondary hover:text-sap-blue dark:hover:text-dark-text-primary'
       }`}
     >
-      {name}
+      <span className="relative z-10">{name}</span>
+      <span className={`absolute bottom-0 left-0 h-[2px] bg-sap-gold transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+      
       {hasDropdown && (
         <svg 
-          className={`ml-1 w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`ml-1.5 w-3 h-3 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"

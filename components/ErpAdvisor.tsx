@@ -129,6 +129,7 @@ const RenderMessageText: React.FC<{ text: string }> = ({ text }) => {
 
 const starterPromptsByPhase: Record<string, string[]> = {
   Basisdaten: [
+    'İstanbulda Tesla Brand Experience Galata, 12 Nisan 2026. 500 katılımcı, Print-on-Demand Check-in, 15.000 EUR bütçe.',
     'Tech-Konferenz in Berlin, 3 Tage, 1.200 pax, Print-on-Demand an 3 Eingängen, 12 Counter.',
     'Corporate Event in München, 1 Tag, 450 pax, klassischer Check-in (vorproduzierte Badges).'
   ],
@@ -160,7 +161,7 @@ const starterPromptsByPhase: Record<string, string[]> = {
 
 const initialMessage = `Guten Tag. Ich bin Ihr FastLane Assistant (Pre-Sales KI-Agent).
 
-Ich führe mit Ihnen ein strukturiertes Angebots-Interview durch, um Ihr Event-Setup (Software, PM, Miettechnik, Verbrauchsmaterial, Support & Logistik) zu erfassen. 
+Ich führe mit Ihnen ein strukturiertes Angebots-Interview durch, um Ihr Event-Setup (Software, PM, Miettechnik, Verbrauchsmaterial, Support & Logistik) zu erfassen. Unterstützte Sprachen: Deutsch, Englisch, Türkisch.
 
 Zusammengefasst generiere ich daraus:
 - Ein modulares Event-Briefing JSON
@@ -170,7 +171,7 @@ Zusammengefasst generiere ich daraus:
 
 Starten wir mit **Phase A (Event-Basisdaten)**: Wie heißt das Event, wo findet es statt, Datum, erwartete Teilnehmerzahl, Aufbau/Abbau-Zeiten, wie sieht Ihr Check-in-Szenario aus und gibt es bereits ein Budget oder einen Budgetrahmen?`;
 
-const consultingLeadMessage = 'Beschreiben Sie Ihr Ziel fuer den KI-Agenten oder Ihre Frage zu Architektur, Produktkatalog, Preislogik, Angebotsvarianten, Interview-Flow, Knowledge Cards, Budgetlogik oder CRM-Uebergabe. Das Studio antwortet dann als fachlicher Pre-Sales- und Solution-Consulting-Assistent.';
+const consultingLeadMessage = 'Beschreiben Sie Ihr Ziel fuer den KI-Agenten oder Ihre Frage zu Architektur, Produktkatalog, Preislogik, Angebotsvarianten, Interview-Flow, Knowledge Cards, Budgetlogik oder CRM-Uebergabe. Der Workspace antwortet dann als fachlicher Pre-Sales- und Solution-Consulting-Assistent.';
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('de-DE', {
@@ -199,12 +200,14 @@ const escapeXml = (value: string) =>
     .replace(/'/g, '&apos;');
 
 const LockedPanel: React.FC<{ title: string; description: string }> = ({ title, description }) => (
-  <div className="rounded-[1.5rem] bg-[#fffaf0] dark:bg-white/[0.03] p-4 shadow-[0_12px_30px_-24px_rgba(32,41,57,0.28)]">
-    <div className="flex items-center gap-2 mb-2">
-      <Lock className="w-4 h-4 text-slate-400" />
-      <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</div>
+  <div className="rounded-[2rem] bg-slate-50 dark:bg-dark-surface p-6 border border-slate-200 dark:border-white/10 shadow-sm transition-all group hover:border-sap-gold/30">
+    <div className="flex items-center gap-3 mb-3">
+      <div className="w-8 h-8 rounded-xl bg-slate-200/50 dark:bg-white/5 flex items-center justify-center">
+        <Lock className="w-4 h-4 text-slate-400 group-hover:text-sap-gold transition-colors" />
+      </div>
+      <div className="text-[15px] font-black text-slate-800 dark:text-dark-text-primary tracking-tight">{title}</div>
     </div>
-    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{description}</p>
+    <p className="text-[13px] text-slate-500 dark:text-dark-text-secondary leading-relaxed font-bold">{description}</p>
   </div>
 );
 
@@ -215,18 +218,18 @@ const StudioSection: React.FC<{
   actions?: React.ReactNode;
   children: React.ReactNode;
 }> = ({ eyebrow, title, description, actions, children }) => (
-  <section className="p-4 sm:p-5">
-    <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+  <section className="p-6 md:p-10">
+    <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 flex-1">
         {eyebrow ? (
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{eyebrow}</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-sap-blue/60 dark:text-sap-blue/80 mb-2.5">{eyebrow}</div>
         ) : null}
-        <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{title}</div>
+        <div className="text-2xl font-black text-slate-900 dark:text-dark-text-primary tracking-tight uppercase">{title}</div>
         {description ? (
-          <div className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{description}</div>
+          <div className="mt-2 text-[13px] leading-relaxed text-slate-500 dark:text-dark-text-secondary font-bold max-w-2xl">{description}</div>
         ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2 lg:justify-end">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-3 lg:justify-end">{actions}</div> : null}
     </div>
     {children}
   </section>
@@ -253,10 +256,10 @@ const ConsoleSection: React.FC<{
 );
 
 const toolbarButtonClass =
-  'inline-flex min-h-10 items-center justify-center rounded-full px-3.5 py-2 text-xs font-semibold shadow-sm transition whitespace-nowrap';
+  'inline-flex min-h-12 items-center justify-center rounded-2xl px-5 py-2.5 text-xs font-bold shadow-sm transition-all whitespace-nowrap active:scale-95';
 
-const subtleToolbarButtonClass = `${toolbarButtonClass} bg-white/80 text-slate-700 hover:text-sap-blue`;
-const primaryToolbarButtonClass = `${toolbarButtonClass} bg-sap-blue text-white hover:bg-sap-blue/90`;
+const subtleToolbarButtonClass = `${toolbarButtonClass} bg-white dark:bg-dark-surface/60 text-slate-700 dark:text-dark-text-primary border border-slate-200 dark:border-white/5 hover:border-sap-blue hover:text-sap-blue dark:hover:text-sap-blue shadow-[0_8px_20px_-15px_rgba(0,0,0,0.1)]`;
+const primaryToolbarButtonClass = `${toolbarButtonClass} bg-sap-blue text-white hover:bg-sap-blue/90 shadow-[0_12px_24px_-12px_rgba(0,30,70,0.4)]`;
 
 const structuredFields: Array<{ key: keyof StructuredDraft; label: string; placeholder: string; rows?: number }> = [
   { key: 'customerName', label: 'Kunde / PO', placeholder: 'z.B. Laura Demir' },
@@ -373,6 +376,14 @@ const buildLocalEasyExpansionPrompt = (seed: string) => {
 
 const inferEasyPromptEventName = (seed: string) => {
   const normalized = String(seed ?? '');
+  const quotedMatch = normalized.match(/[„"]([^"\n“”]{3,80})[“”"]/);
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1].trim();
+  }
+  const explicitMatch = normalized.match(/\b(?:eventname|eventtitel|arbeitstitel)\s*[:=-]?\s*([^\n.,;]{3,80})/i);
+  if (explicitMatch?.[1]) {
+    return explicitMatch[1].trim();
+  }
   if (/tesla/i.test(normalized) && /galata|istanbul/i.test(normalized)) {
     return 'Tesla Brand Experience Galata';
   }
@@ -384,6 +395,17 @@ const inferEasyPromptEventName = (seed: string) => {
 
 const inferEasyPromptLocation = (seed: string) => {
   const normalized = String(seed ?? '');
+  const explicitMatch = normalized.match(/\b(?:ort|venue|location)\s*[:=-]?\s*([^\n]{3,100})/i);
+  if (explicitMatch?.[1]) {
+    return explicitMatch[1].trim().replace(/[.]+$/g, '');
+  }
+  const istanbulVenueMatch = normalized.match(/\bin\s+Istanbul(?:,\s*([A-Za-zÇĞİÖŞÜçğıöşü.\- ]+))?(?:\s*\(([^)]+)\))?/i);
+  if (istanbulVenueMatch) {
+    const parts = ['Istanbul'];
+    if (istanbulVenueMatch[1]) parts.push(istanbulVenueMatch[1].trim());
+    if (istanbulVenueMatch[2]) parts.push(`(${istanbulVenueMatch[2].trim()})`);
+    return `${parts.join(', ')}, Türkei`;
+  }
   if (/galata/i.test(normalized) && /istanbul/i.test(normalized)) {
     return 'Galata, Istanbul, Türkei';
   }
@@ -402,6 +424,11 @@ const inferEasyPromptAttendees = (seed: string) => {
   return match[3] || '';
 };
 
+const inferEasyPromptBudget = (seed: string) => {
+  const match = String(seed ?? '').match(/(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:TRY|TL|EUR|EURO|€))/i);
+  return match?.[1]?.replace(/\s+/g, ' ').trim() || '';
+};
+
 const buildDeterministicEasyPrompt = (seed: string) => {
   const cleanSeed = String(seed ?? '')
     .replace(/\s+/g, ' ')
@@ -410,46 +437,39 @@ const buildDeterministicEasyPrompt = (seed: string) => {
   if (!cleanSeed) return '';
 
   const normalizedSeed = cleanSeed.endsWith('.') ? cleanSeed : `${cleanSeed}.`;
-  const lowerSeed = cleanSeed.toLowerCase();
   const eventName = inferEasyPromptEventName(cleanSeed);
   const eventLocation = inferEasyPromptLocation(cleanSeed);
   const attendeeHint = inferEasyPromptAttendees(cleanSeed);
+  const budgetHint = inferEasyPromptBudget(cleanSeed);
 
-  const scenarioLine = /badge|check-in|walk-?in|einlass/i.test(cleanSeed)
-    ? 'Check-in-Szenario: Schneller Check-in mit Badge-Druck, Walk-ins und Besuchersteuerung.'
-    : 'Check-in-Szenario: Noch zu definieren, voraussichtlich mit registriertem Check-in und moeglichen Walk-ins.';
-  const softwareLine = /software|scanning|lead-capture|integration|reporting/i.test(cleanSeed)
-    ? 'Software: Teilnehmermanagement, Check-in, Badge-Druck, Scanning und bei Bedarf Lead-Capture bzw. Integrationen.'
-    : 'Software: Teilnehmermanagement, Check-in, Badge-Druck, Reporting und moegliche Integrationen mitdenken.';
-  const pmLine = 'Projektmanagement: Vorbereitung, Abstimmungen, Testlauf und operative Detailplanung beruecksichtigen.';
-  const rentalLine = /ipad|tablet|drucker|scanner|router|lte|miettechnik|hardware/i.test(cleanSeed)
-    ? 'Miettechnik: Tablets, Badge-Drucker, Scanner und gegebenenfalls Netzwerk-Backup einplanen.'
-    : 'Miettechnik: Voraussichtlichen Bedarf an Tablets, Badge-Druckern, Scannern und Backup-Konnektivitaet pruefen.';
-  const consumablesLine = 'Verbrauchsmaterial: Badges, Lanyards, Halter, Druckmaterialien und Materialreserve beruecksichtigen.';
-  const supportLine = /support|onsite|vor ort|techniker|supervisor/i.test(cleanSeed)
-    ? 'Support vor Ort: Technischen Vor-Ort-Support passend zum Besucheraufkommen dimensionieren.'
-    : 'Support vor Ort: Geeignetes Support-Level fuer Peak-Zeiten und Eventbetrieb einplanen.';
-  const logisticsLine = /hotel|reise|transport|spedition|logistik/i.test(cleanSeed)
-    ? 'Transport / Reise / Hotel: Reise-, Hotel-, Transport- und Logistikbedarf im Angebot abbilden.'
-    : 'Transport / Reise / Hotel: Relevante Logistik-, Reise- und Hotelbedarfe mitpruefen.';
-  const budgetLine = /budget|rahmenbudget|maximalbudget/i.test(cleanSeed)
-    ? 'Budget: Vorhandenen Budgetrahmen in der Angebotslogik beruecksichtigen.'
-    : 'Budget: Noch offen, soll in der weiteren Planung abgestimmt werden.';
+  const operationalParagraph = [
+    /badge|check-in|walk-?in|einlass/i.test(cleanSeed)
+      ? 'Fuer den Einlass sind ein schneller Check-in, Badge-Druck, Walk-ins und eine saubere Besuchersteuerung wichtig.'
+      : 'Der Check-in und die Besuchersteuerung sollen operativ sauber geplant werden.',
+    /software|scanning|lead-capture|integration|reporting/i.test(cleanSeed)
+      ? 'Softwareseitig sollen Teilnehmermanagement, Check-in, Badge-Druck, Scanning und bei Bedarf Lead-Capture oder Integrationen beruecksichtigt werden.'
+      : 'Softwareseitig sollen Teilnehmermanagement, Check-in, Badge-Druck, Reporting und moegliche Integrationen mitgedacht werden.',
+    'Projektmanagement, Vorbereitung, Abstimmungen, Testlauf und operative Detailplanung sollen im Angebot enthalten sein.',
+    /ipad|tablet|drucker|scanner|router|lte|miettechnik|hardware/i.test(cleanSeed)
+      ? 'Fuer die Miettechnik sollen Tablets, Badge-Drucker, Scanner und gegebenenfalls Netzwerk-Backup eingeplant werden.'
+      : 'Der voraussichtliche Bedarf an Tablets, Badge-Druckern, Scannern und Backup-Konnektivitaet soll geprueft werden.',
+    'Auch Verbrauchsmaterialien wie Badges, Lanyards, Halter, Druckmaterialien und Materialreserven sollen beruecksichtigt werden.',
+    /support|onsite|vor ort|techniker|supervisor|extended/i.test(cleanSeed)
+      ? 'Ein passendes Support-Level mit technischer Vor-Ort-Betreuung soll mitkalkuliert werden.'
+      : 'Das geeignete Support-Level fuer Peak-Zeiten und Eventbetrieb soll mitdefiniert werden.',
+    /hotel|reise|transport|spedition|logistik/i.test(cleanSeed)
+      ? 'Zusaetzlich sollen Reise-, Hotel-, Transport- und Logistikbedarfe im Angebot abgebildet werden.'
+      : 'Relevante Reise-, Transport-, Hotel- und Logistikanforderungen sollen mitgeprueft werden.'
+  ].join(' ');
 
   return [
-    eventName ? `Eventname: ${eventName}.` : 'Eventname: Noch zu bestaetigen.',
-    eventLocation ? `Ort / Venue: ${eventLocation}.` : 'Ort / Venue: Noch zu bestaetigen.',
-    attendeeHint ? `Teilnehmerzahl: Ca. ${attendeeHint}.` : 'Teilnehmerzahl: Noch zu bestaetigen.',
+    eventName ? `Eventname: ${eventName}.` : '',
+    eventLocation ? `Ort / Venue: ${eventLocation}.` : '',
+    attendeeHint ? `Teilnehmerzahl: Ca. ${attendeeHint}.` : '',
+    budgetHint ? `Budget: ${budgetHint}.` : '',
     normalizedSeed,
-    scenarioLine,
-    softwareLine,
-    pmLine,
-    rentalLine,
-    consumablesLine,
-    supportLine,
-    logisticsLine,
-    budgetLine
-  ].join('\n');
+    operationalParagraph
+  ].filter(Boolean).join('\n');
 };
 
 const isAcceptableExpandedPrompt = (seed: string, prompt: string) => {
@@ -562,6 +582,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   });
   const [input, setInput] = useState('');
   const [inputMode, setInputMode] = useState<AiExplorerInputMode>('easy');
+  const [isModeStepComplete, setIsModeStepComplete] = useState(false);
   const [structuredDraft, setStructuredDraft] = useState<StructuredDraft>({
     customerName: '',
     eventName: '',
@@ -685,6 +706,14 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     ? consultingLeadMessage
     : (mergedBrief?.currentQuestion || initialMessage);
   const recentMessages = messages.slice(-4);
+  const isStepTwoLocked = !isModeStepComplete;
+  const currentModeLabel = !isModeStepComplete
+    ? 'Nicht gewaehlt'
+    : inputMode === 'easy'
+      ? 'Easy Mode'
+      : inputMode === 'prompt'
+        ? 'Prompt Mode'
+        : 'Consulting';
 
   useEffect(() => {
     if (!mergedBrief && !offer) return;
@@ -722,12 +751,12 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     });
   }, [mergedBrief, offer, structuredDraftTouched]);
 
-  const showServiceModules = currentPhaseIndex >= 1;
-  const showCostDrivers = currentPhaseIndex >= 2;
-  const showPricingOverview = currentPhaseIndex >= 3;
-  const showModuleDetails = currentPhaseIndex >= 4;
-  const showAssumptions = currentPhaseIndex >= 5;
-  const showKnowledgeCards = currentPhaseIndex >= 6;
+  const showServiceModules = !!offer?.modules?.length || currentPhaseIndex >= 1;
+  const showCostDrivers = !!offer?.costDrivers?.length || currentPhaseIndex >= 2;
+  const showPricingOverview = (!!offer?.subtotal && offer.subtotal > 0) || currentPhaseIndex >= 3;
+  const showModuleDetails = !!offer?.modules?.length || currentPhaseIndex >= 4;
+  const showAssumptions = !!offer?.assumptions?.length || currentPhaseIndex >= 5;
+  const showKnowledgeCards = !!offer?.knowledgeCards?.length || currentPhaseIndex >= 6;
 
   const buildStructuredPrompt = () => {
     const sections = [
@@ -1020,7 +1049,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     printWindow.document.write(`
       <html>
         <head>
-          <title>${escapeHtml(mergedBrief?.eventName || 'FastLane Studio Export')}</title>
+          <title>${escapeHtml(mergedBrief?.eventName || 'FastLane Workspace Export')}</title>
           <style>
             @page { size: A4; margin: 16mm; }
             * { box-sizing: border-box; }
@@ -1056,8 +1085,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           <div class="page">
             <div class="header">
               <div class="header-copy">
-                <div class="header-kicker">FastLane Studio Export</div>
-                <h1>${escapeHtml(mergedBrief?.eventName || 'FastLane Studio Export')}</h1>
+                <div class="header-kicker">FastLane Workspace Export</div>
+                <h1>${escapeHtml(mergedBrief?.eventName || 'FastLane Workspace Export')}</h1>
                 <div class="muted">Event-Brief, Angebotslogik, Varianten und operative Leitplanken.</div>
               </div>
               <div class="total-box">
@@ -1123,6 +1152,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     });
     setInput('');
     setInputMode('easy');
+    setIsModeStepComplete(false);
     setStructuredDraft({
       customerName: '',
       eventName: '',
@@ -1193,8 +1223,13 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     }));
   };
 
+  const handleSelectInputMode = (mode: AiExplorerInputMode) => {
+    setInputMode(mode);
+    setIsModeStepComplete(true);
+  };
+
   const openPromptReview = (prompt: string, notice?: string) => {
-    setInputMode('prompt');
+    handleSelectInputMode('prompt');
     setInput(prompt);
     setPendingPromptReview(prompt);
     if (notice) {
@@ -1213,6 +1248,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const handleSend = async (prefill?: string, modeOverride?: AiExplorerInputMode) => {
     const nextText = (prefill ?? input).trim();
     if (!nextText || isTyping) return;
+    if (!isModeStepComplete && !modeOverride) return;
     const effectiveMode = modeOverride ?? inputMode;
 
     setError(null);
@@ -1475,9 +1511,9 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 <button
                   key={mode.key}
                   type="button"
-                  onClick={() => setInputMode(mode.key)}
+                  onClick={() => handleSelectInputMode(mode.key)}
                   className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
-                    inputMode === mode.key
+                    inputMode === mode.key && isModeStepComplete
                       ? 'bg-sap-blue text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'
                   }`}
@@ -1487,11 +1523,13 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               ))}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {inputMode === 'easy'
-                ? 'Schritt fuer Schritt antworten'
-                : inputMode === 'prompt'
-                  ? 'Freien Event-Text direkt senden'
-                  : 'Architektur, Pricing-Logik und Agent-Konzept beraten lassen'}
+              {isStepTwoLocked
+                ? 'Zuerst Modus waehlen'
+                : inputMode === 'easy'
+                  ? 'Schritt fuer Schritt antworten'
+                  : inputMode === 'prompt'
+                    ? 'Freien Event-Text direkt senden'
+                    : 'Architektur, Pricing-Logik und Agent-Konzept beraten lassen'}
             </div>
           </div>
 
@@ -1513,16 +1551,19 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                   handleSend();
                 }
               }}
-              placeholder={inputMode === 'easy'
-                ? (mergedBrief?.currentQuestion || 'Geben Sie die Antwort fuer den aktuellen Schritt ein...')
-                : inputMode === 'prompt'
-                  ? 'z.B. Wir planen ein zweitaegiges Event in Berlin mit 800 Teilnehmern, Print-on-Demand, 8 Counter und Budgetrahmen von 25.000 EUR.'
-                  : 'z.B. Wie wuerdest du fuer Teilnehmermanagement einen KI-Agenten mit Event-Brief, Pricing Engine, Varianten, Knowledge Cards und CRM-Uebergabe aufsetzen?'}
-              className={`w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-3.5 sm:py-4 pl-4 sm:pl-6 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none shadow-sm scrollbar-hide ${inputMode === 'easy' ? 'h-[72px] sm:h-20' : 'h-[120px] sm:h-32'}`}
+              disabled={isStepTwoLocked}
+              placeholder={isStepTwoLocked
+                ? 'Waehlen Sie zuerst den Modus in Step 1.'
+                : inputMode === 'easy'
+                  ? (mergedBrief?.currentQuestion || 'Geben Sie die Antwort fuer den aktuellen Schritt ein...')
+                  : inputMode === 'prompt'
+                    ? 'z.B. Wir planen ein zweitaegiges Event in Berlin mit 800 Teilnehmern, Print-on-Demand, 8 Counter und Budgetrahmen von 25.000 EUR.'
+                    : 'z.B. Wie wuerdest du fuer Teilnehmermanagement einen KI-Agenten mit Event-Brief, Pricing Engine, Varianten, Knowledge Cards und CRM-Uebergabe aufsetzen?'}
+              className={`w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-3.5 sm:py-4 pl-4 sm:pl-6 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none shadow-sm scrollbar-hide disabled:cursor-not-allowed disabled:opacity-60 ${inputMode === 'easy' ? 'h-[72px] sm:h-20' : 'h-[120px] sm:h-32'}`}
             />
             <button
               onClick={() => handleSend()}
-              disabled={!input.trim() || isTyping}
+              disabled={isStepTwoLocked || !input.trim() || isTyping}
               className="absolute right-2.5 top-2.5 p-3.5 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-[1.25rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
             >
               <Send className="w-4 h-4" />
@@ -1540,98 +1581,118 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
   return (
     <div
-      className={`flex flex-col w-full ${embedded ? 'max-w-none mx-0 bg-transparent rounded-none shadow-none' : 'max-w-[1680px] mx-auto bg-[#fffdf7] dark:bg-[#0e1621] rounded-[1.5rem] lg:rounded-[2rem] shadow-[0_30px_80px_-35px_rgba(24,33,49,0.28)]'} overflow-hidden transition-all duration-500 ${
+      className={`flex flex-col w-full ${embedded ? 'max-w-none mx-0 bg-transparent rounded-none shadow-none' : 'max-w-[1600px] mx-auto bg-white dark:bg-dark-surface rounded-3xl lg:rounded-[2.5rem] shadow-2xl border border-slate-200/50 dark:border-white/10'} overflow-hidden transition-all duration-500 ${
         embedded ? 'h-full min-h-0' : 'h-full min-h-0'
       }`}
     >
       <div className={`h-[3px] sm:h-1 w-full bg-slate-200/60 dark:bg-white/[0.05] studio-progress-track transition-opacity duration-300 ${isTyping ? 'opacity-100' : 'opacity-0'}`}>
         {isTyping ? <div className="studio-progress-bar" /> : null}
       </div>
-      <div className="px-4 sm:px-6 md:px-8 py-3 bg-transparent dark:bg-transparent">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-[520px]">
-          <div className="px-3 py-2 min-h-[60px] flex flex-col justify-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Progress</div>
-            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{mergedBrief?.progressLabel || '0/7 Phasen'}</div>
+      <div className="px-6 sm:px-8 py-4 bg-transparent">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:max-w-[600px]">
+          <div className="px-4 py-3 min-h-[64px] flex flex-col justify-center bg-slate-50 dark:bg-dark-surface/40 rounded-2xl border border-slate-100 dark:border-white/5">
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-1">Progress</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-dark-text-primary tracking-tight">{mergedBrief?.progressLabel || '0/7 Phasen'}</div>
           </div>
-          <div className="px-3 py-2 min-h-[60px] flex flex-col justify-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Mode</div>
-            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-              {inputMode === 'easy' ? 'Guided Capture' : inputMode === 'prompt' ? 'Free Prompt' : 'Consulting'}
+          <div className="px-4 py-3 min-h-[64px] flex flex-col justify-center bg-slate-50 dark:bg-dark-surface/40 rounded-2xl border border-slate-100 dark:border-white/5">
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-1">Mode</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-dark-text-primary tracking-tight">{currentModeLabel}</div>
+          </div>
+          <div className="px-4 py-3 min-h-[64px] flex flex-col justify-center bg-slate-50 dark:bg-dark-surface/40 rounded-2xl border border-slate-100 dark:border-white/5">
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-1">Status</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-dark-text-primary tracking-tight">
+              {isTyping ? 'Analysiert...' : isStepTwoLocked ? 'Step 1 offen' : 'Bereit'}
             </div>
-          </div>
-          <div className="px-3 py-2 min-h-[60px] flex flex-col justify-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Status</div>
-            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{isTyping ? 'Analysiert...' : 'Bereit'}</div>
           </div>
         </div>
       </div>
-      <div className="px-4 sm:px-6 md:px-8 py-3 bg-transparent dark:bg-transparent">
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+      <div className="px-6 sm:px-8 py-5 bg-transparent overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-white/5">
+        <div className="flex gap-10 items-center min-w-max">
           {phases.map((phase, index) => {
             const isActive = phase === mergedBrief?.currentPhase || (!mergedBrief?.currentPhase && index === 0);
             const isDone = index < currentPhaseIndex;
             return (
-              <div key={phase} className={`px-3 py-3 sm:px-4 transition-all ${isActive ? 'bg-sap-blue/[0.05] shadow-[inset_0_0_0_1px_rgba(0,143,211,0.16)]' : isDone ? 'bg-emerald-50/65 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.12)] dark:bg-emerald-500/8 dark:shadow-[inset_0_0_0_1px_rgba(16,185,129,0.16)]' : 'bg-transparent shadow-[inset_0_0_0_1px_rgba(234,223,206,0.45)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]'}`}>
-                <div className="flex flex-col items-start gap-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${isActive ? 'bg-sap-blue text-white' : isDone ? 'bg-emerald-500 text-white' : 'bg-[#efe4ce] text-slate-600 dark:bg-white/10 dark:text-slate-300'}`}>
-                    {isDone ? <CheckCircle className="w-4 h-4" /> : index + 1}
-                  </div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white leading-tight break-words">{phase}</div>
+              <div 
+                key={phase} 
+                className={`group relative flex flex-col gap-1.5 transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}
+              >
+                <div className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${isActive ? 'text-sap-blue' : 'text-slate-500 dark:text-dark-text-secondary'}`}>
+                  {`0${index + 1}`}
                 </div>
+                <div className="flex items-center gap-3">
+                  <div className={`text-[12px] font-black uppercase tracking-[0.05em] ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-dark-text-secondary'}`}>
+                    {phase}
+                  </div>
+                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-sap-blue" />}
+                </div>
+                <div className={`absolute -bottom-5 left-0 right-0 h-[2px] transition-all duration-500 ${isActive ? 'bg-sap-blue scale-x-100' : 'bg-transparent scale-x-0 group-hover:bg-slate-300 dark:group-hover:bg-white/10 group-hover:scale-x-50'}`} />
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="grid xl:grid-cols-[minmax(0,0.92fr)_minmax(540px,1.08fr)] flex-1 min-h-0">
-        <section className="min-h-0 flex flex-col bg-transparent dark:bg-transparent">
+      <div className="grid lg:grid-cols-[1fr_minmax(320px,0.45fr)] xl:grid-cols-[1fr_minmax(420px,0.38fr)] gap-px flex-1 min-h-0 bg-slate-200/50 dark:bg-white/5">
+        <section className="min-h-0 flex flex-col bg-white dark:bg-dark-base border-r border-slate-200/60 dark:border-white/5">
           <div className="px-4 sm:px-6 md:px-8 pt-5 sm:pt-6 pb-4">
             <StudioSection
               eyebrow="Workspace"
               title="Aktuelle Eingabe"
               description={inputMode === 'consulting'
-                ? 'Nutzen Sie das Studio fuer Systemarchitektur, Preislogik und Agent-Konzeption.'
+                ? 'Nutzen Sie den Workspace fuer Systemarchitektur, Preislogik und Agent-Konzeption.'
                 : 'Antworten Sie direkt auf die aktuelle Phase oder senden Sie einen kompletten Briefing-Text.'}
             >
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center flex-shrink-0">
-                  <ChevronRight className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <ChevronRight className="w-5 h-5" />
                 </div>
-                <div className="text-sm text-slate-700 dark:text-slate-200">{leadQuestionText}</div>
+                <div className="text-[15px] font-bold text-slate-800 dark:text-dark-text-primary leading-relaxed">{leadQuestionText}</div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="inline-flex w-fit rounded-full bg-[#fff8ec] dark:bg-white/[0.03] p-1 shadow-[inset_0_0_0_1px_rgba(234,223,206,0.7)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-                  {([
-                    { key: 'easy', label: 'Easy Mode' },
-                    { key: 'prompt', label: 'Prompt Mode' },
-                    { key: 'consulting', label: 'Consulting' }
-                  ] as const).map((mode) => (
-                    <button
-                      key={mode.key}
-                      type="button"
-                      onClick={() => setInputMode(mode.key)}
-                      className={`rounded-full px-3.5 py-2 text-[11px] font-semibold transition-colors ${
-                        inputMode === mode.key
-                          ? 'bg-sap-blue text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
+              <div className="mt-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-sap-blue">01 / MODE</div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { key: 'easy', label: 'EASY' },
+                      { key: 'prompt', label: 'PROMPT' },
+                      { key: 'consulting', label: 'CONSULTING' }
+                    ] as const).map((mode) => (
+                      <button
+                        key={mode.key}
+                        type="button"
+                        onClick={() => handleSelectInputMode(mode.key)}
+                        className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
+                          inputMode === mode.key && isModeStepComplete
+                            ? 'bg-sap-blue border-sap-blue text-white shadow-lg'
+                            : 'bg-transparent border-slate-200 dark:border-white/10 text-slate-500 dark:text-dark-text-secondary hover:border-slate-400 dark:hover:border-white/30'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {inputMode === 'easy'
-                    ? 'Der Agent fragt die fehlenden Punkte Schritt fuer Schritt ab.'
-                    : inputMode === 'prompt'
-                      ? 'Schreiben Sie einen freien deutschen Event-Text wie in einem normalen Briefing.'
-                    : 'Nutzen Sie das Studio fuer Agent-Konzept, Preislogik, Produktkatalog, Fragebaum und Architekturfragen.'}
+
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-dark-text-secondary">02 / STATUS</div>
+                  </div>
+                  <div className="text-[12px] font-bold text-slate-800 dark:text-dark-text-primary uppercase tracking-wider">
+                    {isStepTwoLocked
+                      ? 'Warten auf Modus-Wahl'
+                      : inputMode === 'easy'
+                        ? 'Gefuehrter Dialog Aktive'
+                        : inputMode === 'prompt'
+                          ? 'Freie Eingabe Bereit'
+                          : 'Consulting Modus Bereit'}
+                  </div>
                 </div>
               </div>
 
-              <div className="relative">
+              <div className="mt-12 relative group">
                 <textarea
                   ref={workspaceComposerRef}
                   value={input}
@@ -1642,18 +1703,21 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       handleSend();
                     }
                   }}
-                  placeholder={inputMode === 'easy'
-                    ? (mergedBrief?.currentQuestion || 'Geben Sie die Antwort fuer den aktuellen Schritt ein...')
-                    : inputMode === 'prompt'
-                      ? 'z.B. Wir planen ein zweitaegiges Event in Berlin mit 800 Teilnehmern, Print-on-Demand, 8 Counter, Scanner, Badge-Druckern und einem Budgetrahmen von 25.000 EUR.'
-                      : 'z.B. Wie sollte ein KI-Agent fuer Teilnehmermanagement aufgebaut sein, inklusive Event-Brief, Preisregeln, Angebotsvarianten und Knowledge Cards?'}
-                  className={`w-full bg-[#fff8ef] dark:bg-white/[0.02] rounded-[1.25rem] py-3.5 pl-4 ${inputMode === 'easy' ? 'pr-[4.5rem]' : 'pr-16'} focus:outline-none focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none scrollbar-hide shadow-[inset_0_0_0_1px_rgba(234,223,206,0.72)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] ${inputMode === 'easy' ? 'h-24' : 'h-32'}`}
+                  disabled={isStepTwoLocked}
+                  placeholder={isStepTwoLocked
+                    ? 'Waehlen Sie zuerst einen Modus...'
+                    : inputMode === 'easy'
+                      ? (mergedBrief?.currentQuestion || 'Ihre Antwort...')
+                      : inputMode === 'prompt'
+                        ? 'Event-Details hier eingeben...'
+                        : 'Frage an den Consulting-Agenten...'}
+                  className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 py-6 text-lg text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-white/10 focus:outline-none focus:border-sap-blue transition-all resize-none scrollbar-hide min-h-[120px] disabled:opacity-30 antialiased font-medium"
                 />
                 {inputMode === 'easy' ? (
                   <button
                     type="button"
                     onClick={expandEasyInputWithAi}
-                    disabled={!input.trim() || isTyping || isPromptGenerating}
+                    disabled={isStepTwoLocked || !input.trim() || isTyping || isPromptGenerating}
                     className="absolute right-[3.9rem] bottom-2.5 p-3 bg-white text-sap-blue hover:bg-[#fff8ef] rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_8px_24px_-16px_rgba(15,23,42,0.35)]"
                     aria-label="Eingabe erweitern"
                   >
@@ -1663,7 +1727,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 {inputMode !== 'easy' ? (
                   <button
                     onClick={() => handleSend()}
-                    disabled={!input.trim() || isTyping}
+                    disabled={isStepTwoLocked || !input.trim() || isTyping}
                     className="absolute right-2.5 bottom-2.5 p-3 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
                   >
                     <Send className="w-4 h-4" />
@@ -1671,12 +1735,14 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 ) : null}
               </div>
 
-              <div className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                {inputMode === 'easy'
-                  ? 'Easy Mode erzeugt zuerst einen studiofaehigen Prompt. Versendet wird erst nach der Optimierung.'
-                  : inputMode === 'prompt'
-                    ? 'Prompt Mode eignet sich fuer komplette Event-Briefings in einem freien Text.'
-                    : 'Consulting Mode eignet sich fuer Agent-Design, Preislogik, Architektur, MVP und Angebotsstrategie.'}
+              <div className="mt-4 text-xs font-bold leading-relaxed text-slate-500 dark:text-dark-text-secondary">
+                {isStepTwoLocked
+                  ? 'Step 2 bleibt gesperrt, bis in Step 1 ein Modus ausgewaehlt wurde.'
+                  : inputMode === 'easy'
+                    ? 'Easy Mode erzeugt zuerst einen workspacefaehigen Prompt. Versendet wird erst nach der Optimierung.'
+                    : inputMode === 'prompt'
+                      ? 'Prompt Mode eignet sich fuer komplette Event-Briefings in einem freien Text.'
+                      : 'Consulting Mode eignet sich fuer Agent-Design, Preislogik, Architektur, MVP und Angebotsstrategie.'}
               </div>
             </StudioSection>
           </div>
@@ -1684,36 +1750,26 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
             <div className="grid gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
               <StudioSection
                 eyebrow="Activity"
-                title="Studio Aktivitaet"
-                description="Die letzten Eingaben und Antworten bleiben hier sichtbar, waehrend das Studio Brief und Angebotslogik aktualisiert."
+                title="Workspace Aktivitaet"
+                description="Live-Historie der Eingaben und Analysen."
               >
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div />
-                  {isTyping ? (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-sap-blue/10 px-3 py-1 text-[11px] font-semibold text-sap-blue">
-                      <span className="flex gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce"></span>
-                        <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:120ms]"></span>
-                        <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:240ms]"></span>
-                      </span>
-                      Analysiere Eingabe
-                    </div>
-                  ) : null}
-                </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {recentMessages.map((msg, idx) => (
                     <div
                       key={`${msg.role}-${idx}-${msg.text.slice(0, 12)}`}
-                      className={`rounded-[1.25rem] px-4 py-3 text-sm leading-relaxed ${
+                      className={`group relative rounded-[2rem] px-6 py-4.5 text-[15px] leading-relaxed shadow-sm border transition-all duration-300 ${
                         msg.role === 'user'
-                          ? 'bg-sap-blue text-white'
-                          : 'bg-white/85 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200'
+                          ? 'bg-sap-blue text-white border-sap-blue/20 shadow-xl shadow-sap-blue/10'
+                          : 'bg-white dark:bg-dark-surface text-slate-700 dark:text-dark-text-primary border-slate-200/60 dark:border-white/10'
                       }`}
                     >
-                      <div className={`mb-1 text-[10px] font-bold uppercase tracking-[0.16em] ${msg.role === 'user' ? 'text-white/70' : 'text-slate-400'}`}>
-                        {msg.role === 'user' ? 'Ihre Eingabe' : 'Assistent'}
+                      <div className={`mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] ${
+                        msg.role === 'user' ? 'text-white/60' : 'text-sap-blue/60 dark:text-sap-blue/80'
+                      }`}>
+                        {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
+                        {msg.role === 'user' ? 'Direct Input' : 'FastLane Analysis'}
                       </div>
-                      <div className="line-clamp-4 whitespace-pre-wrap break-words">{msg.text}</div>
+                      <div className="whitespace-pre-wrap break-words font-medium antialiased">{msg.text}</div>
                     </div>
                   ))}
 
@@ -1732,21 +1788,21 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               >
                 <div className="grid sm:grid-cols-2 gap-4">
                   {summaryItems.map((item) => (
-                    <div key={item.label} className="rounded-[1.5rem] bg-[#fff8ef] dark:bg-white/[0.03] p-4 shadow-[0_12px_26px_-24px_rgba(32,41,57,0.22)]">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-1">{item.label}</div>
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{item.value}</div>
+                    <div key={item.label} className="rounded-3xl bg-slate-50 dark:bg-dark-surface p-5 border border-slate-200/60 dark:border-white/10 shadow-sm hover:shadow-md transition-all">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-1.5">{item.label}</div>
+                      <div className="text-[15px] font-black text-slate-900 dark:text-dark-text-primary tracking-tight">{item.value}</div>
                     </div>
                   ))}
                 </div>
 
                 {locationDetails.length ? (
-                  <div className="mt-4 rounded-[1.5rem] bg-[#fff8ef] dark:bg-white/[0.03] p-4 shadow-[0_12px_26px_-24px_rgba(32,41,57,0.22)]">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">Standortdetails</div>
+                  <div className="mt-8 rounded-3xl bg-slate-50 dark:bg-dark-surface p-5 border border-slate-200/60 dark:border-white/10 shadow-sm">
+                    <div className="text-[10px] font-black uppercase tracking-[0.25em] text-sap-blue/60 dark:text-sap-blue/80 mb-4">Standortdetails</div>
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       {locationDetails.map((item) => (
-                        <div key={`${item.label}-${item.value}`} className="rounded-[1rem] bg-white/80 dark:bg-white/[0.04] px-3.5 py-3">
-                          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 mb-1">{item.label}</div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-white break-words">{item.value}</div>
+                        <div key={`${item.label}-${item.value}`} className="rounded-2xl bg-white dark:bg-dark-base px-4 py-3.5 border border-slate-100 dark:border-white/5">
+                          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-dark-text-secondary mb-1.5">{item.label}</div>
+                          <div className="text-[13px] font-bold text-slate-900 dark:text-dark-text-primary break-words tracking-tight">{item.value}</div>
                         </div>
                       ))}
                     </div>
@@ -1754,36 +1810,36 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 ) : null}
 
                 {(mergedBrief?.serviceModules?.length || mergedBrief?.costDrivers?.length || offer?.assumptions?.length || offer?.openQuestions?.length) ? (
-                  <div className="grid lg:grid-cols-2 gap-4 mt-4">
-                    <div className="rounded-[1.5rem] bg-[#fff8ef] dark:bg-white/[0.03] p-4 shadow-[0_12px_26px_-24px_rgba(32,41,57,0.22)]">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">Service Modules</div>
-                      <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                  <div className="grid lg:grid-cols-2 gap-4 mt-6">
+                    <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3">Service Modules</div>
+                      <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(mergedBrief?.serviceModules ?? []).map((item) => (
-                          <div key={item}>• {item}</div>
+                          <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
                         ))}
                       </div>
                     </div>
-                    <div className="rounded-[1.5rem] bg-[#fff8ef] dark:bg-white/[0.03] p-4 shadow-[0_12px_26px_-24px_rgba(32,41,57,0.22)]">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">Cost Drivers</div>
-                      <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                    <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3">Cost Drivers</div>
+                      <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(mergedBrief?.costDrivers ?? []).map((item) => (
-                          <div key={item}>• {item}</div>
+                          <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
                         ))}
                       </div>
                     </div>
-                    <div className="rounded-[1.5rem] bg-[#fff8ef] dark:bg-white/[0.03] p-4 shadow-[0_12px_26px_-24px_rgba(32,41,57,0.22)]">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">Assumptions</div>
-                      <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                    <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3">Assumptions</div>
+                      <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(offer?.assumptions ?? []).map((item) => (
-                          <div key={item}>• {item}</div>
+                          <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
                         ))}
                       </div>
                     </div>
-                    <div className="rounded-[1.5rem] bg-[#fff8ef] dark:bg-white/[0.03] p-4 shadow-[0_12px_26px_-24px_rgba(32,41,57,0.22)]">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">Open Questions</div>
-                      <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                    <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3">Open Questions</div>
+                      <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(offer?.openQuestions ?? []).map((item) => (
-                          <div key={item}>• {item}</div>
+                          <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
                         ))}
                       </div>
                     </div>
@@ -1796,7 +1852,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
             <StudioSection
               eyebrow="Manuelle Eingabe"
               title="Strukturierte Felder"
-              description="Pflegen Sie Event- und Angebotsdaten manuell und uebernehmen Sie diese als Prompt oder senden Sie sie direkt an das Studio."
+              description="Pflegen Sie Event- und Angebotsdaten manuell und uebernehmen Sie diese als Prompt oder senden Sie sie direkt an den Workspace."
               actions={
                 <>
                   <button
@@ -1817,9 +1873,9 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       }
                       const prompt = await generateStructuredPromptWithAi();
                       if (!prompt) return;
-                      setInputMode('prompt');
+                      handleSelectInputMode('prompt');
                       setInput(prompt);
-                      setStructuredActionNotice(draftWasEmpty ? 'AI-Prompt wurde aus dem Beispiel generiert.' : 'AI-Prompt wurde in das Studio uebernommen.');
+                      setStructuredActionNotice(draftWasEmpty ? 'AI-Prompt wurde aus dem Beispiel generiert.' : 'AI-Prompt wurde in den Workspace uebernommen.');
                       requestAnimationFrame(() => focusWorkspaceComposer());
                     }}
                     disabled={isPromptGenerating}
@@ -1837,9 +1893,9 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       }
                       const prompt = await generateStructuredPromptWithAi();
                       if (!prompt) return;
-                      setInputMode('prompt');
+                      handleSelectInputMode('prompt');
                       setInput(prompt);
-                      setStructuredActionNotice(draftWasEmpty ? 'AI-Prompt wird direkt aus dem Beispiel an das Studio gesendet.' : 'AI-Prompt wird direkt an das Studio gesendet.');
+                      setStructuredActionNotice(draftWasEmpty ? 'AI-Prompt wird direkt aus dem Beispiel an den Workspace gesendet.' : 'AI-Prompt wird direkt an den Workspace gesendet.');
                       requestAnimationFrame(() => focusWorkspaceComposer());
                       handleSend(prompt, 'prompt');
                     }}
@@ -1876,7 +1932,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                     <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 mb-1">Feinschliff</div>
                     <div className="text-sm font-semibold text-slate-900 dark:text-white">Direkt editierbar</div>
                     <div className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      Aendern Sie hier einzelne Event-, Scope- und Budgetdetails und senden Sie die aktualisierte Fassung direkt wieder ins Studio.
+                      Aendern Sie hier einzelne Event-, Scope- und Budgetdetails und senden Sie die aktualisierte Fassung direkt wieder in den Workspace.
                     </div>
                   </div>
                 </div>
@@ -1934,85 +1990,89 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           </div>
         </section>
 
-        <aside className="bg-transparent dark:bg-transparent p-4 sm:p-6 md:p-7 min-h-0 overflow-y-auto">
-          <div className="mb-4 px-1 py-1">
-            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Offer Console</div>
-            <div className="mt-1 text-base font-semibold text-slate-900 dark:text-white">
-              {inputMode === 'consulting' ? 'Consulting & Konzept' : 'Preis, Module und Varianten'}
+        <aside className="bg-slate-50/50 dark:bg-dark-surface p-4 sm:p-6 md:p-8 min-h-0 overflow-y-auto border-l border-slate-200 dark:border-white/10">
+          <div className="mb-8 px-1 py-1">
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-sap-blue/60 dark:text-sap-blue/80 mb-3">Offer Console</div>
+            <div className="mt-1 text-2xl font-black text-slate-900 dark:text-dark-text-primary tracking-tight uppercase leading-tight">
+              {inputMode === 'consulting' ? 'Consulting & Konzept' : 'Preis, Module & Varianten'}
             </div>
-            <div className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            <div className="mt-3 text-[13px] leading-relaxed text-slate-500 dark:text-dark-text-secondary font-bold">
               {inputMode === 'consulting'
-                ? 'Nutzen Sie die rechte Seite fuer Architektur, Deliverables und fachliche Leitplanken.'
-                : 'Hier verdichtet das Studio Positionen, Kosten, Varianten und operative Empfehlungen.'}
+                ? 'Architektur, Deliverables und fachliche Leitplanken'
+                : 'Zusammenfassung der Positionen, Kosten und Varianten.'}
             </div>
           </div>
           {inputMode === 'consulting' ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <ConsoleSection
-                title="Consulting Fokus"
-                description="Dieser Modus beantwortet Architektur-, Produkt- und Angebotsfragen ohne den Event-Dialog zu erzwingen."
+                title="CONCULTING FOKUS"
+                description="Architektur-, Produkt- und Angebotsfragen."
               >
-                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                  Dieses Studio kann in diesem Modus Architektur, Event-Brief-Struktur, Preisregeln, Angebotsmodule, Variantenlogik, MVP-Stufen und operative Modellierung ausarbeiten.
-                </p>
+                <div className="rounded-3xl bg-white dark:bg-dark-base p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+                  <p className="text-[14px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
+                    Dieser Workspace kann Architektur, Event-Brief-Struktur, Preisregeln, Angebotsmodule, Variantenlogik, MVP-Stufen und operative Modellierung ausarbeiten.
+                  </p>
+                </div>
               </ConsoleSection>
               <ConsoleSection
-                title="Typische Deliverables"
-                description="Diese Ergebnisbausteine kann das Studio ausarbeiten oder vorbereiten."
+                title="DELIVERABLES"
+                description="Ergebnisbausteine des Consulting-Prozesses."
               >
-                <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                  <div>Event-Brief Struktur und Pflichtfelder</div>
-                  <div>Interview-Flow je Angebotsbereich</div>
-                  <div>Preis- und Rechenlogik fuer Module</div>
-                  <div>Standard / Plus / Premium Varianten</div>
-                  <div>Knowledge Cards und operative Empfehlungen</div>
-                  <div>CRM-, PM- und Dokumenten-Uebergabe</div>
+                <div className="space-y-3">
+                  {[
+                    'Event-Brief Struktur & Pflichtfelder',
+                    'Interview-Flow je Angebotsbereich',
+                    'Preis- & Rechenlogik fuer Module',
+                    'Standard / Plus / Premium Varianten',
+                    'Knowledge Cards & Empfehlungen',
+                    'CRM- & PM-Schnittstellen'
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-3 text-[13px] font-bold text-slate-600 dark:text-slate-300">
+                      <div className="w-1.5 h-1.5 rounded-full bg-sap-blue opacity-40 shrink-0" />
+                      {item}
+                    </div>
+                  ))}
                 </div>
               </ConsoleSection>
             </div>
           ) : showPricingOverview ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <ConsoleSection
-                title="Kostenuebersicht"
-                description="Gesamtsumme, Budgetbezug und Export der aktuellen Kalkulation."
+                title="KALKULATION"
+                description="Gesamtsumme und Budgetbezug."
                 actions={
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleExportPdf}
-                    className={subtleToolbarButtonClass}
-                    >
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={handleExportPdf} className={subtleToolbarButtonClass}>
                       <Printer className="w-3.5 h-3.5" />
                       PDF
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleExportSpreadsheet}
-                    className={subtleToolbarButtonClass}
-                    >
+                    <button type="button" onClick={handleExportSpreadsheet} className={subtleToolbarButtonClass}>
                       <Download className="w-3.5 h-3.5" />
-                      Excel
+                      EXCEL
                     </button>
-                  </>
+                  </div>
                 }
               >
-                <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                  {offer?.hasPricing ? offer?.subtotalFormatted || formatPriceValue(offer?.subtotal) : 'Preis offen'}
-                </div>
-                {(offer?.budget || offer?.budgetStatus) ? (
-                  <div className="mt-3 space-y-1">
-                    {offer?.budget ? (
-                      <div className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                        Budget: {offer.budget}
-                      </div>
-                    ) : null}
-                    {offer?.budgetStatus ? (
-                      <div className={`text-sm font-semibold ${offer.budgetStatus.startsWith('Im Budget') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                        {offer.budgetStatus}
-                      </div>
-                    ) : null}
+                <div className="px-6 py-8 rounded-[2rem] bg-white dark:bg-dark-base border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/40 dark:shadow-black/20 flex flex-col items-center justify-center text-center">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3">Gesamtsumme (Est.)</div>
+                  <div className="text-4xl font-black text-sap-blue dark:text-dark-text-primary tracking-tighter">
+                    {offer?.hasPricing ? offer?.subtotalFormatted || formatPriceValue(offer?.subtotal) : 'OFFEN'}
                   </div>
-                ) : null}
+                  {(offer?.budget || offer?.budgetStatus) ? (
+                    <div className="mt-5 space-y-2">
+                      {offer?.budget ? (
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[11px] font-black text-slate-500 dark:text-dark-text-secondary uppercase tracking-wider">
+                          Budget: {offer.budget}
+                        </div>
+                      ) : null}
+                      {offer?.budgetStatus ? (
+                        <div className={`text-[12px] font-black uppercase tracking-[0.05em] px-4 py-1.5 rounded-xl border ${offer.budgetStatus.startsWith('Im Budget') ? 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 'text-amber-600 bg-amber-50 border-amber-100 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20'}`}>
+                          {offer.budgetStatus}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </ConsoleSection>
 
               {offer?.modules?.length ? (
@@ -2091,48 +2151,97 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
       </div>
 
       {!embedded ? assistantOverlay : null}
-      {isPromptGenerating ? (
-        <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100001] pointer-events-none">
-          <div className="flex items-center gap-3 rounded-2xl bg-white/96 px-4 py-3 text-slate-900 shadow-[0_18px_40px_-20px_rgba(15,23,42,0.35)] backdrop-blur-md dark:bg-[#f8f8f8]">
-            <span className="inline-flex h-5 w-5 items-center justify-center">
-              <span className="h-4 w-4 rounded-full border-2 border-sap-blue/20 border-t-sap-blue animate-spin" />
-            </span>
-            <span className="text-sm font-semibold tracking-[0.01em]">Fixing Prompt</span>
-          </div>
-        </div>
-      ) : null}
+      {/* Individual isPromptGenerating toast removed from here, integrated below */}
       {pendingPromptReview ? (
-        <div className="fixed inset-0 z-[100002] flex items-center justify-center bg-slate-950/25 px-4 backdrop-blur-[2px]">
-          <div className="w-full max-w-lg rounded-[1.75rem] bg-white px-6 py-6 shadow-[0_30px_90px_-35px_rgba(15,23,42,0.45)] dark:bg-[#0f1622]">
-            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sap-blue">Prompt Review</div>
-            <div className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Die Optimierung ist abgeschlossen.</div>
-            <div className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Der Prompt wurde fuer das Studio vorbereitet. Moechten Sie jetzt mit der Erstellung starten?
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white dark:bg-dark-elevated shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10 animate-in zoom-in-95 duration-500 text-left">
+            <div className="px-8 py-8 border-b border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-2xl bg-sap-blue flex items-center justify-center text-white shadow-lg shadow-sap-blue/20">
+                  <Bot className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.3em] text-sap-blue mb-1">AI Recommendation</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Review & Fix Prompt</div>
+                </div>
+              </div>
+              <p className="text-slate-500 dark:text-dark-text-secondary text-sm leading-relaxed mb-6">
+                Der Prompt wurde fuer den Workspace optimiert, um alle Event-Details praezise zu analysieren. Bitte pruefen Sie den Text.
+              </p>
+              <div className="mt-4 rounded-2xl bg-slate-50 dark:bg-dark-base border border-slate-200 dark:border-white/5 p-6 text-[15px] font-medium leading-relaxed text-slate-800 dark:text-dark-text-primary max-h-[40vh] overflow-y-auto no-scrollbar shadow-inner">
+                {pendingPromptReview}
+              </div>
             </div>
-            <div className="mt-4 rounded-[1.25rem] bg-[#fff8ef] dark:bg-white/[0.04] px-4 py-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200 max-h-44 overflow-y-auto">
-              {pendingPromptReview}
-            </div>
-            <div className="mt-5 flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-3 px-8 py-6 bg-slate-50/50 dark:bg-white/[0.02]">
               <button
                 type="button"
                 onClick={() => setPendingPromptReview(null)}
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+                className="px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-dark-text-secondary hover:text-slate-800 dark:hover:text-white transition-colors"
               >
                 Ueberspringen
               </button>
               <button
                 type="button"
                 onClick={handleApproveReviewedPrompt}
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-sap-blue px-4 py-2 text-sm font-semibold text-white transition hover:bg-sap-blue/90"
+                className="px-8 py-3 rounded-full bg-sap-blue text-white text-[11px] font-black uppercase tracking-widest hover:bg-sap-blue/90 shadow-xl shadow-sap-blue/20 transition-all active:scale-95"
               >
-                Senden
+                Analysieren Starten
               </button>
             </div>
           </div>
         </div>
       ) : null}
+
+      {/* Fixed Toast / Status Container - Top Right for Tracking */}
+      <div className="fixed top-24 right-8 z-[200000] flex flex-col items-end gap-3 pointer-events-none">
+        {isPromptGenerating && (
+          <div className="pointer-events-auto flex items-center gap-4 bg-white dark:bg-dark-elevated border border-slate-200 dark:border-white/10 px-6 py-4 rounded-2xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] toast-animate-in border-l-4 border-l-amber-500 min-w-[320px]">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 shrink-0">
+               <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-0.5">AI Engine Phase</div>
+              <div className="text-[14px] font-black text-slate-900 dark:text-white leading-tight">Fixing Prompt...</div>
+              <div className="mt-3 h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500 animate-progress-indefinite"></div>
+              </div>
+            </div>
+          </div>
+        )}
+        {isTyping && (
+          <div className="pointer-events-auto flex items-center gap-4 bg-white dark:bg-dark-elevated border border-slate-200 dark:border-white/10 px-6 py-4 rounded-2xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] toast-animate-in border-l-4 border-l-sap-blue min-w-[320px]">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sap-blue/10 text-sap-blue shrink-0">
+               <Bot className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sap-blue mb-0.5">FastLane Engine</div>
+              <div className="text-[14px] font-black text-slate-900 dark:text-white leading-tight">Analysing Brief...</div>
+              <div className="mt-3 h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-sap-blue animate-progress-indefinite"></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {structuredActionNotice && (
+          <div className="pointer-events-auto bg-sap-blue text-white px-6 py-4 rounded-2xl shadow-2xl shadow-sap-blue/20 border border-white/10 toast-animate-in max-w-sm">
+            <div className="flex items-start gap-4">
+              <Sparkles className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="text-[13px] font-bold leading-relaxed">{structuredActionNotice}</div>
+              <button 
+                type="button"
+                onClick={() => setStructuredActionNotice('')} 
+                className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default ErpAdvisor;
+

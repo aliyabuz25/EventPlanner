@@ -138,6 +138,50 @@ export interface AiExplorerReport {
   errorMessage: string;
 }
 
+export interface AdminTranslationResponse {
+  target: string;
+  copy: Record<string, unknown>;
+}
+
+export interface AdminTranslationJob {
+  id: string;
+  target: string;
+  status: 'pending' | 'running' | 'completed' | 'error';
+  progress: number;
+  message: string;
+  copy?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface FrontendTranslationResponse {
+  target: string;
+  copy: SiteContent;
+  meta?: {
+    sourceHash?: string;
+    updatedAt?: string;
+    lastValidatedAt?: string;
+    lastValidationDay?: string;
+    validation?: {
+      missingCount?: number;
+      identicalCount?: number;
+      total?: number;
+      coverage?: number;
+      stale?: boolean;
+      issues?: string[];
+    };
+  };
+}
+
+export interface FrontendTranslationJob {
+  id: string;
+  target: string;
+  status: 'pending' | 'running' | 'completed' | 'error';
+  progress: number;
+  message: string;
+  copy?: SiteContent;
+  error?: string;
+}
+
 export async function fetchSiteContent(): Promise<SiteContentResponse> {
   const response = await fetch('/api/site-content');
   if (!response.ok) {
@@ -291,4 +335,120 @@ export async function fetchAiExplorerReports(limit = 100) {
   }
 
   return result as Promise<{ reports: AiExplorerReport[] }>;
+}
+
+export async function startAdminTranslationJob(target: string, bundle: Record<string, unknown>) {
+  const response = await fetch('/api/admin/translate-jobs', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ target, bundle })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Admin translation failed: ${response.status}`);
+  }
+
+  return result as Promise<{ job: AdminTranslationJob }>;
+}
+
+export async function fetchAdminTranslationJob(jobId: string) {
+  const response = await fetch(`/api/admin/translate-jobs/${encodeURIComponent(jobId)}`);
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Failed to load translation job: ${response.status}`);
+  }
+
+  return result as Promise<{ job: AdminTranslationJob }>;
+}
+
+export async function fetchAdminTranslation(target: string) {
+  const response = await fetch(`/api/admin/translations?target=${encodeURIComponent(target)}`);
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Failed to load translation: ${response.status}`);
+  }
+
+  return result as Promise<AdminTranslationResponse>;
+}
+
+export async function startFrontendTranslationJob(target: string, bundle: SiteContent) {
+  const response = await fetch('/api/frontend/translate-jobs', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ target, bundle })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Frontend translation failed: ${response.status}`);
+  }
+
+  return result as Promise<{ job: FrontendTranslationJob }>;
+}
+
+export async function fetchFrontendTranslationJob(jobId: string) {
+  const response = await fetch(`/api/frontend/translate-jobs/${encodeURIComponent(jobId)}`);
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Failed to load frontend translation job: ${response.status}`);
+  }
+
+  return result as Promise<{ job: FrontendTranslationJob }>;
+}
+
+export async function fetchFrontendTranslation(target: string) {
+  const response = await fetch(`/api/frontend/translations?target=${encodeURIComponent(target)}`);
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Failed to load frontend translation: ${response.status}`);
+  }
+
+  return result as Promise<FrontendTranslationResponse>;
+}
+
+export async function saveFrontendTranslation(target: string, copy: SiteContent) {
+  const response = await fetch(`/api/frontend/translations?target=${encodeURIComponent(target)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ copy })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Failed to save frontend translation: ${response.status}`);
+  }
+
+  return result as Promise<FrontendTranslationResponse>;
+}
+
+export async function saveFrontendTranslationDocument(target: string, key: string, value: unknown) {
+  const response = await fetch(`/api/frontend/translations/document?target=${encodeURIComponent(target)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ key, value })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((result as { message?: string }).message || `Failed to save frontend translation document: ${response.status}`);
+  }
+
+  return result as Promise<FrontendTranslationResponse>;
 }

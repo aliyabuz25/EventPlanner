@@ -24,7 +24,7 @@ const SolutionDropdown: React.FC<SolutionDropdownProps> = ({
       <div className="p-2">
         <button 
           onClick={onOverview}
-          className="w-full text-left px-4 py-3 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-sap-gold dark:hover:text-sap-gold transition-all rounded-md"
+          className="w-full text-left px-4 py-3 text-[14px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-sap-gold dark:hover:text-sap-gold transition-all rounded-md"
         >
           Tum moduleri gor
         </button>
@@ -33,7 +33,7 @@ const SolutionDropdown: React.FC<SolutionDropdownProps> = ({
           <button
             key={s.id}
             onClick={() => onSelect(s.id)}
-            className={`w-full text-left px-4 py-3 text-[13px] font-medium transition-all rounded-md flex items-center justify-between group ${
+            className={`w-full text-left px-4 py-3 text-[14px] font-medium transition-all rounded-md flex items-center justify-between group ${
               currentView === s.id 
                 ? 'bg-sap-blue/10 text-sap-blue' 
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-sap-gold dark:hover:text-sap-gold'

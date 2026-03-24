@@ -6,6 +6,7 @@ import { FASTLANE_CONTENT_VERSION, fastlaneContentDocuments } from '../shared/fa
 
 const dataDir = path.resolve(process.cwd(), 'data');
 const dbPath = path.join(dataDir, 'site-content.sqlite');
+const frontendTranslationsJsonPath = path.join(dataDir, 'frontend-translations.json');
 
 const documentLoaders = {
   global: (content) => content.global,
@@ -104,6 +105,15 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS frontend_localizations (
+    target TEXT PRIMARY KEY,
+    json_value TEXT NOT NULL,
+    meta_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )
+`);
+
 const insert = db.prepare(`
   INSERT INTO content_documents (doc_key, json_value, updated_at)
   VALUES (?, ?, ?)
@@ -162,6 +172,24 @@ const insertAiExplorerLog = db.prepare(`
     error_message
   )
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
+const selectFrontendLocalization = db.prepare(`
+  SELECT target, json_value, meta_json, updated_at
+  FROM frontend_localizations
+  WHERE target = ?
+`);
+const selectFrontendLocalizations = db.prepare(`
+  SELECT target, json_value, meta_json, updated_at
+  FROM frontend_localizations
+  ORDER BY target ASC
+`);
+const upsertFrontendLocalization = db.prepare(`
+  INSERT INTO frontend_localizations (target, json_value, meta_json, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(target) DO UPDATE SET
+    json_value = excluded.json_value,
+    meta_json = excluded.meta_json,
+    updated_at = excluded.updated_at
 `);
 const selectAiExplorerLogs = db.prepare(`
   SELECT
@@ -241,6 +269,42 @@ const fastlaneDocumentKeys = [
   'pages.solutions',
   'solutionDetails'
 ];
+
+function migrateFrontendLocalizationsFromJson() {
+  if (!fs.existsSync(frontendTranslationsJsonPath)) {
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(fs.readFileSync(frontendTranslationsJsonPath, 'utf-8'));
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+
+    for (const [target, entry] of Object.entries(payload)) {
+      if (!entry || typeof entry !== 'object' || !entry.copy) {
+        continue;
+      }
+
+      const existing = selectFrontendLocalization.get(target);
+      if (existing) {
+        continue;
+      }
+
+      const timestamp = String(entry?.meta?.updatedAt ?? nowIso());
+      upsertFrontendLocalization.run(
+        String(target).trim().toLowerCase(),
+        JSON.stringify(entry.copy),
+        JSON.stringify(entry.meta ?? {}),
+        timestamp
+      );
+    }
+  } catch {
+    // Ignore malformed legacy translation files during startup.
+  }
+}
+
+migrateFrontendLocalizationsFromJson();
 
 export function syncFastlaneContentIfNeeded() {
   const currentGlobal = getDocument('global')?.value;
@@ -376,4 +440,40 @@ export function getAiExplorerLogs(limit = 100) {
     offer: parseValue(row.offer_json),
     errorMessage: row.error_message ?? ''
   }));
+}
+
+export function getFrontendLocalization(target) {
+  const row = selectFrontendLocalization.get(String(target).trim().toLowerCase());
+  if (!row) {
+    return null;
+  }
+
+  return {
+    target: row.target,
+    copy: parseValue(row.json_value),
+    meta: parseValue(row.meta_json) ?? {},
+    updatedAt: row.updated_at
+  };
+}
+
+export function getFrontendLocalizations() {
+  return selectFrontendLocalizations.all().map((row) => ({
+    target: row.target,
+    copy: parseValue(row.json_value),
+    meta: parseValue(row.meta_json) ?? {},
+    updatedAt: row.updated_at
+  }));
+}
+
+export function upsertFrontendLocalizationEntry(target, copy, meta = {}) {
+  const normalizedTarget = String(target).trim().toLowerCase();
+  const timestamp = String(meta?.updatedAt ?? nowIso());
+  upsertFrontendLocalization.run(
+    normalizedTarget,
+    JSON.stringify(copy),
+    JSON.stringify(meta ?? {}),
+    timestamp
+  );
+
+  return getFrontendLocalization(normalizedTarget);
 }

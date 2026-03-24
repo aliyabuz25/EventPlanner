@@ -84,6 +84,9 @@ export interface SiteContent {
       faviconUrl: string;
       appleTouchIconUrl: string;
     };
+    localization: {
+      frontendThirdLanguage: string;
+    };
     smtp: {
       enabled: boolean;
       host: string;
@@ -140,6 +143,7 @@ export interface SiteContent {
           secondaryHref: string;
           stats: Array<{ value: string; label: string }>;
           visual: {
+            backgroundVideoUrl: string;
             mainImageUrl: string;
             mainImageAlt: string;
             sideImageUrl: string;

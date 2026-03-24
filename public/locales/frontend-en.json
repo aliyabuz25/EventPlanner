@@ -1,0 +1,1447 @@
+{
+  "global": {
+    "company": {
+      "name": "FastLane",
+      "fullName": "FastLane GmbH",
+      "sapPartnerLevel": "Teilnehmendenmanagement & OnSite Services",
+      "phone": "+49 228 - 91 251 - 300",
+      "email": "service@fastlane-gmbh.de",
+      "address": {
+        "city": "Bonn",
+        "country": "Germany",
+        "full": "Rochusstrasse 217, 53123 Bonn, Germany"
+      },
+      "contact": {
+        "phone": "+49 228 - 91 251 - 300",
+        "email": "service@fastlane-gmbh.de"
+      },
+      "stats": {
+        "experts": "25+ Years",
+        "projects": "Live + Hybrid",
+        "support": "OnSite",
+        "experience": "2nd Gen"
+      }
+    },
+    "branding": {
+      "siteTitle": "FastLane | Teilnehmermanagement fuer Events",
+      "contentVersion": "2026-03-24-de-palette-v3",
+      "logoUrl": "https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png",
+      "faviconUrl": "https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png",
+      "appleTouchIconUrl": "https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png"
+    },
+    "smtp": {
+      "enabled": false,
+      "host": "smtp.your-provider.com",
+      "port": 587,
+      "secure": false,
+      "username": "smtp-user@your-domain.com",
+      "password": "",
+      "fromName": "FastLane Website",
+      "fromEmail": "no-reply@your-domain.com",
+      "recipientEmail": "service@fastlane-gmbh.de",
+      "testRecipientEmail": "service@fastlane-gmbh.de"
+    },
+    "solutionDetailUi": {
+      "notFoundText": "Loesung nicht gefunden.",
+      "capabilitiesTitle": "Leistungsumfang",
+      "benefitsTitle": "Mehrwert",
+      "transformTitle": "Bereit fuer einen reibungslosen Event-Start?",
+      "transformDescriptionTemplate": "Mit {company} integrierst du {solution} in einen klaren, belastbaren Teilnehmerprozess vor Ort.",
+      "primaryButtonText": "Termin anfragen",
+      "primaryButtonHref": "/#contact",
+      "secondaryButtonText": "E-Mail senden",
+      "secondaryButtonHref": "mailto:service@fastlane-gmbh.de"
+    },
+    "socialLinks": [
+      {
+        "name": "LN",
+        "href": "https://www.linkedin.com",
+        "label": "LinkedIn"
+      },
+      {
+        "name": "IG",
+        "href": "#",
+        "label": "Instagram"
+      },
+      {
+        "name": "YT",
+        "href": "#",
+        "label": "YouTube"
+      }
+    ],
+    "localization": {
+      "frontendThirdLanguage": ""
+    }
+  },
+  "siteMap": [
+    {
+      "slug": "home",
+      "view": "home",
+      "title": "Home",
+      "description": "Landing page with FastLane event entry services."
+    },
+    {
+      "slug": "solutions",
+      "view": "solutions",
+      "title": "Loesungen",
+      "description": "FastLane modules for live, hybrid and medical events."
+    },
+    {
+      "slug": "services",
+      "view": "services",
+      "title": "Services",
+      "description": "Consulting, setup and onsite support for event flows."
+    },
+    {
+      "slug": "about",
+      "view": "about",
+      "title": "Ueber Uns",
+      "description": "Company profile, values and operating model."
+    },
+    {
+      "slug": "team",
+      "view": "team",
+      "title": "OnSite Team",
+      "description": "How FastLane works onsite with customers and guests."
+    },
+    {
+      "slug": "kontakt",
+      "view": "contact",
+      "title": "Kontakt",
+      "description": "Direct consultation and event inquiry page."
+    },
+    {
+      "slug": "privacy-compliance",
+      "view": "corporate-standards",
+      "title": "Datenschutz & Compliance",
+      "description": "Trust, privacy and operational standards."
+    },
+    {
+      "slug": "event-finder",
+      "view": "survey",
+      "title": "Event Finder",
+      "description": "Interactive recommendation flow for the right event setup."
+    },
+    {
+      "slug": "studio",
+      "view": "studio",
+      "title": "FastLane Workspace",
+      "description": "Full briefing and offer workspace for event scoping."
+    },
+    {
+      "slug": "content-admin",
+      "view": "content-admin",
+      "title": "Content Admin",
+      "description": "JSON editor for site content."
+    }
+  ],
+  "navigation": {
+    "mainLinks": [
+      {
+        "name": "Loesungen",
+        "view": "solutions",
+        "href": "#solutions"
+      },
+      {
+        "name": "Services",
+        "view": "services",
+        "href": "#services"
+      },
+      {
+        "name": "OnSite",
+        "view": "team",
+        "href": "#team"
+      },
+      {
+        "name": "Ueber Uns",
+        "view": "about",
+        "href": "#about"
+      },
+      {
+        "name": "Kontakt",
+        "view": "contact",
+        "href": "/kontakt"
+      }
+    ],
+    "solutionLinks": [
+      {
+        "name": "Live-Badging",
+        "id": "sap-s4hana"
+      },
+      {
+        "name": "Einlassmanagement",
+        "id": "sap-successfactors"
+      },
+      {
+        "name": "Event-Apps",
+        "id": "sap-ariba"
+      },
+      {
+        "name": "Medical Events",
+        "id": "sap-business-one"
+      },
+      {
+        "name": "Hybride Events",
+        "id": "opentext"
+      },
+      {
+        "name": "Badge2Go",
+        "id": "bimser"
+      },
+      {
+        "name": "FastLane Inside",
+        "id": "microsoft-power-bi"
+      }
+    ],
+    "footer": {
+      "ecosystemLinks": [
+        {
+          "label": "Live-Badging",
+          "view": "sap-s4hana"
+        },
+        {
+          "label": "Einlassmanagement",
+          "view": "sap-successfactors"
+        },
+        {
+          "label": "Event-Apps",
+          "view": "sap-ariba"
+        },
+        {
+          "label": "Event Finder",
+          "view": "survey"
+        }
+      ],
+      "corporateLinks": [
+        {
+          "label": "Ueber Uns",
+          "view": "about"
+        },
+        {
+          "label": "Services",
+          "view": "services"
+        },
+        {
+          "label": "Workspace",
+          "view": "studio"
+        },
+        {
+          "label": "Datenschutz",
+          "view": "corporate-standards"
+        },
+        {
+          "label": "Kontakt",
+          "view": "contact"
+        }
+      ]
+    },
+    "badges": {
+      "partner": "OnSite Event Services",
+      "admin": "CMS"
+    }
+  },
+  "customPages": [],
+  "pages": {
+    "home": {
+      "seoTitle": "FastLane | Akkreditierung, Check-in und Live-Badging",
+      "sections": {
+        "hero": {
+          "badge": "Teilnehmendenmanagement fuer Live- und Hybrid-Events",
+          "title": {
+            "lineOne": "Akkreditierung,",
+            "highlight": "Check-in",
+            "lineThree": "& Live-Badgings."
+          },
+          "description": "Professioneller Event-Einlass mit Akkreditierung, Live-Badge-Druck und schnellen Check-ins direkt vor Ort. Flexibel, verlaesslich und genau auf dein Event abgestimmt.",
+          "primaryCta": "Loesungen ansehen",
+          "primaryHref": "/solutions",
+          "secondaryCta": "Termin anfragen",
+          "secondaryHref": "/#contact",
+          "stats": [
+            {
+              "value": "25+ Years",
+              "label": "Erfahrung im Teilnehmermanagement"
+            },
+            {
+              "value": "OnSite",
+              "label": "Support direkt vor Ort"
+            },
+            {
+              "value": "Live + Hybrid",
+              "label": "Event-Setups aus einer Hand"
+            }
+          ],
+          "visual": {
+            "backgroundVideoUrl": "https://cdn.pixabay.com/video/2023/11/21/189992-887332575_large.mp4",
+            "mainImageUrl": "",
+            "mainImageAlt": "Event check-in and badge printing",
+            "sideImageUrl": "",
+            "sideImageAlt": "FastLane event app and dashboard"
+          }
+        },
+        "about": {
+          "eyebrow": "Ueber FastLane",
+          "title": "Teilnehmendenmanagement mit Praxiserfahrung",
+          "paragraphs": [
+            "FastLane ist ein unabhaengiger Dienstleister fuer OnSite-Events und unterstuetzt Live-, Hybrid- und Medical-Formate mit strukturierter Akkreditierung, Einlasssteuerung und digital begleiteten Prozessen.",
+            "Das Unternehmen arbeitet seit mehr als 25 Jahren im Teilnehmermanagement und wird in zweiter Generation gefuehrt. Ziel ist immer ein Setup, das zum Event, zum Publikum und zum Ablauf vor Ort passt."
+          ],
+          "badges": [
+            "25+ Years Experience",
+            "2nd Generation"
+          ],
+          "buttonText": "Mehr erfahren",
+          "buttonHref": "/about",
+          "cards": [
+            {
+              "value": "Live",
+              "label": "Akkreditierung & Badges"
+            },
+            {
+              "value": "Mobile",
+              "label": "Check-in per App oder Kiosk"
+            },
+            {
+              "value": "Hybrid",
+              "label": "Prozesse fuer Vor-Ort und Remote"
+            },
+            {
+              "value": "Medical",
+              "label": "Sichere Teilnehmerfuehrung"
+            }
+          ]
+        },
+        "partners": {
+          "title": "Technologie- & Event-Ecosystem",
+          "items": [
+            {
+              "name": "Microsoft",
+              "logo": ""
+            },
+            {
+              "name": "Apple",
+              "logo": ""
+            }
+          ]
+        },
+        "services": {
+          "eyebrow": "Unsere Leistungen",
+          "title": "Modulare Services fuer den ersten Eindruck deines Events",
+          "description": "Von Akkreditierung bis Auswertung kombiniert FastLane Technik, Prozesse und OnSite-Betreuung zu einem klaren Einlasskonzept.",
+          "items": [
+            {
+              "id": "live-badging",
+              "title": "Live-Badging",
+              "description": "Full-colour Badge-Druck direkt beim Check-in mit individuellen Layouts und Echtzeit-Anpassungen.",
+              "icon": "BadgeCheck"
+            },
+            {
+              "id": "entry",
+              "title": "Einlassmanagement",
+              "description": "QR-Scan, Zutrittsrechte und klare Besucherfluesse fuer einen schnellen, kontrollierten Start.",
+              "icon": "ScanLine"
+            },
+            {
+              "id": "event-apps",
+              "title": "Event-Apps",
+              "description": "Agenda, Lageplaene, Buchungen, Feedback und Updates zentral in einer App gebuendelt.",
+              "icon": "Smartphone"
+            },
+            {
+              "id": "medical",
+              "title": "Medical Events",
+              "description": "Prozesse fuer sensible Teilnehmergruppen mit klarer Steuerung, Sicherheit und Nachvollziehbarkeit.",
+              "icon": "HeartPulse"
+            },
+            {
+              "id": "hybrid",
+              "title": "Hybride Events",
+              "description": "Vor-Ort- und Remote-Erlebnisse in einem durchgaengigen Setup verbunden.",
+              "icon": "MonitorPlay"
+            },
+            {
+              "id": "onsite-service",
+              "title": "OnSite Service",
+              "description": "Persoenliche Betreuung, Sonderloesungen und schnelle Entscheidungen direkt am Eventtag.",
+              "icon": "Users"
+            }
+          ],
+          "cta": {
+            "title": "FastLane fuer dein Event",
+            "description": "Lass uns gemeinsam entscheiden, welches Setup zu Teilnehmerzahl, Format und Einlasslogik passt.",
+            "buttonText": "Zum Loesungskatalog",
+            "buttonHref": "/solutions"
+          }
+        },
+        "contact": {
+          "eyebrow": "Kontakt",
+          "title": "Sprich mit FastLane ueber dein Event",
+          "description": "Wir beraten dich persoenlich und entwickeln gemeinsam die passende Kombination aus Einlass, Badges, App und OnSite-Service.",
+          "phoneLabel": "Telefon",
+          "phoneMeta": "Mo-Fr, 09:00 - 18:00",
+          "emailLabel": "E-Mail",
+          "emailMeta": "Antwort in der Regel innerhalb von 24 Stunden",
+          "form": {
+            "firstName": "Vorname",
+            "firstNamePlaceholder": "Vorname eingeben",
+            "lastName": "Nachname",
+            "lastNamePlaceholder": "Nachname eingeben",
+            "email": "E-Mail",
+            "emailPlaceholder": "name@unternehmen.de",
+            "details": "Event-Details",
+            "detailsPlaceholder": "Welche Services sind fuer dein Event relevant?",
+            "submitText": "Anfrage senden",
+            "successMessage": "Deine Anfrage wurde erfolgreich uebermittelt.",
+            "errorMessage": "Die Anfrage konnte gerade nicht gesendet werden. Bitte versuche es spaeter erneut."
+          }
+        }
+      }
+    },
+    "campaign": {
+      "sections": {
+        "badge": "Modular Setup",
+        "titleLines": [
+          "Ein Setup,",
+          "mehrere Event-Module"
+        ],
+        "initiativesLabel": "FastLane Fokus",
+        "initiativesText": "Live-Badging, Einlassmanagement, Event-Apps, Medical Events und hybride Formate lassen sich flexibel kombinieren.",
+        "buttonText": "Kontakt aufnehmen",
+        "buttonHref": "/#contact",
+        "sideWords": [
+          "OnSite",
+          "Flow",
+          "Control"
+        ]
+      }
+    },
+    "about": {
+      "sections": {
+        "heroBadge": "Ueber Uns",
+        "heroTitle": [
+          "Teilnehmerprozesse",
+          "mit Verantwortung."
+        ],
+        "intro": "FastLane begleitet Events mit einem klaren Fokus auf Akkreditierung, Einlass und Teilnehmerfuehrung. Das Unternehmen arbeitet unabhaengig, praxisnah und mit einem Setup, das auf reale Eventablaeufe zugeschnitten ist.",
+        "mission": {
+          "title": "Unsere Mission",
+          "description": "Teilnehmendenmanagement so zu gestalten, dass Veranstalter, Teams und Gaeste vom ersten Kontakt bis zur Auswertung einen strukturierten, sicheren und professionellen Ablauf erleben."
+        },
+        "vision": {
+          "title": "Unsere Vision",
+          "description": "Fuer Events jeder Groesse die verlaessliche Schnittstelle zwischen Technik, Team und Gaesten zu sein, ohne Komplexitaet in den Vordergrund zu stellen."
+        },
+        "valuesTitle": "Was FastLane ausmacht",
+        "valuesSubtitle": "Arbeitsweise und Haltung",
+        "values": [
+          {
+            "title": "Praxiserfahrung",
+            "description": "Mehr als 25 Jahre Erfahrung im Teilnehmermanagement fuehren zu belastbaren Entscheidungen vor Ort.",
+            "icon": "ShieldCheck"
+          },
+          {
+            "title": "Flexibilitaet",
+            "description": "Systeme und Prozesse werden an Eventformat, Publikum und kurzfristige Aenderungen angepasst.",
+            "icon": "Zap"
+          },
+          {
+            "title": "Verantwortung",
+            "description": "Einlass, Rechte und Besucherstroeme werden nachvollziehbar, sauber und stressarm organisiert.",
+            "icon": "Award"
+          }
+        ],
+        "timeline": {
+          "title": "Wie FastLane arbeitet",
+          "description": "Keine Standardpakete, sondern passende Event-Setups",
+          "badge": "25+ Years / 2nd Generation",
+          "items": [
+            {
+              "year": "Briefing",
+              "label": "Verstehen",
+              "description": "FastLane analysiert Format, Teilnehmerzahl, Einlasspunkte und Sonderfaelle deines Events."
+            },
+            {
+              "year": "Setup",
+              "label": "Konfigurieren",
+              "description": "Badges, Check-in, App, Kontingente und Rechte werden auf dein Eventmodell abgestimmt."
+            },
+            {
+              "year": "OnSite",
+              "label": "Begleiten",
+              "description": "Vor Ort laufen Prozesse, Technik und Teamsteuerung kontrolliert zusammen."
+            },
+            {
+              "year": "Review",
+              "label": "Auswerten",
+              "description": "Nach dem Event lassen sich Bewegungen, Check-ins und Erkenntnisse strukturiert auswerten."
+            }
+          ]
+        },
+        "cta": {
+          "title": "FastLane denkt vom Eventfluss aus",
+          "description": "Nicht einzelne Tools stehen im Mittelpunkt, sondern ein Einlasskonzept, das fuer dein Event funktioniert und dein Team im laufenden Betrieb entlastet.",
+          "cities": [
+            "Bonn",
+            "OnSite",
+            "Live",
+            "Hybrid"
+          ]
+        }
+      }
+    },
+    "corporateStandards": {
+      "sections": {
+        "eyebrow": "Vertrauen & Datenschutz",
+        "title": "Datenschutz und operative Sorgfalt",
+        "intro": "FastLane arbeitet in sensiblen Teilnehmerprozessen. Deshalb stehen Datenschutz, saubere Rechtepruefung und transparente Kommunikation im Zentrum jedes Setups.",
+        "inquiryCard": {
+          "title": "Rueckfragen zu Datenschutz oder Compliance",
+          "description": "Wenn du Anforderungen an Datenhaltung, Teilnehmerrechte oder operative Standards hast, stimmen wir diese fruehzeitig mit dir ab.",
+          "email": "service@fastlane-gmbh.de"
+        },
+        "documents": [
+          {
+            "title": "Datenschutzerklaerung",
+            "lang": "DE"
+          },
+          {
+            "title": "Impressum",
+            "lang": "DE"
+          },
+          {
+            "title": "Cookie-Richtlinie",
+            "lang": "DE"
+          },
+          {
+            "title": "Event-spezifische Zutrittsregeln",
+            "lang": "Projektbezogen"
+          }
+        ],
+        "transparency": {
+          "title": "Verbindliche Prozesse statt Improvisation",
+          "quote": "Teilnehmerdaten, Zutrittsrechte und Vor-Ort-Ablaeufe muessen klar geregelt sein. FastLane setzt deshalb auf nachvollziehbare Prozesse, flexible Technik und persoenliche Abstimmung."
+        }
+      }
+    },
+    "survey": {
+      "sections": {
+        "badge": "Interactive Event Finder",
+        "title": "Plane dein",
+        "titleHighlight": "Event-Setup",
+        "description": "Nutze den Schnellmodus fuer eine erste Empfehlung oder den KI-Assistenten fuer ein ausfuehrlicheres OnSite-Briefing.",
+        "modeQuick": "Quick Match",
+        "modeAdvisor": "KI-Assistent",
+        "calculatingTitle": "Passendes Setup wird ermittelt",
+        "calculatingDescription": "Wir ordnen dein Event dem naechstliegenden FastLane-Modul zu...",
+        "recommendationLabel": "Empfohlenes Modul",
+        "viewProductButton": "Details ansehen",
+        "retakeButton": "Neu starten",
+        "backButton": "Zurueck",
+        "quickQuestions": [
+          {
+            "id": 1,
+            "question": "Welches Format hat dein Event?",
+            "subtitle": "Das Format entscheidet, wie Check-in und Informationsfluss organisiert werden.",
+            "options": [
+              {
+                "label": "Live vor Ort",
+                "icon": "Users",
+                "scores": {
+                  "sap-s4hana": 4,
+                  "sap-successfactors": 4,
+                  "bimser": 2
+                }
+              },
+              {
+                "label": "Hybrid",
+                "icon": "MonitorPlay",
+                "scores": {
+                  "opentext": 5,
+                  "sap-ariba": 3,
+                  "microsoft-power-bi": 2
+                }
+              },
+              {
+                "label": "Medical / reguliert",
+                "icon": "HeartPulse",
+                "scores": {
+                  "sap-business-one": 5,
+                  "sap-successfactors": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "question": "Was ist dein wichtigster Engpass?",
+            "subtitle": "Wir fokussieren zuerst auf den kritischsten Punkt am Eventtag.",
+            "options": [
+              {
+                "label": "Badge-Druck und Personalisierung",
+                "icon": "BadgeCheck",
+                "scores": {
+                  "sap-s4hana": 5,
+                  "bimser": 2
+                }
+              },
+              {
+                "label": "Schneller Einlass und Rechtepruefung",
+                "icon": "ScanLine",
+                "scores": {
+                  "sap-successfactors": 5,
+                  "sap-business-one": 2
+                }
+              },
+              {
+                "label": "Teilnehmerinfos und Begleitung per App",
+                "icon": "Smartphone",
+                "scores": {
+                  "sap-ariba": 5,
+                  "microsoft-power-bi": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "question": "Wie soll der Check-in organisiert sein?",
+            "subtitle": "Die operative Form beeinflusst Hardware, Personal und Besucherfluss.",
+            "options": [
+              {
+                "label": "Self-Check-in / Kiosk",
+                "icon": "TabletSmartphone",
+                "scores": {
+                  "bimser": 5,
+                  "sap-s4hana": 2
+                }
+              },
+              {
+                "label": "Mobiles Team mit App",
+                "icon": "Smartphone",
+                "scores": {
+                  "sap-successfactors": 4,
+                  "sap-ariba": 2,
+                  "sap-business-one": 2
+                }
+              },
+              {
+                "label": "Zentrale Plattform fuer alles",
+                "icon": "LayoutDashboard",
+                "scores": {
+                  "microsoft-power-bi": 5,
+                  "opentext": 3
+                }
+              }
+            ]
+          }
+        ],
+        "solutionContent": {
+          "sap-s4hana": {
+            "title": "Full-Colour Live-Badging",
+            "description": "Badge-Druck in Echtzeit fuer einen professionellen ersten Eindruck und flexible Anpassungen direkt vor Ort."
+          },
+          "sap-successfactors": {
+            "title": "Einlassmanagement",
+            "description": "Check-in, QR-Scan und Rechtepruefung fuer kontrollierte Besucherstroeme und kurze Wartezeiten."
+          },
+          "sap-ariba": {
+            "title": "Event-Apps",
+            "description": "Agenda, Lageplaene, Buchungen, Feedback und Updates gebuendelt in einer App fuer Teilnehmende und Team."
+          },
+          "sap-business-one": {
+            "title": "Medical Events",
+            "description": "Strukturierte Prozesse fuer sensible Veranstaltungen mit klaren Zugriffs- und Teilnehmerregeln."
+          },
+          "opentext": {
+            "title": "Hybride Events",
+            "description": "Ein Setup, das Vor-Ort-Ablauf und digitale Teilnahme konsistent verbindet."
+          },
+          "bimser": {
+            "title": "Badge2Go / Self-Check-in",
+            "description": "Self-service Check-in mit Kiosk-Logik fuer schnelle Auslastung an mehreren Einlasspunkten."
+          },
+          "microsoft-power-bi": {
+            "title": "FastLane Inside",
+            "description": "Eine zentrale Plattform fuer Teilnehmermanagement, Einlass und operative Uebersicht waehrend des Events."
+          },
+          "sap-bydesign": {
+            "title": "SAP Business ByDesign",
+            "description": "A cloud ERP suite for growing mid-market companies that need fast deployment and global best practices."
+          },
+          "sap-fsm": {
+            "title": "SAP Field Service Management",
+            "description": "Improve dispatching, service execution, and customer satisfaction in the field."
+          },
+          "sap-sam": {
+            "title": "SAP Service & Asset Manager",
+            "description": "Empower technicians with mobile, context-rich asset management tools."
+          },
+          "sap-bw4hana": {
+            "title": "SAP BW/4HANA",
+            "description": "Consolidate enterprise data into a high-performance warehouse for real-time analytics."
+          }
+        }
+      }
+    },
+    "services": {
+      "sections": {
+        "eyebrow": "Services",
+        "title": [
+          "Eventprozesse &",
+          "OnSite-Betreuung"
+        ],
+        "description": "FastLane verbindet Beratung, Konfiguration und operative Begleitung zu einem Setup, das am Eventtag belastbar bleibt.",
+        "phases": [
+          {
+            "title": "Konzeption & Briefing",
+            "steps": [
+              "Format klaeren",
+              "Teilnehmerlogik definieren",
+              "Einlasspunkte planen",
+              "Sonderfaelle aufnehmen"
+            ],
+            "description": "Zu Beginn wird festgelegt, wie Gaeste, Kategorien, Rechte und Check-in-Strecken organisiert werden. So entsteht ein Ablauf, der realistisch und testbar ist."
+          },
+          {
+            "title": "Technisches Setup",
+            "steps": [
+              "Badges konfigurieren",
+              "Rechte abbilden",
+              "Apps und Kioske vorbereiten",
+              "Dashboards abstimmen"
+            ],
+            "description": "FastLane richtet Druck, mobile Check-ins, Self-service und Teilnehmerkommunikation so ein, dass alle Module ineinandergreifen."
+          },
+          {
+            "title": "Betrieb & Auswertung",
+            "steps": [
+              "OnSite Support",
+              "Live-Anpassungen",
+              "Monitoring",
+              "Nachbereitung"
+            ],
+            "description": "Am Eventtag wird operativ begleitet und bei Veraenderungen schnell reagiert. Danach koennen Check-ins und Bewegungen strukturiert ausgewertet werden."
+          }
+        ],
+        "supportCards": [
+          {
+            "title": "Persoenliche Betreuung",
+            "description": "Von der Abstimmung bis zum Eventtag begleitet FastLane dein Team mit konkreten Ansprechpartnern und pragmischen Entscheidungen.",
+            "meta": "Direkt vor Ort und im Projekt",
+            "icon": "LifeBuoy",
+            "accent": "gold"
+          },
+          {
+            "title": "Flexible Technik",
+            "description": "App, Kiosk, Badge-Druck und Rechtepruefung werden so kombiniert, dass auch kurzfristige Aenderungen sauber abgebildet werden koennen.",
+            "meta": "Anpassbar an Format und Besucherfluss",
+            "icon": "ShieldCheck",
+            "accent": "blue"
+          }
+        ]
+      }
+    },
+    "team": {
+      "sections": {
+        "eyebrow": "OnSite Team",
+        "title": "FastLane arbeitet dort, wo Eventfluss entscheidet",
+        "description": "Teilnehmermanagement ist kein reiner Softwareprozess. FastLane verbindet Menschen, Technik und Ablaufsteuerung genau an der Stelle, an der Ankunft und Orientierung entstehen.",
+        "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
+        "principlesTitle": "Arbeitsprinzipien",
+        "principles": [
+          {
+            "title": "Klarheit",
+            "description": "Teilnehmerwege, Rollen und Rechte werden vorab sauber definiert.",
+            "icon": "Users"
+          },
+          {
+            "title": "Ruhe im Betrieb",
+            "description": "Vor Ort zaehlen kurze Wege, klare Verantwortungen und schnelle Entscheidungen.",
+            "icon": "MessageSquare"
+          },
+          {
+            "title": "Verlaesslichkeit",
+            "description": "Check-in, Badge-Druck und Rechtepruefung muessen auch unter Last stabil bleiben.",
+            "icon": "ShieldCheck"
+          },
+          {
+            "title": "Respekt fuer Gaeste",
+            "description": "Der erste Eindruck entsteht an Empfang, Kiosk und Einlass.",
+            "icon": "Heart"
+          },
+          {
+            "title": "Anpassungsfaehigkeit",
+            "description": "Kurzfristige Aenderungen werden in Prozesse statt in Chaos uebersetzt.",
+            "icon": "Target"
+          },
+          {
+            "title": "Timing",
+            "description": "Einlasslogik muss exakt auf das Tempo des Events abgestimmt sein.",
+            "icon": "Clock"
+          }
+        ],
+        "quote": "FastLane denkt nicht in Inselloesungen, sondern in einem Ablauf, der fuer Team, Veranstalter und Gaeste gleichzeitig funktioniert.",
+        "cta": {
+          "title": "Sprich mit dem Team ueber dein naechstes Event",
+          "description": "Wenn du ein Live-, Hybrid- oder Medical-Setup planst, klaeren wir gemeinsam, welche Module vor Ort wirklich gebraucht werden.",
+          "buttonText": "Termin anfragen",
+          "buttonHref": "mailto:service@fastlane-gmbh.de"
+        }
+      }
+    },
+    "sapBusinessOne": {
+      "sections": {
+        "hero": {
+          "badge": "SAP Solution Brief",
+          "title": [
+            "A single ERP",
+            "solution for",
+            "entire company"
+          ],
+          "description": "SAP Solutions for Small and Midsize Businesses. Gain greater control over your business or subsidiary with SAP Business One.",
+          "primaryCta": "Download Brochure",
+          "secondaryCta": "Request Demo",
+          "gallery": [
+            {
+              "type": "image",
+              "src": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=600&q=80",
+              "alt": "Team"
+            },
+            {
+              "type": "image",
+              "src": "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=600&q=80",
+              "alt": "Office"
+            },
+            {
+              "type": "image",
+              "src": "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80",
+              "alt": "Meeting"
+            },
+            {
+              "type": "image",
+              "src": "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=600&q=80",
+              "alt": "Working"
+            }
+          ],
+          "primaryHref": "https://www.sap.com/products/erp/business-one.html",
+          "secondaryHref": "/#contact"
+        },
+        "stats": {
+          "title": "Why 83,000 customers already run SAP Business One around the world?",
+          "description": "Every day over 83,000 customers rely on SAP Business One to manage every aspect of their businesses and keep their customers satisfied. Built-in analytics and reporting make it possible to take fast decisions.",
+          "metrics": [
+            {
+              "value": "83000+",
+              "label": "Global Customers"
+            },
+            {
+              "value": "50",
+              "label": "Localizations"
+            },
+            {
+              "value": "28",
+              "label": "Languages"
+            }
+          ],
+          "benefits": [
+            {
+              "title": "Affordable",
+              "description": "Low total cost of ownership",
+              "icon": "ShieldCheck"
+            },
+            {
+              "title": "Comprehensive",
+              "description": "All your department needs",
+              "icon": "Layout"
+            },
+            {
+              "title": "Quick & Easy",
+              "description": "To implement and maintain",
+              "icon": "Zap"
+            },
+            {
+              "title": "Powerful",
+              "description": "To help your business grow",
+              "icon": "TrendingUp"
+            }
+          ]
+        },
+        "core": {
+          "title": "Robust ERP Solution. Easy to Extend.",
+          "description": "A comprehensive solution that covers every aspect of your business, from CRM and sales to financials and operations.",
+          "centerTitle": "SAP",
+          "centerSubtitle": "Business One",
+          "centerBadge": "CORE",
+          "modules": [
+            {
+              "name": "Accounting & Financials",
+              "icon": "Wallet"
+            },
+            {
+              "name": "Inventory & Distribution",
+              "icon": "Package"
+            },
+            {
+              "name": "Production & MRP",
+              "icon": "Factory"
+            },
+            {
+              "name": "Project Management",
+              "icon": "ClipboardList"
+            },
+            {
+              "name": "Sales & Service",
+              "icon": "Users"
+            },
+            {
+              "name": "Purchasing & Operations",
+              "icon": "ShoppingBag"
+            },
+            {
+              "name": "Management & Admin",
+              "icon": "UserCog"
+            },
+            {
+              "name": "Mobile Technologies",
+              "icon": "Smartphone"
+            }
+          ]
+        },
+        "webInterface": {
+          "eyebrow": "User Experience",
+          "title": [
+            "Intuitive,",
+            "User-friendly Interface"
+          ],
+          "description": "SAP Business One web Client features a user-friendly web interface aligned with SAP Fiori design principles. It integrates the core business processes and functionalities with advanced analytics.",
+          "points": [
+            "Flexible deployment options",
+            "Advanced analytics in one glance",
+            "Manage sales, partners, and products",
+            "Ideal companion for growth"
+          ],
+          "mockup": {
+            "brandLabel": "SAP",
+            "productLabel": "Business One",
+            "dashboardTitle": "My Dashboard",
+            "updatedLabel": "Last updated: Just now",
+            "salesOrdersLabel": "Sales Orders",
+            "salesOrdersValue": "156",
+            "salesOrdersStatus": "Open",
+            "revenueLabel": "Revenue",
+            "revenueValue": "$1.2M",
+            "targetLabel": "Target",
+            "targetValue": "75%",
+            "inventoryLabel": "Inventory Value by Group",
+            "inventoryBars": [
+              "40",
+              "60",
+              "30",
+              "80",
+              "50",
+              "70",
+              "45",
+              "90"
+            ]
+          }
+        },
+        "financials": {
+          "title": "Streamline Your Financial Operations",
+          "subtitle": "Financial Management",
+          "description": "SAP Business One streamlines financial operations by automating accounting tasks, managing multi-currency transactions, and supporting tax calculations. It handles banking activities, reconciles accounts, and tracks cash flow.",
+          "featureCards": [
+            {
+              "title": "Accounting",
+              "description": "Automatically handle all key accounting processes, such as journal entries, accounts receivable, and accounts payable.",
+              "icon": "Calculator"
+            },
+            {
+              "title": "Controlling",
+              "description": "Accurately manage cash flow, track fixed assets, control budgets, and monitor project costs.",
+              "icon": "TrendingUp"
+            }
+          ],
+          "statCards": [
+            {
+              "value": "35%",
+              "label": "Efficiency Increase"
+            },
+            {
+              "value": "Auto",
+              "label": "Reconciliations"
+            }
+          ]
+        },
+        "sales": {
+          "title": "Maximize Customer Relationships",
+          "subtitle": "Sales & CRM",
+          "description": "Manage the entire sales process and customer lifecycle efficiently, from initial contact to after-sales support. Integrated functionality provides a complete view of prospects and customers.",
+          "featureCards": [
+            {
+              "title": "Sales Management",
+              "description": "Track opportunities and activities from the first contact to deal closing. Create and manage marketing campaigns.",
+              "icon": "Users"
+            },
+            {
+              "title": "Mobilize Sales Team",
+              "description": "Manage your sales information on the move with SAP Business One Sales mobile app.",
+              "icon": "Smartphone"
+            }
+          ]
+        },
+        "purchasing": {
+          "title": "Simplify Procurement",
+          "subtitle": "Purchasing & Inventory",
+          "description": "Streamline the entire order-to-pay cycle for small and midsized businesses. Integrated reporting tools enable supplier comparison for better deals and cost savings.",
+          "featureCards": [
+            {
+              "title": "Procurement",
+              "description": "Create purchase requests, POs, and goods receipts; link purchasing documents and view document trails for audit purposes.",
+              "icon": "ShoppingCart"
+            },
+            {
+              "title": "Master Data Management",
+              "description": "Manage detailed data in a user-friendly interface, view account balance and purchase analyses.",
+              "icon": "Database"
+            }
+          ]
+        },
+        "production": {
+          "title": "Effortlessly Manage Inventory",
+          "subtitle": "Production & MRP",
+          "description": "Track shipments, inventory, and item locations accurately. Support various costing methods, real-time stock monitoring, and seamless transfer tracking.",
+          "featureCards": [
+            {
+              "title": "Warehouse & Inventory",
+              "description": "Manage inventory using various costing models, maintain item master data, and use multiple units of measure.",
+              "icon": "Box"
+            },
+            {
+              "title": "Production Planning",
+              "description": "Create and maintain multilevel bills of materials (BOMs), issue and release production orders manually or by backflush.",
+              "icon": "RefreshCw"
+            }
+          ]
+        },
+        "analytics": {
+          "eyebrow": "Insights",
+          "title": "See Your Entire Business Clearly",
+          "description": "SAP Business One offers advanced built-in analytical capabilities allowing you to instantly gain business insights that support optimized decision making.",
+          "cards": [
+            {
+              "title": "Real-time Data",
+              "description": "Instant access to live business data for faster decisions."
+            },
+            {
+              "title": "Overview Screens",
+              "description": "Customizable dashboards for every department."
+            },
+            {
+              "title": "User-Defined Queries",
+              "description": "Create complex reports without technical expertise."
+            },
+            {
+              "title": "Linked Views",
+              "description": "Drill down into details with a single click."
+            }
+          ]
+        },
+        "innovation": {
+          "badge": "Innovation",
+          "title": [
+            "Artificial Intelligence",
+            "and Automation"
+          ],
+          "description": "Extensibility readiness for adoption of AI services. SAP Business One is ready for the adoption of AI services, enabling partners to create and innovate with most recent AI agents.",
+          "items": [
+            {
+              "title": "SAP Document AI",
+              "description": "Machine learning to streamline processing of invoices from vendors.",
+              "icon": "Sparkles"
+            },
+            {
+              "title": "Process Automation",
+              "description": "Free employees from repetitive and error-prone tasks using best-practice templates.",
+              "icon": "Zap"
+            }
+          ],
+          "visualLabel": "Foundation on SAP BTP"
+        },
+        "industries": {
+          "eyebrow": "Expertise",
+          "title": "Harness Industry Expertise",
+          "ecosystemLabel": "Ecosystem",
+          "ecosystemValue": "Over 500 add-on solutions",
+          "items": [
+            {
+              "title": "Consumer Products",
+              "description": "Align operations with modern consumer needs.",
+              "cta": "Explore"
+            },
+            {
+              "title": "Industrial Machinery",
+              "description": "Reduce supply chain costs and accelerate cycle times.",
+              "cta": "Explore"
+            },
+            {
+              "title": "Professional Services",
+              "description": "Deliver consistent, high-value services to clients.",
+              "cta": "Explore"
+            },
+            {
+              "title": "Retail",
+              "description": "Personalized shopping experiences across all channels.",
+              "cta": "Explore"
+            },
+            {
+              "title": "Wholesale Distribution",
+              "description": "Proactively meet customer and supplier demands.",
+              "cta": "Explore"
+            }
+          ]
+        },
+        "deployment": {
+          "eyebrow": "Infrastructure",
+          "title": "Flexible Deployment",
+          "options": [
+            {
+              "title": "Cloud",
+              "description": "Deploy in the cloud through partner-hosted options, ensuring scalability.",
+              "icon": "Cloud",
+              "color": "text-blue-500",
+              "background": "bg-blue-50"
+            },
+            {
+              "title": "On-Premise",
+              "description": "Deploy in your office with tailored solutions to meet specific needs.",
+              "icon": "Building2",
+              "color": "text-slate-600",
+              "background": "bg-slate-50"
+            },
+            {
+              "title": "Mobile Apps",
+              "description": "Manage your business on the go, anytime, anywhere.",
+              "icon": "Smartphone",
+              "color": "text-pink-500",
+              "background": "bg-pink-50"
+            }
+          ]
+        },
+        "cta": {
+          "title": "Empower Your Business with SAP Business One",
+          "description": "Available exclusively through SAP partners like 3ILINE. It streamlines operations, provides instant access to critical information, and accelerates profitable growth.",
+          "primaryText": "Learn More at SAP.com",
+          "primaryHref": "https://sap.com/businessone",
+          "secondaryText": "Contact Our Experts",
+          "secondaryHref": "/#contact",
+          "trustedLabel": "Trusted by 83,000+ Companies"
+        }
+      }
+    },
+    "solutions": {
+      "sections": {
+        "eyebrow": "FastLane Loesungen",
+        "title": "Teilnehmendenmanagement als modulares System",
+        "description": "Jede Loesung ist auf einen konkreten Teil des Eventflusses ausgerichtet und laesst sich mit weiteren Modulen kombinieren.",
+        "products": [
+          {
+            "id": "sap-s4hana",
+            "title": "Full-Colour Live-Badging",
+            "category": "OnSite Print",
+            "description": "Personalisierte Badges in Echtzeit direkt beim Event.",
+            "icon": "BadgeCheck"
+          },
+          {
+            "id": "sap-successfactors",
+            "title": "Einlassmanagement",
+            "category": "Check-in",
+            "description": "QR-Scan, Rechtepruefung und transparente Besuchersteuerung.",
+            "icon": "ScanLine"
+          },
+          {
+            "id": "sap-ariba",
+            "title": "Event-Apps",
+            "category": "Participant App",
+            "description": "Agenda, Buchungen, Navigation und Updates in einer mobilen Begleitung.",
+            "icon": "Smartphone"
+          },
+          {
+            "id": "sap-business-one",
+            "title": "Medical Events",
+            "category": "Regulated Events",
+            "description": "Strukturierte Teilnehmerfuehrung fuer sensible und stark geregelte Formate.",
+            "icon": "HeartPulse"
+          },
+          {
+            "id": "opentext",
+            "title": "Hybride Events",
+            "category": "Live + Digital",
+            "description": "Verbindung aus Vor-Ort-Erlebnis und digitaler Teilnahme.",
+            "icon": "MonitorPlay"
+          },
+          {
+            "id": "bimser",
+            "title": "Badge2Go",
+            "category": "Self-Service",
+            "description": "Self-check-in und Badge-Ausgabe mit klarer Kiosklogik.",
+            "icon": "TabletSmartphone"
+          },
+          {
+            "id": "microsoft-power-bi",
+            "title": "FastLane Inside",
+            "category": "Control Center",
+            "description": "Eine Plattform fuer Teilnehmerdaten, Buchungen und operative Uebersicht.",
+            "icon": "LayoutDashboard"
+          }
+        ]
+      }
+    }
+  },
+  "solutionDetails": {
+    "sap-s4hana": {
+      "title": "Full-Colour Live-Badging",
+      "category": "OnSite Print",
+      "description": "Badge-Druck in Farbe direkt vor Ort.",
+      "intro": "Mit Live-Badging gestaltest du den Empfang effizient, professionell und markengerecht. Namensschilder werden beim Check-in in Echtzeit produziert und koennen auch kurzfristig angepasst werden.",
+      "features": [
+        "Personalisierte Badges mit Namen, Rolle, Firma oder Gruppenmerkmalen",
+        "Echtzeit-Druck ohne Vorproduktion",
+        "Flexible Anpassungen bei Nachmeldungen oder Rollenwechseln",
+        "Nahtlose Verbindung mit Check-in und Zutrittslogik"
+      ],
+      "benefits": [
+        "Reduziert Wartezeiten am Empfang",
+        "Staerkt den ersten Eindruck deiner Veranstaltung",
+        "Macht kurzfristige Aenderungen beherrschbar",
+        "Verbindet Branding und Prozess in einem Schritt"
+      ],
+      "ctaText": "Jetzt Kontakt aufnehmen",
+      "ctaHref": "/#contact"
+    },
+    "sap-successfactors": {
+      "title": "Einlassmanagement",
+      "category": "Check-in",
+      "description": "Kontrollierter Zutritt fuer Events jeder Groesse.",
+      "intro": "Schneller Check-in, klare Zutrittskontrolle und strukturierte Ablaeufe sorgen dafuer, dass Gaeste entspannt ankommen und dein Event professionell startet. Mit FastLane lassen sich Teilnehmer, Rechte und Bewegungen in einem durchgaengigen Prozess steuern.",
+      "features": [
+        "QR-Code-Scan und manuelle Suche in einer mobilen Check-in-App",
+        "Live-Dashboard fuer Besucherzahlen und Auslastungen",
+        "Individuelle Rechtekontrolle fuer Bereiche und Sessions",
+        "Einsatz ueber App, Kiosk oder mehrere Einlasspunkte"
+      ],
+      "benefits": [
+        "Kurze Wartezeiten auch bei hohem Besucheraufkommen",
+        "Volle Transparenz ueber Einlassstatus und Kontingente",
+        "Sichere Rechtepruefung in Echtzeit",
+        "Belastbarer Start auch bei mehreren Zugangszonen"
+      ],
+      "ctaText": "Angebot anfordern",
+      "ctaHref": "/#contact"
+    },
+    "sap-ariba": {
+      "title": "Event-Apps",
+      "category": "Participant App",
+      "description": "Digitale Begleitung fuer den gesamten Eventtag.",
+      "intro": "Die FastLane Event-App ergaenzt Akkreditierung und Einlass mit einer zentralen Informationsschicht fuer Teilnehmende. Agenda, Buchungen, Lageplaene, Feedback und Updates bleiben waehrend der Veranstaltung jederzeit erreichbar.",
+      "features": [
+        "Agenda, Sessions und Programmpunkte mobil verfuegbar",
+        "Buchungen, Lageplaene und Updates an einem Ort",
+        "Feedback und Orientierung direkt im Eventfluss",
+        "Saubere Verzahnung mit Vor-Ort-Prozessen"
+      ],
+      "benefits": [
+        "Weniger Rueckfragen am Eventtag",
+        "Mehr Orientierung fuer Teilnehmende",
+        "Klarer Informationskanal fuer kurzfristige Updates",
+        "Stimmiges Erlebnis zwischen Empfang und Programmnutzung"
+      ],
+      "ctaText": "Event-App entdecken",
+      "ctaHref": "/#contact"
+    },
+    "sap-business-one": {
+      "title": "Medical Events",
+      "category": "Regulated Events",
+      "description": "Teilnehmerfuehrung fuer sensible Veranstaltungsformate.",
+      "intro": "Medical Events benoetigen eindeutige Prozesse, saubere Teilnehmerlogik und dokumentierbare Rechte. FastLane unterstuetzt solche Formate mit kontrolliertem Check-in, strukturierten Teilnehmerwegen und verlaesslicher OnSite-Betreuung.",
+      "features": [
+        "Klare Teilnehmerkategorien und Zutrittsregeln",
+        "Nachvollziehbare Check-in-Prozesse fuer sensible Formate",
+        "Saubere Steuerung von Einlasspunkten und Besucherwegen",
+        "Persoenliche Begleitung bei operativen Sonderfaellen"
+      ],
+      "benefits": [
+        "Mehr Sicherheit in regulierten Eventumgebungen",
+        "Klare Orientierung fuer Team und Teilnehmende",
+        "Kontrollierte Umsetzung auch bei komplexen Vorgaben",
+        "Weniger operative Unsicherheit am Eventtag"
+      ],
+      "ctaText": "Medical Setup besprechen",
+      "ctaHref": "/#contact"
+    },
+    "opentext": {
+      "title": "Hybride Events",
+      "category": "Live + Digital",
+      "description": "Ein Event fuer Vor-Ort- und Remote-Teilnahme.",
+      "intro": "Hybride Events verbinden physische Begegnung mit digitaler Reichweite. FastLane denkt Einlass, Teilnehmerdaten und Informationsfluss so, dass Vor-Ort- und Remote-Erlebnis aus einem durchgehenden Setup heraus funktionieren.",
+      "features": [
+        "Verbindung von Live-Event und digitaler Teilnahme",
+        "Zentrale Teilnehmerlogik fuer mehrere Nutzungskanaele",
+        "Klarer Informationsfluss fuer Team und Teilnehmende",
+        "Flexibles Setup fuer unterschiedliche Reichweiten"
+      ],
+      "benefits": [
+        "Mehr Reichweite ohne Verlust des Live-Charakters",
+        "Sauberer Uebergang zwischen Vor-Ort und digital",
+        "Bessere Steuerung von Informationen und Updates",
+        "Flexibles Format fuer wechselnde Anforderungen"
+      ],
+      "ctaText": "Hybrid-Setup anfragen",
+      "ctaHref": "/#contact"
+    },
+    "bimser": {
+      "title": "Badge2Go",
+      "category": "Self-Service",
+      "description": "Self-check-in und Badge-Ausgabe mit Kiosklogik.",
+      "intro": "Badge2Go bringt Self-service in den Event-Einlass. Teilnehmende koennen sich an Kiosken anmelden, QR-Codes scannen und Badges ohne Medienbruch erhalten. Das beschleunigt Stoerungen nicht nur, sondern entlastet auch das Empfangsteam.",
+      "features": [
+        "Self-check-in ueber Kiosk oder QR-Scan",
+        "Direkte Ausgabe von Badges am Terminal",
+        "Geeignet fuer mehrere Einlasspunkte und Peaks",
+        "Verbindbar mit Rechten, Status und Teilnehmerdaten"
+      ],
+      "benefits": [
+        "Entlastet Personal an stark frequentierten Check-ins",
+        "Beschleunigt den Zutritt in Peak-Phasen",
+        "Skalierbar fuer verschiedene Eventgroessen",
+        "Sauberer Prozess fuer wiederkehrende Standardfaelle"
+      ],
+      "ctaText": "Badge2Go pruefen",
+      "ctaHref": "/#contact"
+    },
+    "microsoft-power-bi": {
+      "title": "FastLane Inside",
+      "category": "Control Center",
+      "description": "Zentrale Plattform fuer Teilnehmermanagement.",
+      "intro": "FastLane Inside ist die Steuerungszentrale fuer dein OnSite-Event. Buchungen, Teilnehmerverwaltung und Einlassmanagement werden in einer Anwendung gebuendelt, damit das Team den Ueberblick behaelt.",
+      "features": [
+        "Zentrale Verwaltung fuer Buchungen und Teilnehmerdaten",
+        "Konfiguration von Kategorien und Optionen vor dem Event",
+        "Verknuepfung mit Einlass, Check-in und Auswertung",
+        "Uebersichtliche Bedienung fuer operative Teams"
+      ],
+      "benefits": [
+        "Weniger Systembrueche im Projekt und am Eventtag",
+        "Mehr Transparenz fuer operative Entscheidungen",
+        "Schneller Zugriff auf relevante Teilnehmerinformationen",
+        "Belastbare Grundlage fuer Monitoring und Nachbereitung"
+      ],
+      "ctaText": "Plattform ansehen",
+      "ctaHref": "/#contact"
+    },
+    "sap-sam": {
+      "title": "SAP Service & Asset Manager",
+      "category": "Mobile Asset Management",
+      "description": "Intuitive mobile app for field technicians.",
+      "intro": "Empower your workforce with mobile access to asset data, enabling sustainable and risk-resilient operations through context-rich visualizations and productivity tools.",
+      "features": [
+        "Mobile access to asset health and history",
+        "Streamlined maintenance processes and forms",
+        "Tailored mobile personas for supply chain",
+        "Seamless integration with core SAP systems",
+        "Low-code/no-code designer for dynamic forms"
+      ],
+      "benefits": [
+        "Enable sustainable and risk-resilient operations",
+        "Improve field technician productivity by 30%+",
+        "Reduce maintenance costs through faster data entry",
+        "Ensure high accuracy of asset information"
+      ],
+      "ctaText": "Schedule a Mobile Demo",
+      "ctaHref": "/#contact"
+    },
+    "sap-fsm": {
+      "title": "SAP Field Service Management",
+      "category": "FSM & Scheduling",
+      "description": "Resolve customer issues quickly with end-to-end service.",
+      "intro": "SAP FSM provides comprehensive support for field service operations, featuring cloud deployment, customer self-service, and AI-enabled scheduling.",
+      "features": [
+        "Scheduling & Dispatching: AI-powered optimization",
+        "Customer Self-Service: Empower clients to book service",
+        "Real-time Analytics: Monitor KPIs on the go",
+        "AI-Enabled Scheduling: Reduce travel time and costs",
+        "End-to-end Service Lifecycle: From call to invoice"
+      ],
+      "benefits": [
+        "Improve first-time fix rates significantly",
+        "Reduce operational costs and travel overhead",
+        "Increase customer satisfaction and revenue",
+        "Scale service operations efficiently"
+      ],
+      "ctaText": "Optimize Your Field Service",
+      "ctaHref": "/#contact"
+    },
+    "sap-bw4hana": {
+      "title": "SAP BW/4HANA",
+      "category": "Data Warehousing",
+      "description": "A single source of truth for the entire enterprise.",
+      "intro": "SAP BW/4HANA is an on-premise data warehouse layer that consolidates data across the enterprise, providing a robust platform for real-time insights.",
+      "features": [
+        "Simplified Data Modeling: Modern web-based interface",
+        "Real-time Insights: Process massive data volumes live",
+        "Cloud & On-premise Deployment: Flexible options",
+        "Integration: Connect with SAP and non-SAP sources",
+        "Advanced Analytics: Innovative data processing"
+      ],
+      "benefits": [
+        "Capitalize on all your data assets efficiently",
+        "Simplify provisioning of business insights",
+        "Consolidate data for a single source of truth",
+        "Innovate with high-performance analytics"
+      ],
+      "ctaText": "Analyze Your Enterprise Data",
+      "ctaHref": "/#contact"
+    },
+    "sap-analytics": {
+      "title": "SAP Business Analytics",
+      "category": "BI & Analytics Cloud",
+      "description": "Unified analytics and predictive planning.",
+      "intro": "A centralized suite for data reporting, visualization, and sharing. Includes BusinessObjects BI for on-premise and SAP Analytics Cloud for modern planning.",
+      "features": [
+        "Ad-hoc Queries: Rapid data exploration",
+        "Enterprise Reporting: Scalable information delivery",
+        "Self-service Visualization: Empower business users",
+        "Predictive Planning: AI-driven foresight",
+        "Role-based Dashboards: Contextual insights"
+      ],
+      "benefits": [
+        "Make faster, data-driven business decisions",
+        "Unify analytics and planning in one solution",
+        "Improve transparency across all departments",
+        "Predict future trends with high accuracy"
+      ],
+      "ctaText": "Start Your Free 30-Day Trial",
+      "ctaHref": "/#contact"
+    },
+    "sap-bydesign": {
+      "title": "SAP Business ByDesign",
+      "category": "Cloud ERP for Midmarket",
+      "description": "Large-enterprise capabilities for midsize companies.",
+      "intro": "A cloud-based ERP suite that provides comprehensive business management without the need for a large IT infrastructure or massive upfront investment.",
+      "features": [
+        "Finance & CRM: Integrated core operations",
+        "Project Management: Track resources and costs",
+        "Supply Chain: Manage inventory and logistics",
+        "Industry-specific Functions: Tailored for your niche",
+        "Quarterly Releases: Always stay on latest version"
+      ],
+      "benefits": [
+        "Run your entire business in the cloud",
+        "Avoid heavy hardware and IT maintenance costs",
+        "Scale your business without limits",
+        "Gain enterprise-grade ERP power affordably"
+      ],
+      "ctaText": "See ByDesign in Action",
+      "ctaHref": "/#contact"
+    }
+  }
+}

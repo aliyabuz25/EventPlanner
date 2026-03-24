@@ -9,7 +9,6 @@ interface MobileMenuProps {
   solutionSublinks: { name: string; id: SolutionId }[];
   onLinkClick: (e: React.MouseEvent, link: any) => void;
   onSolutionSelect: (id: SolutionId) => void;
-  onStudioOpen: () => void;
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = ({ 
@@ -18,19 +17,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   navLinks, 
   solutionSublinks, 
   onLinkClick, 
-  onSolutionSelect,
-  onStudioOpen
+  onSolutionSelect
 }) => {
   return (
     <div className={`md:hidden fixed inset-0 z-[100000] h-[100dvh] min-h-screen bg-sap-paper dark:bg-[#000000] transition-all duration-300 ease-in-out flex flex-col pt-20 sm:pt-24 px-4 sm:px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
       <div className="flex-1 min-h-0 space-y-5 overflow-y-auto pb-10">
-        <button
-          type="button"
-          onClick={onStudioOpen}
-          className="w-full rounded-2xl bg-sap-blue text-white px-5 py-4 text-sm font-bold uppercase tracking-[0.18em] shadow-lg"
-        >
-          Event Studio
-        </button>
         {navLinks.map((link) => (
           <div key={link.name} className="border-b border-slate-200 dark:border-white/5 pb-4">
             <a

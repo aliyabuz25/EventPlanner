@@ -12,13 +12,13 @@ const About: React.FC<AboutProps> = ({ onReadMore }) => {
   const about = content.pages.home.sections.about;
 
   return (
-    <section id="about" className="py-24 bg-sap-paper dark:bg-[#050505] transition-colors duration-500">
+    <section id="about" className="py-24 bg-sap-paper dark:bg-dark-base transition-colors duration-500">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
         <div className="flex flex-col lg:flex-row gap-24 items-center">
           <div className="w-full lg:w-1/2">
             <div className="text-sap-gold font-semibold uppercase tracking-wide text-xs mb-3">{about.eyebrow}</div>
-            <h2 className="text-4xl sm:text-5xl font-semibold mb-8 leading-tight tracking-tight text-slate-900 dark:text-white transition-colors">{about.title}</h2>
-            <div className="space-y-6 text-slate-600 dark:text-slate-400 text-lg leading-relaxed font-normal transition-colors">
+            <h2 className="text-4xl sm:text-5xl font-semibold mb-8 leading-tight tracking-tight text-slate-900 dark:text-dark-text-primary transition-colors">{about.title}</h2>
+            <div className="space-y-6 text-slate-600 dark:text-dark-text-secondary text-lg leading-relaxed font-normal transition-colors">
               {about.paragraphs.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
@@ -26,9 +26,9 @@ const About: React.FC<AboutProps> = ({ onReadMore }) => {
             
             <div className="mt-10 flex flex-wrap gap-4">
                {about.badges.map((badge) => (
-                 <div key={badge} className="flex items-center space-x-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 px-6 py-3 rounded-full shadow-sm dark:shadow-none transition-all">
+                 <div key={badge} className="flex items-center space-x-3 bg-white dark:bg-dark-elevated/40 border border-slate-200 dark:border-white/5 px-6 py-3 rounded-full shadow-sm dark:shadow-none transition-all">
                     <CheckCircle2 className="w-5 h-5 text-sap-gold" />
-                    <span className="text-xs font-semibold text-slate-800 dark:text-white tracking-wide">{badge}</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-dark-text-primary tracking-wide">{badge}</span>
                  </div>
                ))}
             </div>

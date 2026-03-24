@@ -44,6 +44,15 @@
     animation: studio-progress-slide 1.45s ease-in-out infinite;
     will-change: transform;
   }
+
+  .view-slide-in-right {
+    animation: view-slide-in-right 560ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity;
+  }
+
+  .view-fade-in-soft {
+    animation: view-fade-in-soft 320ms ease-out;
+  }
 }
 
 @keyframes studio-progress-slide {
@@ -52,5 +61,25 @@
   }
   100% {
     transform: translateX(265%);
+  }
+}
+
+@keyframes view-slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translate3d(56px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes view-fade-in-soft {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }

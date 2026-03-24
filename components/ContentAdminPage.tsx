@@ -10,6 +10,7 @@ import {
   Globe,
   History,
   Home,
+  Languages,
   Megaphone,
   Network,
   PanelLeftClose,
@@ -27,13 +28,21 @@ import {
 } from 'lucide-react';
 import bootstrapCssUrl from 'bootstrap/dist/css/bootstrap.min.css?url';
 import { GiOctopus } from 'react-icons/gi';
-import { useSiteContent } from '../contexts/SiteContentContext';
+import { CircleFlag } from 'react-circle-flags';
+import { applyFrontendLocaleOverrides, useSiteContent } from '../contexts/SiteContentContext';
+import { SiteContent } from '../types';
 import { fallbackIcon, iconOptions, resolveIcon } from './iconRegistry';
-import { siteContentSeed } from '../shared/siteContentSeed';
+import { normalizeSiteContent, siteContentSeed } from '../shared/siteContentSeed';
 import {
+  AdminTranslationJob,
   AiExplorerReport,
+  fetchAdminTranslation,
+  fetchAdminTranslationJob,
   fetchAiExplorerReports,
+  fetchFrontendTranslation,
   fetchSiteDocumentRevisions,
+  saveFrontendTranslationDocument,
+  startAdminTranslationJob,
   sendSmtpTestEmail,
   SiteDocumentRevision,
   uploadMedia
@@ -83,10 +92,398 @@ interface SmtpDraftConfig {
 interface AdminToastState {
   message: string;
   tone: 'success' | 'error';
+  progress?: number;
+  persistent?: boolean;
 }
+
+type AdminLocale = 'de' | 'en' | 'custom';
 
 const AI_REPORTS_KEY = 'aiReports';
 const HIDDEN_ADMIN_KEYS = new Set(['pages.sapBusinessOne']);
+const ADMIN_LOCALE_STORAGE_KEY = 'oc_admin_locale_v1';
+const ADMIN_CUSTOM_LOCALE_STORAGE_KEY = 'oc_admin_custom_locale_v1';
+const ADMIN_CUSTOM_LOCALE_CACHE_KEY = 'oc_admin_custom_locale_cache_v1';
+const ADMIN_TRANSLATION_JOB_STORAGE_KEY = 'oc_admin_translation_job_v1';
+const CircleFlagIcon = CircleFlag as React.ComponentType<any>;
+
+const adminCopy = {
+  de: {
+    languageLabel: 'Sprache',
+    searchEverything: 'Seiten, Felder, Texte, Badges, Icons und Medien durchsuchen...',
+    searchPages: 'Seiten suchen',
+    noSearchResults: 'Keine passenden Inhalte gefunden.',
+    startSearch: 'Tippe, um die gesamte Inhaltsstruktur zu durchsuchen.',
+    crmKicker: 'Admin Panel',
+    readOnly: 'Nur Lesen',
+    saving: 'Speichert...',
+    update: 'Aktualisieren',
+    expandSidebar: 'Sidebar erweitern',
+    collapseSidebar: 'Sidebar einklappen',
+    loggedUsages: 'Protokollierte Nutzungen',
+    editableFields: 'Bearbeitbare Felder',
+    group: 'Gruppe',
+    editorIntro: 'Bearbeite die Felder unten. Aenderungen werden in der Live-Quelle gespeichert und nach dem Update auf der Website sichtbar.',
+    aiIntro: 'Jede KI-Nutzung wird hier mit Prompt, Event-Details, User-Agent und Zeitstempel protokolliert.',
+    loadingAiReports: 'KI-Berichte werden geladen...',
+    noAiReports: 'Noch keine KI-Nutzungsdaten vorhanden.',
+    untitledAiUsage: 'Unbenannte KI-Nutzung',
+    locationOpen: 'Ort offen',
+    attendeesOpen: 'Teilnehmer offen',
+    phaseOpen: 'Phase offen',
+    unknownUserAgent: 'Unbekannter User-Agent',
+    prompt: 'Prompt',
+    assistantResponse: 'Assistentenantwort',
+    noResponseText: 'Kein Antworttext vorhanden.',
+    customer: 'Kunde',
+    event: 'Event',
+    location: 'Ort',
+    created: 'Erstellt',
+    open: 'Offen',
+    userFriendlySummary: 'Benutzerfreundliche Zusammenfassung',
+    noReadableSummary: 'Noch keine lesbare Zusammenfassung verfuegbar.',
+    publish: 'Veroeffentlichen',
+    status: 'Status',
+    readOnlyAiHistory: 'Schreibgeschuetzte KI-Verlaufshistorie',
+    readyForUpdate: 'Bereit zum Aktualisieren',
+    lastSaved: 'Zuletzt gespeichert',
+    notSavedYet: 'Dieses Dokument wurde in dieser Sitzung noch nicht gespeichert.',
+    updateDocument: 'Dokument aktualisieren',
+    documentSummary: 'Dokumentzusammenfassung',
+    documentKey: 'Dokumentschluessel',
+    groupItems: 'Elemente in der Gruppe',
+    totalDocuments: 'Dokumente gesamt',
+    leafFields: 'Einzelfelder',
+    editorNotes: 'Editor-Hinweise',
+    savedChangeNote: 'Jede gespeicherte Aenderung wird mit Zeitstempel abgelegt und kann wiederhergestellt werden.',
+    recentChangesNote: 'Die letzten Aenderungen dieses Dokuments sind unten aufgefuehrt.',
+    aiUsageNote: 'Alle KI-Nutzungen werden mit Prompt, Event-Details, User-Agent und Zeitstempel protokolliert.',
+    aiUsageSummary: 'KI-Nutzungsuebersicht',
+    recentChanges: 'Letzte Aenderungen',
+    records: 'Eintraege',
+    loadingAiSummary: 'KI-Berichte werden geladen...',
+    totalUses: 'Gesamtnutzungen',
+    successful: 'Erfolgreich',
+    errors: 'Fehler',
+    latestActivity: 'Letzte Aktivitaet',
+    noActivityYet: 'Noch keine Aktivitaet',
+    loadingRevisionHistory: 'Versionsverlauf wird geladen...',
+    noSavedChanges: 'Fuer dieses Dokument gibt es noch keine gespeicherten Aenderungen.',
+    restore: 'Wiederherstellung',
+    updateBadge: 'Update',
+    original: 'Original',
+    changed: 'Geaendert',
+    restoring: 'Wird wiederhergestellt...',
+    restorePrevious: 'Vorherige Version wiederherstellen',
+    savedSuccessfully: 'Erfolgreich gespeichert',
+    saveFailed: 'Speichern fehlgeschlagen',
+    previousVersionRestored: 'Vorherige Version wiederhergestellt',
+    restoreFailed: 'Wiederherstellung fehlgeschlagen',
+    globalSettings: 'Globale Einstellungen',
+    aiExplorerLogs: 'KI-Explorer-Protokolle',
+    routesAndPages: 'Routen und Seiten',
+    navigation: 'Navigation',
+    customPages: 'Benutzerdefinierte Seiten',
+    homePage: 'Startseite',
+    campaignBanner: 'Kampagnenbanner',
+    aboutPage: 'Ueber uns',
+    privacyStandards: 'Datenschutz und Standards',
+    eventFinder: 'Event Finder',
+    servicesPage: 'Services-Seite',
+    onsiteTeamPage: 'OnSite-Team-Seite',
+    legacyShowcasePage: 'Legacy-Showcase-Seite',
+    solutionsCatalog: 'Loesungskatalog',
+    solutionDetailPages: 'Loesungsdetailseiten',
+    core: 'Core',
+    pages: 'Seiten',
+    other: 'Andere',
+    thirdLanguage: 'Dritte Sprache',
+    translatingLabel: 'Uebersetzt...',
+    translationReady: 'Admin-Sprache wurde aktualisiert.',
+    translationFailed: 'Admin-Sprache konnte nicht uebersetzt werden.',
+    addLanguage: 'ADD',
+    changeLanguage: 'CHANGE',
+    chooseLanguage: 'Sprache hinzufuegen',
+    languageModalIntro: 'Waehle eine Sprache. Die Lokalisierung wird anschliessend automatisch im Hintergrund erstellt.',
+    downloadingLocalization: 'Lokalisierung wird geladen'
+  },
+  en: {
+    languageLabel: 'Language',
+    searchEverything: 'Search pages, fields, text, badges, icons, media...',
+    searchPages: 'Search pages',
+    noSearchResults: 'No matching content found.',
+    startSearch: 'Start typing to search the full content structure.',
+    crmKicker: 'Admin Panel',
+    readOnly: 'Read Only',
+    saving: 'Saving...',
+    update: 'Update',
+    expandSidebar: 'Expand sidebar',
+    collapseSidebar: 'Collapse sidebar',
+    loggedUsages: 'Logged usages',
+    editableFields: 'Editable fields',
+    group: 'Group',
+    editorIntro: 'Edit the fields below. Changes are saved to the live content source and reflected on the site after update.',
+    aiIntro: 'Every AI assistant usage is logged here with prompt, generated event detail, user-agent and created date.',
+    loadingAiReports: 'Loading AI usage reports...',
+    noAiReports: 'No AI usage records yet.',
+    untitledAiUsage: 'Untitled AI usage',
+    locationOpen: 'Location open',
+    attendeesOpen: 'Attendees open',
+    phaseOpen: 'Phase open',
+    unknownUserAgent: 'Unknown user-agent',
+    prompt: 'Prompt',
+    assistantResponse: 'Assistant Response',
+    noResponseText: 'No response text.',
+    customer: 'Customer',
+    event: 'Event',
+    location: 'Location',
+    created: 'Created',
+    open: 'Open',
+    userFriendlySummary: 'User-Friendly Summary',
+    noReadableSummary: 'No readable event summary available for this usage yet.',
+    publish: 'Publish',
+    status: 'Status',
+    readOnlyAiHistory: 'Read-only AI report history',
+    readyForUpdate: 'Ready for update',
+    lastSaved: 'Last saved',
+    notSavedYet: 'This document has not been saved in this session.',
+    updateDocument: 'Update Document',
+    documentSummary: 'Document Summary',
+    documentKey: 'Document key',
+    groupItems: 'Group items',
+    totalDocuments: 'Total documents',
+    leafFields: 'Leaf fields',
+    editorNotes: 'Editor Notes',
+    savedChangeNote: 'Every saved change is stored with a timestamp and can be restored.',
+    recentChangesNote: 'Recent changes for this document are listed below.',
+    aiUsageNote: 'All assistant usages are logged with prompt, event detail, user-agent and timestamp.',
+    aiUsageSummary: 'AI Usage Summary',
+    recentChanges: 'Recent Changes',
+    records: 'records',
+    loadingAiSummary: 'Loading AI reports...',
+    totalUses: 'Total uses',
+    successful: 'Successful',
+    errors: 'Errors',
+    latestActivity: 'Latest activity',
+    noActivityYet: 'No activity yet',
+    loadingRevisionHistory: 'Loading revision history...',
+    noSavedChanges: 'No saved changes yet for this document.',
+    restore: 'Restore',
+    updateBadge: 'Update',
+    original: 'Original',
+    changed: 'Changed',
+    restoring: 'Restoring...',
+    restorePrevious: 'Restore Previous',
+    savedSuccessfully: 'Saved successfully',
+    saveFailed: 'Save failed',
+    previousVersionRestored: 'Previous version restored',
+    restoreFailed: 'Restore failed',
+    globalSettings: 'Global Settings',
+    aiExplorerLogs: 'AI Explorer Logs',
+    routesAndPages: 'Routes & Pages',
+    navigation: 'Navigation',
+    customPages: 'Custom Pages',
+    homePage: 'Home Page',
+    campaignBanner: 'Campaign Banner',
+    aboutPage: 'About Page',
+    privacyStandards: 'Privacy & Standards',
+    eventFinder: 'Event Finder',
+    servicesPage: 'Services Page',
+    onsiteTeamPage: 'OnSite Team Page',
+    legacyShowcasePage: 'Legacy Showcase Page',
+    solutionsCatalog: 'Solutions Catalog',
+    solutionDetailPages: 'Solution Detail Pages',
+    core: 'Core',
+    pages: 'Pages',
+    other: 'Other',
+    thirdLanguage: 'Third Language',
+    translatingLabel: 'Translating...',
+    translationReady: 'Admin language updated.',
+    translationFailed: 'Admin language could not be translated.',
+    addLanguage: 'ADD',
+    changeLanguage: 'CHANGE',
+    chooseLanguage: 'Add Language',
+    languageModalIntro: 'Choose a language. Localization will then be generated automatically in the background.',
+    downloadingLocalization: 'Downloading localization',
+    aboutSection: 'About Section',
+    servicesSection: 'Services Section',
+    solutionsSection: 'Solutions Section',
+    contactPage: 'Contact Page',
+    smtpWizard: 'SMTP Setup Wizard',
+    smtpWizardDescription: 'Configure the mail server once. All site form submissions will be delivered to the configured inbox.',
+    senderIdentity: 'Step 1. Sender Identity',
+    mailServer: 'Step 2. Mail Server',
+    deliveryInbox: 'Step 3. Delivery Inbox',
+    sendingTest: 'Sending Test...',
+    sendTestEmail: 'Send Test Email',
+    saveAfterTest: 'Save the document after a successful test to make the site forms use this configuration.',
+    selectExistingPath: 'Select an existing site path',
+    urlOrRoute: 'URL or internal route',
+    mediaUrl: 'Media URL',
+    uploadFile: 'Upload File',
+    uploading: 'Uploading...',
+    previewingSelectedFile: 'Previewing selected file',
+    uploadFailed: 'Upload failed',
+    mediaPreviewHint: 'Upload a file or paste a media URL to see a preview.',
+    iconPreview: 'Current icon preview',
+    iconPickerHelp: 'Pick an icon visually or type a Lucide icon name.',
+    mediaFieldHelp: 'Upload a file or paste a direct media URL.',
+    items: 'Items',
+    item: 'item',
+    remove: 'Remove',
+    addItem: 'Add Item'
+  },
+  tr: {
+    languageLabel: 'Dil',
+    searchEverything: 'Sayfa, alan, metin, rozet, ikon ve medya ara...',
+    searchPages: 'Sayfalarda ara',
+    noSearchResults: 'Eslesen icerik bulunamadi.',
+    startSearch: 'Tum icerik yapisinda aramak icin yazmaya basla.',
+    crmKicker: 'Yonetim Paneli',
+    readOnly: 'Salt Okunur',
+    saving: 'Kaydediliyor...',
+    update: 'Guncelle',
+    expandSidebar: 'Kenar cubugunu genislet',
+    collapseSidebar: 'Kenar cubugunu daralt',
+    loggedUsages: 'Kayitli kullanimlar',
+    editableFields: 'Duzenlenebilir alanlar',
+    group: 'Grup',
+    editorIntro: 'Asagidaki alanlari duzenle. Degisiklikler canli icerik kaynagina kaydedilir ve guncellemeden sonra sitede gorunur.',
+    aiIntro: 'Tum yapay zeka kullanimi burada prompt, etkinlik detayi, user-agent ve zaman bilgisi ile kayit altina alinir.',
+    loadingAiReports: 'Yapay zeka kayitlari yukleniyor...',
+    noAiReports: 'Henuz yapay zeka kullanim kaydi yok.',
+    untitledAiUsage: 'Isimsiz yapay zeka kullanimi',
+    locationOpen: 'Konum bos',
+    attendeesOpen: 'Katilimci bos',
+    phaseOpen: 'Faz bos',
+    unknownUserAgent: 'Bilinmeyen user-agent',
+    prompt: 'Prompt',
+    assistantResponse: 'Asistan Yaniti',
+    noResponseText: 'Yanıt metni yok.',
+    customer: 'Musteri',
+    event: 'Etkinlik',
+    location: 'Konum',
+    created: 'Olusturulma',
+    open: 'Bos',
+    userFriendlySummary: 'Kullanici Dostu Ozet',
+    noReadableSummary: 'Bu kayit icin okunabilir bir ozet henuz yok.',
+    publish: 'Yayinla',
+    status: 'Durum',
+    readOnlyAiHistory: 'Salt okunur yapay zeka gecmisi',
+    readyForUpdate: 'Guncelleme icin hazir',
+    lastSaved: 'Son kayit',
+    notSavedYet: 'Bu belge bu oturumda henuz kaydedilmedi.',
+    updateDocument: 'Belgeyi Guncelle',
+    documentSummary: 'Belge Ozeti',
+    documentKey: 'Belge anahtari',
+    groupItems: 'Grup ogeleri',
+    totalDocuments: 'Toplam belge',
+    leafFields: 'Alt alanlar',
+    editorNotes: 'Editor Notlari',
+    savedChangeNote: 'Her kaydedilen degisiklik zaman damgasi ile saklanir ve geri yuklenebilir.',
+    recentChangesNote: 'Bu belgeye ait son degisiklikler asagida listelenir.',
+    aiUsageNote: 'Tum yapay zeka kullanimlari prompt, etkinlik detayi, user-agent ve zaman bilgisiyle loglanir.',
+    aiUsageSummary: 'Yapay Zeka Kullanim Ozeti',
+    recentChanges: 'Son Degisiklikler',
+    records: 'kayit',
+    loadingAiSummary: 'Yapay zeka raporlari yukleniyor...',
+    totalUses: 'Toplam kullanim',
+    successful: 'Basarili',
+    errors: 'Hata',
+    latestActivity: 'Son etkinlik',
+    noActivityYet: 'Henuz etkinlik yok',
+    loadingRevisionHistory: 'Surum gecmisi yukleniyor...',
+    noSavedChanges: 'Bu belge icin henuz kaydedilmis degisiklik yok.',
+    restore: 'Geri Yukleme',
+    updateBadge: 'Guncelleme',
+    original: 'Orijinal',
+    changed: 'Degisen',
+    restoring: 'Geri yukleniyor...',
+    restorePrevious: 'Onceki Surumu Geri Yukle',
+    savedSuccessfully: 'Basariyla kaydedildi',
+    saveFailed: 'Kaydetme basarisiz',
+    previousVersionRestored: 'Onceki surum geri yuklendi',
+    restoreFailed: 'Geri yukleme basarisiz',
+    globalSettings: 'Global Ayarlar',
+    aiExplorerLogs: 'YZ Explorer Kayitlari',
+    routesAndPages: 'Rotalar ve Sayfalar',
+    navigation: 'Navigasyon',
+    customPages: 'Ozel Sayfalar',
+    homePage: 'Ana Sayfa',
+    campaignBanner: 'Kampanya Alani',
+    aboutPage: 'Hakkinda Sayfasi',
+    privacyStandards: 'Gizlilik ve Standartlar',
+    eventFinder: 'Etkinlik Bulucu',
+    servicesPage: 'Hizmetler Sayfasi',
+    onsiteTeamPage: 'OnSite Ekip Sayfasi',
+    legacyShowcasePage: 'Eski Vitrin Sayfasi',
+    solutionsCatalog: 'Cozum Katalogu',
+    solutionDetailPages: 'Cozum Detay Sayfalari',
+    core: 'Temel',
+    pages: 'Sayfalar',
+    other: 'Diger',
+    thirdLanguage: 'Ucuncu Dil',
+    translatingLabel: 'Cevriliyor...',
+    translationReady: 'Yonetim dili guncellendi.',
+    translationFailed: 'Yonetim dili cevrilemedi.',
+    addLanguage: 'ADD',
+    changeLanguage: 'CHANGE',
+    chooseLanguage: 'Dil Ekle',
+    languageModalIntro: 'Bir dil sec. Lokalizasyon daha sonra arka planda otomatik olarak olusturulacak.',
+    downloadingLocalization: 'Lokalizasyon indiriliyor',
+    aboutSection: 'Hakkinda Bolumu',
+    servicesSection: 'Hizmetler Bolumu',
+    solutionsSection: 'Cozumler Bolumu',
+    contactPage: 'Iletisim Sayfasi',
+    smtpWizard: 'SMTP Kurulum Sihirbazi',
+    smtpWizardDescription: 'Mail sunucusunu bir kez ayarla. Sitedeki tum form gonderimleri ayarlanan kutuya iletilir.',
+    senderIdentity: 'Adim 1. Gonderici Kimligi',
+    mailServer: 'Adim 2. Mail Sunucusu',
+    deliveryInbox: 'Adim 3. Teslimat Kutusu',
+    sendingTest: 'Test gonderiliyor...',
+    sendTestEmail: 'Test E-postasi Gonder',
+    saveAfterTest: 'Basarili testten sonra bu ayarin form gonderimlerinde kullanilmasi icin belgeyi kaydet.',
+    selectExistingPath: 'Mevcut bir site yolu sec',
+    urlOrRoute: 'URL veya dahili rota',
+    mediaUrl: 'Medya URL',
+    uploadFile: 'Dosya Yukle',
+    uploading: 'Yukleniyor...',
+    previewingSelectedFile: 'Secilen dosya onizleniyor',
+    uploadFailed: 'Yukleme basarisiz',
+    mediaPreviewHint: 'Onizleme icin bir dosya yukle veya medya URL yapistir.',
+    iconPreview: 'Guncel ikon onizlemesi',
+    iconPickerHelp: 'Gorsel olarak bir ikon sec veya Lucide ikon adini yaz.',
+    mediaFieldHelp: 'Dosya yukle veya dogrudan medya URL yapistir.',
+    items: 'Ogeler',
+    item: 'oge',
+    remove: 'Kaldir',
+    addItem: 'Oge Ekle'
+  }
+} as const;
+
+const dynamicAdminLocaleOptions = [
+  { code: 'tr', label: 'Turkish', nativeLabel: 'Turkce', countryCode: 'tr' },
+  { code: 'az', label: 'Azerbaijani', nativeLabel: 'Azərbaycanca', countryCode: 'az' },
+  { code: 'fr', label: 'French', nativeLabel: 'Français', countryCode: 'fr' },
+  { code: 'es', label: 'Spanish', nativeLabel: 'Español', countryCode: 'es' },
+  { code: 'it', label: 'Italian', nativeLabel: 'Italiano', countryCode: 'it' },
+  { code: 'pt', label: 'Portuguese', nativeLabel: 'Português', countryCode: 'pt' },
+  { code: 'nl', label: 'Dutch', nativeLabel: 'Nederlands', countryCode: 'nl' },
+  { code: 'pl', label: 'Polish', nativeLabel: 'Polski', countryCode: 'pl' },
+  { code: 'ru', label: 'Russian', nativeLabel: 'Русский', countryCode: 'ru' },
+  { code: 'ar', label: 'Arabic', nativeLabel: 'العربية', countryCode: 'sa' }
+] as const;
+
+const sanitizeTranslatedCopyValue = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, sanitizeTranslatedCopyValue(child)]));
+};
 
 const OctopusMark: React.FC = () => <GiOctopus size={20} aria-hidden />;
 
@@ -125,6 +522,24 @@ const shortLabels: Record<string, string> = {
   'pages.solutions': 'Sol',
   solutionDetails: 'Detail'
 };
+
+const localizedLabels = (copy: typeof adminCopy.en) => ({
+  global: { title: copy.globalSettings, description: 'Company identity, contact channels, branding and shared CTA settings.', group: copy.core },
+  aiReports: { title: copy.aiExplorerLogs, description: 'AI Explorer sessions, extracted briefs, user-agent and timestamps.', group: copy.core },
+  siteMap: { title: copy.routesAndPages, description: 'Public routes, slugs, titles and page descriptions.', group: copy.core },
+  navigation: { title: copy.navigation, description: 'Top navbar, footer links and solution dropdown items.', group: copy.core },
+  customPages: { title: copy.customPages, description: 'Extra pages created from the admin panel.', group: copy.core },
+  'pages.home': { title: copy.homePage, description: 'Homepage hero, services, ecosystem cards and shared contact block.', group: copy.pages },
+  'pages.campaign': { title: copy.campaignBanner, description: 'Homepage promo band and CTA copy.', group: copy.pages },
+  'pages.about': { title: copy.aboutPage, description: 'About story, mission, values and process timeline.', group: copy.pages },
+  'pages.corporateStandards': { title: copy.privacyStandards, description: 'Trust, privacy and operational standards content.', group: copy.pages },
+  'pages.survey': { title: copy.eventFinder, description: 'Interactive advisor text, quick-match questions and recommendation copy.', group: copy.pages },
+  'pages.services': { title: copy.servicesPage, description: 'Delivery phases, setup flow and support cards.', group: copy.pages },
+  'pages.team': { title: copy.onsiteTeamPage, description: 'Team image, principles and event-operations CTA content.', group: copy.pages },
+  'pages.sapBusinessOne': { title: copy.legacyShowcasePage, description: 'Hidden legacy landing page content that still exists in the app.', group: copy.pages },
+  'pages.solutions': { title: copy.solutionsCatalog, description: 'Module grid and solution summary cards.', group: copy.pages },
+  solutionDetails: { title: copy.solutionDetailPages, description: 'All FastLane module detail texts, benefits and CTA blocks.', group: copy.pages }
+});
 
 const groupIcons = {
   Core: Globe,
@@ -518,24 +933,65 @@ const addArrayItem = (value: JsonValue, path: Array<string | number>, item: Json
   return root;
 };
 
+const emptyValueFromTemplate = (template: JsonValue): JsonValue => {
+  if (typeof template === 'string') return '';
+  if (typeof template === 'number') return 0;
+  if (typeof template === 'boolean') return false;
+  if (template === null || template === undefined) return '';
+  if (Array.isArray(template)) return [];
+  return Object.fromEntries(Object.entries(template).map(([key, value]) => [key, emptyValueFromTemplate(value)])) as JsonValue;
+};
+
 const defaultItemFromArray = (items: JsonValue[]) => {
   const sample = items[0];
-  if (typeof sample === 'string') return 'New item';
-  if (typeof sample === 'number') return 0;
-  if (typeof sample === 'boolean') return false;
-  if (sample === null || sample === undefined) return '';
-  if (Array.isArray(sample)) return [];
-  return Object.fromEntries(Object.keys(sample).map((key) => [key, ''])) as JsonValue;
+  if (sample === undefined) return '';
+  return emptyValueFromTemplate(sample);
+};
+
+const enrichEnglishDraft = (source: JsonValue, english: JsonValue, suggested: JsonValue): JsonValue => {
+  if (typeof source === 'string') {
+    if (typeof english === 'string' && english.trim() && english !== source) {
+      return english;
+    }
+
+    return typeof suggested === 'string' ? suggested : english;
+  }
+
+  if (Array.isArray(source)) {
+    const englishArray = Array.isArray(english) ? english : [];
+    const suggestedArray = Array.isArray(suggested) ? suggested : [];
+    return source.map((item, index) => enrichEnglishDraft(item, englishArray[index] as JsonValue, suggestedArray[index] as JsonValue)) as JsonValue;
+  }
+
+  if (!isObject(source)) {
+    return english ?? suggested ?? source;
+  }
+
+  const englishObject = isObject(english) ? english : {};
+  const suggestedObject = isObject(suggested) ? suggested : {};
+
+  return Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [
+      key,
+      enrichEnglishDraft(
+        value as JsonValue,
+        (englishObject as Record<string, JsonValue>)[key] as JsonValue,
+        (suggestedObject as Record<string, JsonValue>)[key] as JsonValue
+      )
+    ])
+  ) as JsonValue;
 };
 
 const ScalarField: React.FC<{
   label: string;
   value: string | number | boolean | null;
   onChange: (value: JsonValue) => void;
+  secondaryValue?: string | null;
+  onSecondaryChange?: (value: string) => void;
   pathKey?: string;
   isHighlighted?: boolean;
   helpText?: string | null;
-}> = ({ label, value, onChange, pathKey, isHighlighted, helpText }) => {
+}> = ({ label, value, onChange, secondaryValue, onSecondaryChange, pathKey, isHighlighted, helpText }) => {
   if (typeof value === 'boolean') {
     return (
       <label
@@ -554,21 +1010,43 @@ const ScalarField: React.FC<{
   const stringValue = value === null ? '' : String(value);
   const multiline = stringValue.length > 100 || stringValue.includes('\n');
   const isSecret = /password|secret/i.test(pathKey ?? label);
+  const supportsSecondary = typeof value !== 'number' && !isSecret && typeof onSecondaryChange === 'function';
+  const englishValue = secondaryValue ?? '';
 
   return (
     <label data-oc-field-path={pathKey} className={`d-block oc-admin-field-shell ${isHighlighted ? 'oc-admin-search-hit' : ''}`}>
       <div className="oc-admin-section-title mb-2">{label}</div>
       {helpText ? <div className="oc-admin-field-help mb-2">{helpText}</div> : null}
-      {multiline ? (
-        <textarea value={stringValue} onChange={(e) => onChange(e.target.value)} rows={4} className="form-control" />
-      ) : (
-        <input
-          type={isSecret ? 'password' : 'text'}
-          value={stringValue}
-          onChange={(e) => onChange(typeof value === 'number' ? Number(e.target.value) : e.target.value)}
-          className="form-control"
-        />
-      )}
+      <div className="d-grid gap-3">
+        <div>
+          <div className="small text-uppercase text-secondary fw-semibold mb-2">DE</div>
+          {multiline ? (
+            <textarea value={stringValue} onChange={(e) => onChange(e.target.value)} rows={4} className="form-control" />
+          ) : (
+            <input
+              type={isSecret ? 'password' : 'text'}
+              value={stringValue}
+              onChange={(e) => onChange(typeof value === 'number' ? Number(e.target.value) : e.target.value)}
+              className="form-control"
+            />
+          )}
+        </div>
+        {supportsSecondary ? (
+          <div>
+            <div className="small text-uppercase text-secondary fw-semibold mb-2">EN</div>
+            {multiline ? (
+              <textarea value={englishValue} onChange={(e) => onSecondaryChange?.(e.target.value)} rows={4} className="form-control" />
+            ) : (
+              <input
+                type="text"
+                value={englishValue}
+                onChange={(e) => onSecondaryChange?.(e.target.value)}
+                className="form-control"
+              />
+            )}
+          </div>
+        ) : null}
+      </div>
     </label>
   );
 };
@@ -577,7 +1055,8 @@ const SmtpWizardCard: React.FC<{
   smtp: SmtpDraftConfig;
   onChange: (path: Array<string | number>, value: JsonValue) => void;
   onStatus: (message: string, tone?: 'success' | 'error') => void;
-}> = ({ smtp, onChange, onStatus }) => {
+  copy: typeof adminCopy.en;
+}> = ({ smtp, onChange, onStatus, copy }) => {
   const [isSendingTest, setIsSendingTest] = useState(false);
 
   const handleTest = async () => {
@@ -597,8 +1076,8 @@ const SmtpWizardCard: React.FC<{
       <div className="card-body">
         <div className="d-flex align-items-start justify-content-between gap-3 mb-4">
           <div>
-            <div className="oc-admin-section-title mb-1">SMTP Setup Wizard</div>
-            <div className="small text-secondary">Configure the mail server once. All site form submissions will be delivered to the configured inbox.</div>
+            <div className="oc-admin-section-title mb-1">{copy.smtpWizard}</div>
+            <div className="small text-secondary">{copy.smtpWizardDescription}</div>
           </div>
           <label className="form-check form-switch m-0">
             <input className="form-check-input" type="checkbox" checked={smtp.enabled} onChange={(e) => onChange(['smtp', 'enabled'], e.target.checked)} />
@@ -607,7 +1086,7 @@ const SmtpWizardCard: React.FC<{
 
         <div className="row g-3">
           <div className="col-12">
-            <div className="oc-admin-field-help mb-2">Step 1. Sender Identity</div>
+            <div className="oc-admin-field-help mb-2">{copy.senderIdentity}</div>
           </div>
           <div className="col-12 col-md-6">
             <ScalarField label="From Name" value={smtp.fromName} pathKey="smtp.fromName" helpText="Displayed as the sender name in inboxes." onChange={(value) => onChange(['smtp', 'fromName'], value)} />
@@ -617,7 +1096,7 @@ const SmtpWizardCard: React.FC<{
           </div>
 
           <div className="col-12 mt-2">
-            <div className="oc-admin-field-help mb-2">Step 2. Mail Server</div>
+            <div className="oc-admin-field-help mb-2">{copy.mailServer}</div>
           </div>
           <div className="col-12 col-md-6">
             <ScalarField label="SMTP Host" value={smtp.host} pathKey="smtp.host" helpText="Example: `smtp.gmail.com` or your company mail host." onChange={(value) => onChange(['smtp', 'host'], value)} />
@@ -636,7 +1115,7 @@ const SmtpWizardCard: React.FC<{
           </div>
 
           <div className="col-12 mt-2">
-            <div className="oc-admin-field-help mb-2">Step 3. Delivery Inbox</div>
+            <div className="oc-admin-field-help mb-2">{copy.deliveryInbox}</div>
           </div>
           <div className="col-12 col-md-6">
             <ScalarField label="Recipient Email" value={smtp.recipientEmail} pathKey="smtp.recipientEmail" helpText="All live contact form submissions will be delivered here." onChange={(value) => onChange(['smtp', 'recipientEmail'], value)} />
@@ -649,9 +1128,9 @@ const SmtpWizardCard: React.FC<{
         <div className="mt-4 d-flex flex-wrap gap-2">
           <button type="button" onClick={handleTest} disabled={isSendingTest} className="btn btn-outline-primary d-inline-flex align-items-center gap-2">
             <Send className="h-4 w-4" />
-            {isSendingTest ? 'Sending Test...' : 'Send Test Email'}
+            {isSendingTest ? copy.sendingTest : copy.sendTestEmail}
           </button>
-          <div className="small text-secondary align-self-center">Save the document after a successful test to make the site forms use this configuration.</div>
+          <div className="small text-secondary align-self-center">{copy.saveAfterTest}</div>
         </div>
       </div>
     </div>
@@ -663,11 +1142,19 @@ const UrlField: React.FC<{
   value: string;
   onChange: (value: string) => void;
   routeOptions: Array<{ label: string; value: string }>;
+  copy: typeof adminCopy.en;
   pathKey?: string;
   isHighlighted?: boolean;
   helpText?: string | null;
-}> = ({ label, value, onChange, routeOptions, pathKey, isHighlighted, helpText }) => {
+}> = ({ label, value, onChange, routeOptions, copy, pathKey, isHighlighted, helpText }) => {
   const matchingOption = routeOptions.find((option) => option.value === value)?.value ?? '';
+  const uniqueRouteOptions = useMemo(
+    () =>
+      routeOptions.filter((option, index, allOptions) =>
+        allOptions.findIndex((candidate) => candidate.value === option.value && candidate.label === option.label) === index
+      ),
+    [routeOptions]
+  );
 
   return (
     <label data-oc-field-path={pathKey} className={`d-block oc-admin-field-shell ${isHighlighted ? 'oc-admin-search-hit' : ''}`}>
@@ -677,7 +1164,7 @@ const UrlField: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="form-control"
-        placeholder="URL or internal route"
+        placeholder={copy.urlOrRoute}
       />
       <select
         value={matchingOption}
@@ -688,9 +1175,9 @@ const UrlField: React.FC<{
         }}
         className="form-select mt-2"
       >
-        <option value="">Select an existing site path</option>
-        {routeOptions.map((option) => (
-          <option key={`${label}-${option.value}`} value={option.value}>
+        <option value="">{copy.selectExistingPath}</option>
+        {uniqueRouteOptions.map((option, index) => (
+          <option key={`${pathKey ?? label}-${option.value}-${index}`} value={option.value}>
             {option.label}
           </option>
         ))}
@@ -703,9 +1190,10 @@ const MediaField: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
+  copy: typeof adminCopy.en;
   pathKey?: string;
   isHighlighted?: boolean;
-}> = ({ label, value, onChange, pathKey, isHighlighted }) => {
+}> = ({ label, value, onChange, copy, pathKey, isHighlighted }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
@@ -718,6 +1206,12 @@ const MediaField: React.FC<{
       }
     };
   }, [localPreviewUrl]);
+
+  useEffect(() => {
+    setLocalPreviewUrl(null);
+    setLocalPreviewKind(null);
+    setUploadError(null);
+  }, [value]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -752,15 +1246,15 @@ const MediaField: React.FC<{
     <div data-oc-field-path={pathKey} className={`card oc-admin-editor-card ${isHighlighted ? 'oc-admin-search-hit' : ''}`}>
       <div className="card-body">
         <div className="oc-admin-section-title mb-2">{label}</div>
-        <div className="oc-admin-field-help mb-2">Upload a file or paste a direct media URL.</div>
-        <input value={value} onChange={(e) => onChange(e.target.value)} className="form-control" placeholder="Media URL" />
+        <div className="oc-admin-field-help mb-2">{copy.mediaFieldHelp}</div>
+        <input value={value} onChange={(e) => onChange(e.target.value)} className="form-control" placeholder={copy.mediaUrl} />
         <div className="mt-3 d-flex flex-wrap align-items-center gap-2">
           <label className="btn btn-outline-primary d-inline-flex align-items-center gap-2">
             <Plus className="h-4 w-4" />
-            {isUploading ? 'Uploading...' : 'Upload File'}
+            {isUploading ? copy.uploading : copy.uploadFile}
             <input type="file" accept="image/*,video/*" onChange={handleFileChange} className="d-none" />
           </label>
-          {localPreviewUrl && <div className="small text-primary">Previewing selected file</div>}
+          {localPreviewUrl && <div className="small text-primary">{copy.previewingSelectedFile}</div>}
           {uploadError && <div className="small text-danger">{uploadError}</div>}
         </div>
         {hasPreview ? (
@@ -772,7 +1266,7 @@ const MediaField: React.FC<{
             )}
           </div>
         ) : (
-          <div className="mt-3 oc-admin-media-hint">Upload a file or paste a media URL to see a preview.</div>
+          <div className="mt-3 oc-admin-media-hint">{copy.mediaPreviewHint}</div>
         )}
       </div>
     </div>
@@ -783,21 +1277,22 @@ const IconField: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
+  copy: typeof adminCopy.en;
   pathKey?: string;
   isHighlighted?: boolean;
-}> = ({ label, value, onChange, pathKey, isHighlighted }) => {
+}> = ({ label, value, onChange, copy, pathKey, isHighlighted }) => {
   const PreviewIcon = resolveIcon(value);
 
   return (
     <div data-oc-field-path={pathKey} className={`card oc-admin-editor-card ${isHighlighted ? 'oc-admin-search-hit' : ''}`}>
       <div className="card-body">
         <div className="oc-admin-section-title mb-2">{label}</div>
-        <div className="oc-admin-field-help mb-2">Pick an icon visually or type a Lucide icon name.</div>
+        <div className="oc-admin-field-help mb-2">{copy.iconPickerHelp}</div>
         <div className="d-flex align-items-center gap-3 mb-3">
           <div className="d-flex align-items-center justify-content-center rounded-3 border bg-light" style={{ width: 52, height: 52 }}>
             <PreviewIcon className="h-5 w-5 text-primary" />
           </div>
-          <div className="small text-secondary">Current icon preview</div>
+          <div className="small text-secondary">{copy.iconPreview}</div>
         </div>
 
         <input
@@ -841,35 +1336,40 @@ const ObjectEditor: React.FC<{
   onChange: (path: Array<string | number>, value: JsonValue) => void;
   onRemove: (path: Array<string | number>) => void;
   onAddArrayItem: (path: Array<string | number>, value: JsonValue) => void;
+  getDefaultArrayItem: (path: Array<string | number>, items: JsonValue[]) => JsonValue;
+  copy: typeof adminCopy.en;
   depth?: number;
   highlightedPath?: string | null;
   routeOptions: Array<{ label: string; value: string }>;
-}> = ({ value, path = [], label, onChange, onRemove, onAddArrayItem, depth = 0, highlightedPath = null, routeOptions }) => {
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  secondaryValue?: JsonValue;
+  onSecondaryChange?: (path: Array<string | number>, value: JsonValue) => void;
+}> = ({ value, path = [], label, onChange, onRemove, onAddArrayItem, getDefaultArrayItem, copy, depth = 0, highlightedPath = null, routeOptions, secondaryValue, onSecondaryChange }) => {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   if (Array.isArray(value)) {
-    const title = label ?? 'Items';
+    const title = label ?? copy.items;
     const arrayPathKey = path.join('.');
-    const isOpen = !collapsed[arrayPathKey];
+    const isOpen = expandedSections[arrayPathKey] ?? depth <= 1;
     const primitiveArray = value.every((item) => !Array.isArray(item) && !isObject(item));
 
     return (
       <div className="card oc-admin-editor-card">
         <button
-          onClick={() => setCollapsed((prev) => ({ ...prev, [arrayPathKey]: !prev[arrayPathKey] }))}
-          className="btn btn-link text-decoration-none text-start d-flex align-items-center justify-content-between px-4 py-3 text-dark"
+          type="button"
+          onClick={() => setExpandedSections((prev) => ({ ...prev, [arrayPathKey]: !isOpen }))}
+          className="btn btn-link text-decoration-none text-start oc-admin-collapsible-trigger"
         >
-          <div>
-            <div className="fw-semibold">{title}</div>
-            <div className="small text-secondary">{value.length} item</div>
+          <div className="min-w-0">
+            <div className="fw-semibold text-dark">{title}</div>
+            <div className="small text-secondary">#{value.length}</div>
           </div>
           {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
 
         {isOpen && (
-          <div className="card-body border-top d-grid gap-3">
+          <div className="card-body border-top oc-admin-collapsible-body d-grid gap-3">
             {value.map((item, index) => (
-              <div key={`${arrayPathKey}-${index}`} className="border rounded-3 p-3 bg-light">
+              <div key={`${arrayPathKey}-${index}`} className="border rounded-3 p-3 bg-light oc-admin-array-item">
                 <div className="mb-3 d-flex align-items-center justify-content-between">
                   <div className="oc-admin-section-title">
                     {primitiveArray
@@ -878,7 +1378,7 @@ const ObjectEditor: React.FC<{
                   </div>
                   <button onClick={() => onRemove([...path, index])} className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-2">
                     <Trash2 className="h-4 w-4" />
-                    Remove
+                    {copy.remove}
                   </button>
                 </div>
 
@@ -891,14 +1391,14 @@ const ObjectEditor: React.FC<{
                     onChange={(next) => onChange([...path, index], next)}
                   />
                 ) : (
-                  <ObjectEditor value={item} path={[...path, index]} onChange={onChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} depth={depth + 1} highlightedPath={highlightedPath} routeOptions={routeOptions} />
+                  <ObjectEditor value={item} secondaryValue={Array.isArray(secondaryValue) ? secondaryValue[index] as JsonValue : undefined} path={[...path, index]} onChange={onChange} onSecondaryChange={onSecondaryChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} getDefaultArrayItem={getDefaultArrayItem} copy={copy} depth={depth + 1} highlightedPath={highlightedPath} routeOptions={routeOptions} />
                 )}
               </div>
             ))}
 
-            <button onClick={() => onAddArrayItem(path, defaultItemFromArray(value))} className="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+            <button onClick={() => onAddArrayItem(path, getDefaultArrayItem(path, value))} className="btn btn-outline-primary d-inline-flex align-items-center gap-2">
               <Plus className="h-4 w-4" />
-              Add Item
+              {copy.addItem}
             </button>
           </div>
         )}
@@ -910,7 +1410,7 @@ const ObjectEditor: React.FC<{
     const entries = sortObjectEntries(Object.entries(value));
 
     return (
-      <div className={depth === 0 ? 'd-grid gap-4' : 'd-grid gap-3'}>
+      <div className={depth === 0 ? 'd-grid gap-3' : 'd-grid gap-3'}>
         {entries.map(([key, child]) => {
           if (depth === 0 && path.length === 0 && key === 'smtp') {
             return null;
@@ -921,11 +1421,11 @@ const ObjectEditor: React.FC<{
 
           if (!cardLike) {
             if (isMediaField(key, child)) {
-              return <MediaField key={childPath.join('.')} label={friendlyFieldLabel(path, key)} value={(child as string) ?? ''} pathKey={childPath.join('.')} isHighlighted={highlightedPath === childPath.join('.')} onChange={(next) => onChange(childPath, next)} />;
+              return <MediaField key={childPath.join('.')} label={friendlyFieldLabel(path, key)} value={(child as string) ?? ''} copy={copy} pathKey={childPath.join('.')} isHighlighted={highlightedPath === childPath.join('.')} onChange={(next) => onChange(childPath, next)} />;
             }
 
             if (isIconField(key, child)) {
-              return <IconField key={childPath.join('.')} label={friendlyFieldLabel(path, key)} value={(child as string) ?? ''} pathKey={childPath.join('.')} isHighlighted={highlightedPath === childPath.join('.')} onChange={(next) => onChange(childPath, next)} />;
+              return <IconField key={childPath.join('.')} label={friendlyFieldLabel(path, key)} value={(child as string) ?? ''} copy={copy} pathKey={childPath.join('.')} isHighlighted={highlightedPath === childPath.join('.')} onChange={(next) => onChange(childPath, next)} />;
             }
 
             if (isUrlField(key, child)) {
@@ -934,6 +1434,7 @@ const ObjectEditor: React.FC<{
                   key={childPath.join('.')}
                   label={friendlyFieldLabel(path, key)}
                   value={(child as string) ?? ''}
+                  copy={copy}
                   pathKey={childPath.join('.')}
                   isHighlighted={highlightedPath === childPath.join('.')}
                   helpText={fieldHelpText(path, key)}
@@ -948,23 +1449,45 @@ const ObjectEditor: React.FC<{
                 key={childPath.join('.')}
                 label={friendlyFieldLabel(path, key)}
                 value={child as string | number | boolean | null}
+                secondaryValue={typeof child === 'string' || child === null ? String(isObject(secondaryValue) ? (secondaryValue as Record<string, unknown>)[key] ?? '' : '') : undefined}
                 pathKey={childPath.join('.')}
                 isHighlighted={highlightedPath === childPath.join('.')}
                 helpText={fieldHelpText(path, key)}
                 onChange={(next) => onChange(childPath, next)}
+                onSecondaryChange={onSecondaryChange && (typeof child === 'string' || child === null) ? ((next) => onSecondaryChange(childPath, next)) : undefined}
               />
             );
           }
 
+          const sectionPathKey = childPath.join('.');
+          const isOpen = expandedSections[sectionPathKey] ?? depth <= 0;
+          const itemCount = Array.isArray(child)
+            ? child.length
+            : isObject(child)
+              ? Object.keys(child).length
+              : 0;
+
           return (
-            <div key={childPath.join('.')} data-oc-field-path={childPath.join('.')} className={`card oc-admin-editor-card ${highlightedPath === childPath.join('.') ? 'oc-admin-search-hit' : ''}`}>
-              <div className="card-header bg-white">
-                <div className="fw-semibold text-dark">{friendlyFieldLabel(path, key)}</div>
-                {sectionHelpText(path, key) ? <div className="oc-admin-field-help mt-1">{sectionHelpText(path, key)}</div> : null}
-              </div>
-              <div className="card-body">
-                <ObjectEditor value={child} path={childPath} label={friendlyFieldLabel(path, key)} onChange={onChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} depth={depth + 1} highlightedPath={highlightedPath} routeOptions={routeOptions} />
-              </div>
+            <div key={sectionPathKey} data-oc-field-path={sectionPathKey} className={`card oc-admin-editor-card ${highlightedPath === sectionPathKey ? 'oc-admin-search-hit' : ''}`}>
+              <button
+                type="button"
+                onClick={() => setExpandedSections((prev) => ({ ...prev, [sectionPathKey]: !isOpen }))}
+                className="btn btn-link text-decoration-none text-start oc-admin-collapsible-trigger"
+              >
+                <div className="min-w-0">
+                  <div className="fw-semibold text-dark">{friendlyFieldLabel(path, key)}</div>
+                  {sectionHelpText(path, key) ? <div className="oc-admin-field-help mt-1">{sectionHelpText(path, key)}</div> : null}
+                </div>
+                <div className="d-flex align-items-center gap-3 flex-shrink-0">
+                  <span className="badge text-bg-light border">{itemCount}</span>
+                  {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </div>
+              </button>
+              {isOpen && (
+                <div className="card-body border-top oc-admin-collapsible-body">
+                <ObjectEditor value={child} secondaryValue={isObject(secondaryValue) ? secondaryValue[key] as JsonValue : undefined} path={childPath} label={friendlyFieldLabel(path, key)} onChange={onChange} onSecondaryChange={onSecondaryChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} getDefaultArrayItem={getDefaultArrayItem} copy={copy} depth={depth + 1} highlightedPath={highlightedPath} routeOptions={routeOptions} />
+                </div>
+              )}
             </div>
           );
         })}
@@ -976,7 +1499,52 @@ const ObjectEditor: React.FC<{
 };
 
 const ContentAdminPage: React.FC = () => {
-  const { content, editableDocumentKeys, saveDocument, restoreDocument, lastSavedAt } = useSiteContent();
+  const { sourceContent: content, editableDocumentKeys, saveDocument, restoreDocument, lastSavedAt } = useSiteContent();
+  const [locale, setLocale] = useState<AdminLocale>(() => {
+    if (typeof window === 'undefined') {
+      return 'de';
+    }
+
+    const savedLocale = window.localStorage.getItem(ADMIN_LOCALE_STORAGE_KEY);
+    return savedLocale === 'de' || savedLocale === 'en' || savedLocale === 'custom' ? savedLocale : 'de';
+  });
+  const [customLocaleCode, setCustomLocaleCode] = useState<string>(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    return window.localStorage.getItem(ADMIN_CUSTOM_LOCALE_STORAGE_KEY) ?? '';
+  });
+  const [customLocaleCache, setCustomLocaleCache] = useState<Record<string, typeof adminCopy.en>>(() => {
+    if (typeof window === 'undefined') {
+      return {};
+    }
+
+    try {
+      const rawValue = window.localStorage.getItem(ADMIN_CUSTOM_LOCALE_CACHE_KEY);
+      return rawValue ? sanitizeTranslatedCopyValue(JSON.parse(rawValue)) as Record<string, typeof adminCopy.en> : {};
+    } catch {
+      return {};
+    }
+  });
+  const [isTranslatingLocale, setIsTranslatingLocale] = useState(false);
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [translationJob, setTranslationJob] = useState<AdminTranslationJob | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      const rawValue = window.localStorage.getItem(ADMIN_TRANSLATION_JOB_STORAGE_KEY);
+      return rawValue ? JSON.parse(rawValue) : null;
+    } catch {
+      return null;
+    }
+  });
+  const selectedDynamicLocale = dynamicAdminLocaleOptions.find((option) => option.code === customLocaleCode) ?? null;
+  const customLocaleCopy = customLocaleCode ? customLocaleCache[customLocaleCode] : null;
+  const copy = locale === 'custom' ? (customLocaleCopy ?? adminCopy.en) : adminCopy[locale];
+  const localizedMeta = useMemo(() => localizedLabels(copy), [copy]);
   const items = useMemo<SearchableAdminItem[]>(
     () =>
       [AI_REPORTS_KEY, ...editableDocumentKeys]
@@ -993,9 +1561,9 @@ const ContentAdminPage: React.FC = () => {
           }
         }
 
-        const title = labels[key]?.title ?? prettifyLabel(key);
-        const description = labels[key]?.description ?? 'Editable content document.';
-        const group = labels[key]?.group ?? 'Other';
+        const title = localizedMeta[key as keyof typeof localizedMeta]?.title ?? labels[key]?.title ?? prettifyLabel(key);
+        const description = localizedMeta[key as keyof typeof localizedMeta]?.description ?? labels[key]?.description ?? 'Editable content document.';
+        const group = localizedMeta[key as keyof typeof localizedMeta]?.group ?? labels[key]?.group ?? copy.other;
         const searchText = [
           key,
           title,
@@ -1014,11 +1582,13 @@ const ContentAdminPage: React.FC = () => {
           searchText
         };
       }),
-    [content, editableDocumentKeys]
+    [content, editableDocumentKeys, localizedMeta, copy.other]
   );
 
   const [selectedKey, setSelectedKey] = useState(items[0]?.key ?? 'global');
   const [draft, setDraft] = useState<JsonValue>(content.global as JsonValue);
+  const [englishContent, setEnglishContent] = useState<SiteContent | null>(null);
+  const [englishDraft, setEnglishDraft] = useState<JsonValue>(content.global as JsonValue);
   const [status, setStatus] = useState<string | null>(null);
   const [toast, setToast] = useState<AdminToastState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -1027,6 +1597,7 @@ const ContentAdminPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeSearchPath, setActiveSearchPath] = useState<string | null>(null);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [editorResetToken, setEditorResetToken] = useState(0);
   const [revisions, setRevisions] = useState<SiteDocumentRevision[]>([]);
   const [aiReports, setAiReports] = useState<AiExplorerReport[]>([]);
   const [isLoadingAiReports, setIsLoadingAiReports] = useState(false);
@@ -1038,14 +1609,14 @@ const ContentAdminPage: React.FC = () => {
         label: `${entry.title} (${entry.slug === 'home' ? '/' : `/${entry.slug}`})`,
         value: entry.slug === 'home' ? '/' : `/${entry.slug}`
       })),
-      { label: 'About Section (/#about)', value: '/#about' },
-      { label: 'Services Section (/#services)', value: '/#services' },
-      { label: 'Solutions Section (/#solutions)', value: '/#solutions' },
-      { label: 'Contact Page (/kontakt)', value: '/kontakt' },
+      { label: `${copy.aboutSection} (/#about)`, value: '/#about' },
+      { label: `${copy.servicesSection} (/#services)`, value: '/#services' },
+      { label: `${copy.solutionsSection} (/#solutions)`, value: '/#solutions' },
+      { label: `${copy.contactPage} (/kontakt)`, value: '/kontakt' },
       { label: 'mailto:', value: 'mailto:' },
       { label: 'https://', value: 'https://' }
     ],
-    [content.siteMap]
+    [content.siteMap, copy.aboutSection, copy.contactPage, copy.servicesSection, copy.solutionsSection]
   );
 
   useEffect(() => {
@@ -1081,15 +1652,125 @@ const ContentAdminPage: React.FC = () => {
 
   const selectedItem = items.find((item) => item.key === selectedKey);
   const isAiReportsView = selectedKey === AI_REPORTS_KEY;
+  const selectedEnglishValue = useMemo(() => {
+    if (selectedKey === AI_REPORTS_KEY) {
+      return {} as JsonValue;
+    }
+
+    const parts = selectedKey.split('.');
+    let result: any = englishContent ?? content;
+    for (const part of parts) {
+      result = result?.[part];
+    }
+    return cloneJson((result ?? {}) as JsonValue);
+  }, [content, englishContent, selectedKey]);
   const smtpDraft = selectedKey === 'global' && isObject(draft) && isObject(draft.smtp) ? (draft.smtp as unknown as SmtpDraftConfig) : undefined;
   const fieldCount = useMemo(() => countLeafFields(draft), [draft]);
   const docCount = items.length;
   const selectedGroupCount = useMemo(() => items.filter((item) => item.group === selectedItem?.group).length, [items, selectedItem]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(ADMIN_LOCALE_STORAGE_KEY, locale);
+  }, [locale]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(ADMIN_CUSTOM_LOCALE_STORAGE_KEY, customLocaleCode);
+  }, [customLocaleCode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(ADMIN_CUSTOM_LOCALE_CACHE_KEY, JSON.stringify(customLocaleCache));
+  }, [customLocaleCache]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!translationJob) {
+      window.localStorage.removeItem(ADMIN_TRANSLATION_JOB_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(ADMIN_TRANSLATION_JOB_STORAGE_KEY, JSON.stringify(translationJob));
+  }, [translationJob]);
+
+  useEffect(() => {
+    if (locale !== 'custom') {
+      return;
+    }
+
+    if ((!customLocaleCode || !customLocaleCopy) && !isTranslatingLocale) {
+      setLocale('de');
+    }
+  }, [customLocaleCode, customLocaleCopy, isTranslatingLocale, locale]);
+
+  useEffect(() => {
+    if (!customLocaleCode || customLocaleCache[customLocaleCode]) {
+      return;
+    }
+
+    let cancelled = false;
+    void fetchAdminTranslation(customLocaleCode)
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+
+        setCustomLocaleCache((prev) => ({
+          ...prev,
+          [customLocaleCode]: sanitizeTranslatedCopyValue(result.copy) as typeof adminCopy.en
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [customLocaleCache, customLocaleCode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const englishSuggestion = applyFrontendLocaleOverrides('en', normalizeSiteContent(cloneJson(content as JsonValue) as unknown as SiteContent) as SiteContent);
+
+    void fetchFrontendTranslation('en')
+      .then((result) => {
+        if (!cancelled) {
+          const fetchedEnglish = normalizeSiteContent(result.copy) as SiteContent;
+          const enriched = normalizeSiteContent(
+            enrichEnglishDraft(content as unknown as JsonValue, fetchedEnglish as unknown as JsonValue, englishSuggestion as unknown as JsonValue) as unknown as SiteContent
+          ) as SiteContent;
+          setEnglishContent(enriched);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEnglishContent(englishSuggestion);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content]);
+
+  useEffect(() => {
     setDraft(selectedValue);
+    setEnglishDraft(selectedEnglishValue);
+    setEditorResetToken((prev) => prev + 1);
     setStatus(null);
-  }, [selectedValue, selectedKey]);
+  }, [selectedEnglishValue, selectedValue, selectedKey]);
 
   useEffect(() => {
     if (!activeSearchPath) {
@@ -1221,19 +1902,85 @@ const ContentAdminPage: React.FC = () => {
 
         return {
           ...revision,
-          diffs
+          diffs,
+          restoreTargetId: previousRevision?.id ?? null,
+          restoreTargetValue: cloneJson(previousValue as JsonValue)
         };
       }),
     [revisions, selectedKey]
   );
 
+  const getDefaultArrayItemForPath = (path: Array<string | number>, items: JsonValue[]) => {
+    const seedValue = getSeedDocumentValue(selectedKey);
+    const seedArray = Array.isArray(seedValue) || (typeof seedValue === 'object' && seedValue !== null)
+      ? getByPath(seedValue as JsonValue, path)
+      : undefined;
+
+    if (Array.isArray(seedArray) && seedArray.length > 0) {
+      return emptyValueFromTemplate(seedArray[0]);
+    }
+
+    return defaultItemFromArray(items);
+  };
+
   const handleChange = (path: Array<string | number>, nextValue: JsonValue) => setDraft((prev) => setByPath(prev, path, nextValue));
-  const handleRemove = (path: Array<string | number>) => setDraft((prev) => removeByPath(prev, path));
-  const handleAddArrayItem = (path: Array<string | number>, item: JsonValue) => setDraft((prev) => addArrayItem(prev, path, item));
+  const handleEnglishChange = (path: Array<string | number>, nextValue: JsonValue) => setEnglishDraft((prev) => setByPath(prev, path, nextValue));
+  const handleRemove = (path: Array<string | number>) => {
+    setDraft((prev) => removeByPath(prev, path));
+    setEnglishDraft((prev) => removeByPath(prev, path));
+  };
+  const handleAddArrayItem = (path: Array<string | number>, item: JsonValue) => {
+    setDraft((prev) => addArrayItem(prev, path, item));
+    setEnglishDraft((prev) => addArrayItem(prev, path, emptyValueFromTemplate(item)));
+  };
   const showToast = (message: string, tone: 'success' | 'error' = 'success') => setToast({ message, tone });
   const handleStatusUpdate = (message: string, tone: 'success' | 'error' = 'success') => {
     setStatus(message);
     showToast(message, tone);
+  };
+
+  const handleDynamicLocaleSelect = async (nextLocaleCode: string) => {
+    if (!nextLocaleCode) {
+      return;
+    }
+
+    setCustomLocaleCode(nextLocaleCode);
+
+    if (customLocaleCache[nextLocaleCode]) {
+      setLocale('custom');
+      setIsLanguageModalOpen(false);
+      return;
+    }
+
+    try {
+      const existing = await fetchAdminTranslation(nextLocaleCode);
+      setCustomLocaleCache((prev) => ({
+        ...prev,
+        [nextLocaleCode]: sanitizeTranslatedCopyValue(existing.copy) as typeof adminCopy.en
+      }));
+      setLocale('custom');
+      setIsLanguageModalOpen(false);
+      return;
+    } catch {
+      // continue with background job creation
+    }
+
+    try {
+      setIsTranslatingLocale(true);
+      const result = await startAdminTranslationJob(nextLocaleCode, adminCopy.en);
+      setTranslationJob(result.job);
+      setToast({
+        message: `${copy.downloadingLocalization} 0%`,
+        tone: 'success',
+        progress: 0,
+        persistent: true
+      });
+      setIsLanguageModalOpen(false);
+    } catch (error) {
+      handleStatusUpdate(error instanceof Error ? error.message : copy.translationFailed, 'error');
+    } finally {
+      setIsTranslatingLocale(false);
+    }
   };
 
   const handleSave = async () => {
@@ -1245,22 +1992,35 @@ const ContentAdminPage: React.FC = () => {
       setIsSaving(true);
       setStatus(null);
       await saveDocument(selectedKey, draft);
-      handleStatusUpdate('Saved successfully', 'success');
+      const englishBase = englishContent ? cloneJson(englishContent as JsonValue) : cloneJson(content as JsonValue);
+      const nextEnglishContent = normalizeSiteContent(setByPath(englishBase, selectedKey.split('.'), englishDraft) as unknown as SiteContent) as SiteContent;
+      await saveFrontendTranslationDocument('en', selectedKey, englishDraft);
+      setEnglishContent(nextEnglishContent);
+      handleStatusUpdate(copy.savedSuccessfully, 'success');
     } catch (error) {
-      handleStatusUpdate(error instanceof Error ? error.message : 'Save failed', 'error');
+      handleStatusUpdate(error instanceof Error ? error.message : copy.saveFailed, 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleRestoreRevision = async (revisionId: number) => {
+  const handleRestoreRevision = async (revisionId: number | null, fallbackValue: JsonValue) => {
     try {
-      setIsRestoringRevisionId(revisionId);
+      setIsRestoringRevisionId(revisionId ?? -1);
       setStatus(null);
-      await restoreDocument(selectedKey, revisionId);
-      handleStatusUpdate(`Revision #${revisionId} restored`, 'success');
+
+      if (revisionId === null) {
+        await saveDocument(selectedKey, fallbackValue);
+        setDraft(cloneJson(fallbackValue));
+      } else {
+        const restored = await restoreDocument(selectedKey, revisionId);
+        setDraft(cloneJson(restored.value as JsonValue));
+      }
+
+      setEditorResetToken((prev) => prev + 1);
+      handleStatusUpdate(copy.previousVersionRestored, 'success');
     } catch (error) {
-      handleStatusUpdate(error instanceof Error ? error.message : 'Restore failed', 'error');
+      handleStatusUpdate(error instanceof Error ? error.message : copy.restoreFailed, 'error');
     } finally {
       setIsRestoringRevisionId(null);
     }
@@ -1292,6 +2052,10 @@ const ContentAdminPage: React.FC = () => {
       return;
     }
 
+    if (toast.persistent) {
+      return;
+    }
+
     const timeout = window.setTimeout(() => {
       setToast(null);
     }, 2600);
@@ -1299,11 +2063,91 @@ const ContentAdminPage: React.FC = () => {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  useEffect(() => {
+    if (!translationJob?.id) {
+      return;
+    }
+
+    if (translationJob.status === 'completed' && translationJob.copy && customLocaleCode === translationJob.target) {
+      setCustomLocaleCache((prev) => ({
+        ...prev,
+        [translationJob.target]: sanitizeTranslatedCopyValue(translationJob.copy) as typeof adminCopy.en
+      }));
+      setLocale('custom');
+      setTranslationJob(null);
+      return;
+    }
+
+    if (translationJob.status === 'completed' || translationJob.status === 'error') {
+      return;
+    }
+
+    let cancelled = false;
+    const interval = window.setInterval(async () => {
+      try {
+        const result = await fetchAdminTranslationJob(translationJob.id);
+        if (cancelled) {
+          return;
+        }
+
+        setTranslationJob(result.job);
+        setToast({
+          message: `${copy.downloadingLocalization} ${result.job.progress}%`,
+          tone: result.job.status === 'error' ? 'error' : 'success',
+          progress: result.job.progress,
+          persistent: result.job.status !== 'completed' && result.job.status !== 'error'
+        });
+
+        if (result.job.status === 'completed' && result.job.copy && customLocaleCode === result.job.target) {
+          setCustomLocaleCache((prev) => ({
+            ...prev,
+            [result.job.target]: sanitizeTranslatedCopyValue(result.job.copy) as typeof adminCopy.en
+          }));
+          setLocale('custom');
+          setTranslationJob(null);
+          setToast({
+            message: `${copy.translationReady} 100%`,
+            tone: 'success',
+            progress: 100
+          });
+          window.clearInterval(interval);
+        }
+
+        if (result.job.status === 'error') {
+          setTranslationJob(null);
+          setToast({
+            message: result.job.error || copy.translationFailed,
+            tone: 'error'
+          });
+          window.clearInterval(interval);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setToast({
+            message: error instanceof Error ? error.message : copy.translationFailed,
+            tone: 'error'
+          });
+        }
+        window.clearInterval(interval);
+      }
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [copy.downloadingLocalization, copy.translationFailed, copy.translationReady, customLocaleCode, translationJob]);
+
   return (
     <div className="oc-admin-shell">
       {toast ? (
         <div className={`oc-admin-toast ${toast.tone === 'error' ? 'is-error' : 'is-success'}`} role="status" aria-live="polite">
-          {toast.message}
+          <div>{toast.message}</div>
+          {typeof toast.progress === 'number' ? (
+            <div className="oc-admin-toast-progress">
+              <div className="oc-admin-toast-progress-bar" style={{ width: `${Math.max(0, Math.min(100, toast.progress))}%` }} />
+            </div>
+          ) : null}
         </div>
       ) : null}
       {isSearchActive && (
@@ -1315,7 +2159,7 @@ const ContentAdminPage: React.FC = () => {
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search pages, fields, text, badges, icons, media..."
+                placeholder={copy.searchEverything}
                 className="form-control oc-admin-search-dialog-input ps-5"
               />
             </div>
@@ -1331,9 +2175,43 @@ const ContentAdminPage: React.FC = () => {
                 ))
               ) : (
                 <div className="oc-admin-search-empty">
-                  {search.trim() ? 'No matching content found.' : 'Start typing to search the full content structure.'}
+                  {search.trim() ? copy.noSearchResults : copy.startSearch}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {isLanguageModalOpen && (
+        <div className="oc-admin-search-overlay" onClick={() => setIsLanguageModalOpen(false)}>
+          <div className="oc-admin-language-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
+              <div>
+                <div className="fw-semibold text-dark">{copy.chooseLanguage}</div>
+                <div className="small text-secondary mt-1">{copy.languageModalIntro}</div>
+              </div>
+              <button type="button" onClick={() => setIsLanguageModalOpen(false)} className="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                Close
+              </button>
+            </div>
+            <div className="d-grid gap-2 oc-admin-language-list">
+              {dynamicAdminLocaleOptions.map((option) => (
+                <button
+                  key={option.code}
+                  type="button"
+                  onClick={() => void handleDynamicLocaleSelect(option.code)}
+                  className="oc-admin-language-option"
+                  disabled={isTranslatingLocale}
+                >
+                  <div className="d-flex align-items-center gap-3">
+                    <CircleFlagIcon countryCode={option.countryCode} className="rounded-circle flex-shrink-0" style={{ width: 20, height: 20 }} />
+                    <div className="text-start">
+                      <div className="fw-semibold text-dark">{option.label}</div>
+                      <div className="small text-secondary">{option.nativeLabel}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -1347,16 +2225,60 @@ const ContentAdminPage: React.FC = () => {
                 <OctopusMark />
               </div>
               <div className="oc-admin-brand-lockup">
-                <div className="oc-admin-brand-kicker">Octotech CRM</div>
+                <div className="oc-admin-brand-kicker">{copy.crmKicker}</div>
                 <div className="oc-admin-brand-title">OCTOTECH.AZ</div>
               </div>
             </div>
 
             <div className="d-flex align-items-center gap-2">
+              <div className="d-none d-lg-flex align-items-center gap-2 rounded-pill border bg-white px-2 py-1">
+                <span className="small text-secondary px-2">{copy.languageLabel}</span>
+                {([
+                  ['de', 'de', 'DE'],
+                  ['en', 'gb', 'EN']
+                ] as Array<[Exclude<AdminLocale, 'custom'>, string, string]>).map(([option, countryCode, label]) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setLocale(option)}
+                    className={`btn btn-sm d-inline-flex align-items-center gap-2 ${locale === option ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3`}
+                  >
+                    <CircleFlagIcon countryCode={countryCode} className="rounded-circle" style={{ width: 16, height: 16 }} />
+                    {label}
+                  </button>
+                ))}
+                {selectedDynamicLocale && customLocaleCache[selectedDynamicLocale.code] ? (
+                  <div className="d-inline-flex align-items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLocale('custom')}
+                      className={`btn btn-sm d-inline-flex align-items-center gap-2 ${locale === 'custom' ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3`}
+                    >
+                      <CircleFlagIcon countryCode={selectedDynamicLocale.countryCode} className="rounded-circle" style={{ width: 16, height: 16 }} />
+                      {selectedDynamicLocale.code.toUpperCase()}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsLanguageModalOpen(true)}
+                      className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 rounded-pill px-3"
+                    >
+                      {copy.changeLanguage}
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setIsLanguageModalOpen(true)} className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+                    <span className="oc-admin-add-flag">
+                      <Languages className="h-3 w-3" />
+                      <span className="oc-admin-add-flag-mark">?</span>
+                    </span>
+                    {copy.addLanguage}
+                  </button>
+                )}
+              </div>
               <div className="d-none d-md-block oc-admin-topbar-context">{selectedItem?.title}</div>
               <button onClick={handleSave} disabled={isSaving || isAiReportsView} className="btn btn-primary d-inline-flex align-items-center gap-2">
                 <Save className="h-4 w-4" />
-                {isAiReportsView ? 'Read Only' : isSaving ? 'Saving...' : 'Update'}
+                {isAiReportsView ? copy.readOnly : isSaving ? copy.saving : copy.update}
               </button>
             </div>
           </div>
@@ -1374,7 +2296,7 @@ const ContentAdminPage: React.FC = () => {
                       value={search}
                       onFocus={() => setIsSearchActive(true)}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search pages"
+                      placeholder={copy.searchPages}
                       className="form-control ps-5"
                     />
                 </div>
@@ -1382,8 +2304,8 @@ const ContentAdminPage: React.FC = () => {
                   type="button"
                   onClick={() => setIsSidebarCollapsed((prev) => !prev)}
                   className="btn btn-outline-secondary oc-admin-sidebar-toggle"
-                  aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                  title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  aria-label={isSidebarCollapsed ? copy.expandSidebar : copy.collapseSidebar}
+                  title={isSidebarCollapsed ? copy.expandSidebar : copy.collapseSidebar}
                 >
                   {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </button>
@@ -1446,9 +2368,9 @@ const ContentAdminPage: React.FC = () => {
                   <div className="card oc-admin-card oc-admin-stat-card">
                     <div className="card-body small text-secondary">
                       {isAiReportsView ? (
-                        <>Logged usages: <span className="fw-bold text-dark">{aiReports.length}</span></>
+                        <>{copy.loggedUsages}: <span className="fw-bold text-dark">{aiReports.length}</span></>
                       ) : (
-                        <>Editable fields: <span className="fw-bold text-dark">{fieldCount}</span></>
+                        <>{copy.editableFields}: <span className="fw-bold text-dark">{fieldCount}</span></>
                       )}
                     </div>
                   </div>
@@ -1456,27 +2378,27 @@ const ContentAdminPage: React.FC = () => {
                 <div className="col-12 col-md-6">
                   <div className="card oc-admin-card oc-admin-stat-card">
                     <div className="card-body small text-secondary">
-                      Group: <span className="fw-bold text-dark">{selectedItem?.group}</span>
+                      {copy.group}: <span className="fw-bold text-dark">{selectedItem?.group}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {smtpDraft ? <SmtpWizardCard smtp={smtpDraft} onChange={handleChange} onStatus={handleStatusUpdate} /> : null}
+              {smtpDraft ? <SmtpWizardCard smtp={smtpDraft} onChange={handleChange} onStatus={handleStatusUpdate} copy={copy} /> : null}
 
             <div className="card oc-admin-card">
                 <div className="card-body">
                 <div className="oc-admin-editor-intro mb-4">
                   {isAiReportsView
-                    ? 'Every AI assistant usage is logged here with prompt, generated event detail, user-agent and created date.'
-                    : 'Edit the fields below. Changes are saved to the live content source and reflected on the site after update.'}
+                    ? copy.aiIntro
+                    : copy.editorIntro}
                 </div>
                 {isAiReportsView ? (
                   <div className="d-grid gap-3">
                     {isLoadingAiReports ? (
-                      <div className="small text-secondary">Loading AI usage reports...</div>
+                      <div className="small text-secondary">{copy.loadingAiReports}</div>
                     ) : aiReports.length === 0 ? (
-                      <div className="small text-secondary">No AI usage records yet.</div>
+                      <div className="small text-secondary">{copy.noAiReports}</div>
                     ) : (
                       aiReports.map((report) => (
                         <details key={report.id} className="card oc-admin-editor-card">
@@ -1487,48 +2409,48 @@ const ContentAdminPage: React.FC = () => {
                                 <span className="badge text-bg-light border">{report.model}</span>
                                 <span className="small text-secondary">{new Date(report.createdAt).toLocaleString()}</span>
                               </div>
-                              <div className="fw-semibold text-dark">{report.eventName || report.customerName || 'Untitled AI usage'}</div>
+                              <div className="fw-semibold text-dark">{report.eventName || report.customerName || copy.untitledAiUsage}</div>
                               <div className="small text-secondary mt-1">
-                                {report.eventLocation || 'Location open'} · {report.attendees || 'Attendees open'} · {report.currentPhase || 'Phase open'}
+                                {report.eventLocation || copy.locationOpen} · {report.attendees || copy.attendeesOpen} · {report.currentPhase || copy.phaseOpen}
                               </div>
                             </div>
                             <div className="small text-secondary text-break text-lg-end" style={{ maxWidth: 320 }}>
-                              {report.userAgent || 'Unknown user-agent'}
+                              {report.userAgent || copy.unknownUserAgent}
                             </div>
                           </summary>
                           <div className="card-body border-top pt-4">
                             <div className="row g-3">
                               <div className="col-12 col-xl-6">
-                                <div className="oc-admin-field-help mb-2">Prompt</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.userMessage}</div>
+                                <div className="oc-admin-field-help mb-2">{copy.prompt}</div>
+                                <div className="border rounded-3 bg-light p-3 small text-dark oc-admin-scroll-panel">{report.userMessage}</div>
                               </div>
                               <div className="col-12 col-xl-6">
-                                <div className="oc-admin-field-help mb-2">Assistant Response</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.assistantText || report.errorMessage || 'No response text.'}</div>
+                                <div className="oc-admin-field-help mb-2">{copy.assistantResponse}</div>
+                                <div className="border rounded-3 bg-light p-3 small text-dark oc-admin-scroll-panel">{report.assistantText || report.errorMessage || copy.noResponseText}</div>
                               </div>
                               <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">Customer</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.customerName || 'Open'}</div>
+                                <div className="oc-admin-field-help mb-2">{copy.customer}</div>
+                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.customerName || copy.open}</div>
                               </div>
                               <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">Event</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.eventName || 'Open'}</div>
+                                <div className="oc-admin-field-help mb-2">{copy.event}</div>
+                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.eventName || copy.open}</div>
                               </div>
                               <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">Location</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.eventLocation || 'Open'}</div>
+                                <div className="oc-admin-field-help mb-2">{copy.location}</div>
+                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.eventLocation || copy.open}</div>
                               </div>
                               <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">Created</div>
+                                <div className="oc-admin-field-help mb-2">{copy.created}</div>
                                 <div className="border rounded-3 bg-light p-3 small text-dark">{new Date(report.createdAt).toLocaleString()}</div>
                               </div>
                               <div className="col-12">
-                                <div className="oc-admin-field-help mb-2">User-Friendly Summary</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark d-grid gap-2">
+                                <div className="oc-admin-field-help mb-2">{copy.userFriendlySummary}</div>
+                                <div className="border rounded-3 bg-light p-3 small text-dark d-grid gap-2 oc-admin-scroll-panel">
                                   {readableReportLines(report).length > 0 ? (
                                     readableReportLines(report).map((line) => <div key={line}>{line}</div>)
                                   ) : (
-                                    <div>No readable event summary available for this usage yet.</div>
+                                    <div>{copy.noReadableSummary}</div>
                                   )}
                                 </div>
                               </div>
@@ -1539,7 +2461,7 @@ const ContentAdminPage: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <ObjectEditor value={draft} onChange={handleChange} onRemove={handleRemove} onAddArrayItem={handleAddArrayItem} highlightedPath={activeSearchPath} routeOptions={routeOptions} />
+                  <ObjectEditor key={`${selectedKey}:${editorResetToken}`} value={draft} secondaryValue={englishDraft} onChange={handleChange} onSecondaryChange={handleEnglishChange} onRemove={handleRemove} onAddArrayItem={handleAddArrayItem} getDefaultArrayItem={getDefaultArrayItemForPath} copy={copy} highlightedPath={activeSearchPath} routeOptions={routeOptions} />
                 )}
               </div>
               </div>
@@ -1549,81 +2471,81 @@ const ContentAdminPage: React.FC = () => {
           <aside className="col-12 col-lg-4 oc-admin-main p-4 oc-admin-right-rail oc-admin-entrance oc-admin-entrance-rail">
             <div className="sticky-top d-grid gap-4 oc-admin-right-rail-scroll" style={{ top: 89 }}>
               <div className="card oc-admin-card">
-                <div className="card-header bg-white fw-semibold">Publish</div>
+                <div className="card-header bg-white fw-semibold">{copy.publish}</div>
                 <div className="card-body">
                   <div className="d-flex align-items-start gap-3 rounded-3 bg-light p-3 mb-3">
                     <CheckCircle2 className="mt-1 h-5 w-5 text-success" />
                     <div>
-                      <div className="fw-semibold text-dark">Status</div>
-                      <div className="small text-secondary">{isAiReportsView ? 'Read-only AI report history' : status ?? 'Ready for update'}</div>
+                      <div className="fw-semibold text-dark">{copy.status}</div>
+                      <div className="small text-secondary">{isAiReportsView ? copy.readOnlyAiHistory : status ?? copy.readyForUpdate}</div>
                     </div>
                   </div>
 
                   <div className="small text-secondary mb-3">
-                    {lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : 'This document has not been saved in this session.'}
+                    {lastSavedAt ? `${copy.lastSaved} ${new Date(lastSavedAt).toLocaleString()}` : copy.notSavedYet}
                   </div>
 
                   <button onClick={handleSave} disabled={isSaving || isAiReportsView} className="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2">
                     <Save className="h-4 w-4" />
-                    {isAiReportsView ? 'Read Only' : isSaving ? 'Saving...' : 'Update Document'}
+                    {isAiReportsView ? copy.readOnly : isSaving ? copy.saving : copy.updateDocument}
                   </button>
                 </div>
               </div>
 
               <div className="card oc-admin-card">
-                <div className="card-header bg-white fw-semibold">Document Summary</div>
+                <div className="card-header bg-white fw-semibold">{copy.documentSummary}</div>
                 <div className="card-body d-grid gap-3">
                   <div className="d-flex align-items-center justify-content-between small">
-                    <span className="text-secondary">Document key</span>
+                    <span className="text-secondary">{copy.documentKey}</span>
                     <span className="fw-semibold text-dark">{selectedKey}</span>
                   </div>
                   <div className="d-flex align-items-center justify-content-between small">
-                    <span className="text-secondary">Group items</span>
+                    <span className="text-secondary">{copy.groupItems}</span>
                     <span className="fw-semibold text-dark">{selectedGroupCount}</span>
                   </div>
                   <div className="d-flex align-items-center justify-content-between small">
-                    <span className="text-secondary">Total documents</span>
+                    <span className="text-secondary">{copy.totalDocuments}</span>
                     <span className="fw-semibold text-dark">{docCount}</span>
                   </div>
                   <div className="d-flex align-items-center justify-content-between small">
-                    <span className="text-secondary">Leaf fields</span>
+                    <span className="text-secondary">{copy.leafFields}</span>
                     <span className="fw-semibold text-dark">{isAiReportsView ? aiReports.length : fieldCount}</span>
                   </div>
                 </div>
               </div>
 
               <div className="card oc-admin-card">
-                <div className="card-header bg-white fw-semibold">Editor Notes</div>
+                <div className="card-header bg-white fw-semibold">{copy.editorNotes}</div>
                 <div className="card-body d-grid gap-3 small text-secondary">
                   <div className="d-flex align-items-start gap-3">
                     <ShieldCheck className="mt-1 h-4 w-4 text-primary" />
-                    Every saved change is stored with a timestamp and can be restored.
+                    {copy.savedChangeNote}
                   </div>
                   <div className="d-flex align-items-start gap-3">
                     <History className="mt-1 h-4 w-4 text-primary" />
-                    {isAiReportsView ? 'All assistant usages are logged with prompt, event detail, user-agent and timestamp.' : 'Recent changes for this document are listed below.'}
+                    {isAiReportsView ? copy.aiUsageNote : copy.recentChangesNote}
                   </div>
 
                   <div className="border rounded-3 bg-light p-3 oc-admin-revision-panel">
                     <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
-                      <div className="fw-semibold text-dark">{isAiReportsView ? 'AI Usage Summary' : 'Recent Changes'}</div>
-                      <div className="small text-secondary">{isAiReportsView ? `${aiReports.length} records` : `${revisionDetails.length} records`}</div>
+                      <div className="fw-semibold text-dark">{isAiReportsView ? copy.aiUsageSummary : copy.recentChanges}</div>
+                      <div className="small text-secondary">{isAiReportsView ? `${aiReports.length} ${copy.records}` : `${revisionDetails.length} ${copy.records}`}</div>
                     </div>
                     {isAiReportsView ? (
                       isLoadingAiReports ? (
-                        <div className="small text-secondary">Loading AI reports...</div>
+                        <div className="small text-secondary">{copy.loadingAiSummary}</div>
                       ) : (
                         <div className="d-grid gap-2 small text-secondary">
-                          <div>Total uses: <span className="fw-semibold text-dark">{aiReports.length}</span></div>
-                          <div>Successful: <span className="fw-semibold text-dark">{aiReports.filter((item) => item.status === 'success').length}</span></div>
-                          <div>Errors: <span className="fw-semibold text-dark">{aiReports.filter((item) => item.status !== 'success').length}</span></div>
-                          <div>Latest activity: <span className="fw-semibold text-dark">{aiReports[0] ? new Date(aiReports[0].createdAt).toLocaleString() : 'No activity yet'}</span></div>
+                          <div>{copy.totalUses}: <span className="fw-semibold text-dark">{aiReports.length}</span></div>
+                          <div>{copy.successful}: <span className="fw-semibold text-dark">{aiReports.filter((item) => item.status === 'success').length}</span></div>
+                          <div>{copy.errors}: <span className="fw-semibold text-dark">{aiReports.filter((item) => item.status !== 'success').length}</span></div>
+                          <div>{copy.latestActivity}: <span className="fw-semibold text-dark">{aiReports[0] ? new Date(aiReports[0].createdAt).toLocaleString() : copy.noActivityYet}</span></div>
                         </div>
                       )
                     ) : isLoadingRevisions ? (
-                      <div className="small text-secondary">Loading revision history...</div>
+                      <div className="small text-secondary">{copy.loadingRevisionHistory}</div>
                     ) : revisionDetails.length === 0 ? (
-                      <div className="small text-secondary">No saved changes yet for this document.</div>
+                      <div className="small text-secondary">{copy.noSavedChanges}</div>
                     ) : (
                       <div className="d-grid gap-3 oc-admin-revision-list">
                         {revisionDetails.map((revision) => (
@@ -1633,7 +2555,7 @@ const ContentAdminPage: React.FC = () => {
                                 <div className="d-flex flex-wrap align-items-center gap-2">
                                   <div className="fw-semibold text-dark">{getRevisionActionLabel(revision.action)}</div>
                                   <span className={`oc-admin-revision-badge ${revision.action === 'restore' ? 'is-restore' : 'is-update'}`}>
-                                    {revision.action === 'restore' ? 'Restore' : 'Update'}
+                                    {revision.action === 'restore' ? copy.restore : copy.updateBadge}
                                   </span>
                                 </div>
                                 <div className="small text-secondary mt-1">
@@ -1648,11 +2570,11 @@ const ContentAdminPage: React.FC = () => {
                                       <div key={`${revision.id}-${diff.path}`} className="oc-admin-revision-diff">
                                         <div className="oc-admin-revision-path">{diff.path}</div>
                                         <div className="small text-secondary mt-2">
-                                          <div className="fw-semibold text-dark mb-1">Original</div>
+                                          <div className="fw-semibold text-dark mb-1">{copy.original}</div>
                                           <div className="oc-admin-revision-value">{formatDiffValue(diff.previousValue)}</div>
                                         </div>
                                         <div className="small text-secondary mt-2">
-                                          <div className="fw-semibold text-dark mb-1">Changed</div>
+                                          <div className="fw-semibold text-dark mb-1">{copy.changed}</div>
                                           <div className="oc-admin-revision-value">{formatDiffValue(diff.nextValue)}</div>
                                         </div>
                                       </div>
@@ -1662,12 +2584,12 @@ const ContentAdminPage: React.FC = () => {
                               </div>
                               <button
                                 type="button"
-                                onClick={() => handleRestoreRevision(revision.id)}
-                                disabled={isRestoringRevisionId === revision.id}
+                                onClick={() => handleRestoreRevision(revision.restoreTargetId, revision.restoreTargetValue)}
+                                disabled={isRestoringRevisionId === (revision.restoreTargetId ?? -1)}
                                 className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 oc-admin-revision-restore"
                               >
                                 <RotateCcw className="h-4 w-4" />
-                                {isRestoringRevisionId === revision.id ? 'Restoring...' : 'Restore'}
+                                {isRestoringRevisionId === (revision.restoreTargetId ?? -1) ? copy.restoring : copy.restorePrevious}
                               </button>
                             </div>
                           </div>

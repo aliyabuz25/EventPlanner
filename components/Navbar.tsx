@@ -6,6 +6,7 @@ import NavLink from './navbar/NavLink';
 import SolutionDropdown from './navbar/SolutionDropdown';
 import MobileMenu from './navbar/MobileMenu';
 import ThemeToggle from './navbar/ThemeToggle';
+import LanguagePicker from './navbar/LanguagePicker';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
 interface NavbarProps {
@@ -18,16 +19,16 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, toggleTheme, isReady = true }) => {
-  const { content } = useSiteContent();
+  const { content, locale, setLocale, customLocaleCode, customLocaleLabel, isTranslatingLocale, translationJob } = useSiteContent();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [solutionsOpen, setSolutionsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const solutionsDropdownRef = useRef<HTMLDivElement>(null);
   const navLinks = content.navigation.mainLinks;
   const solutionLinks = content.navigation.solutionLinks;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (solutionsDropdownRef.current && !solutionsDropdownRef.current.contains(event.target as Node)) {
         setSolutionsOpen(false);
       }
     };
@@ -64,18 +65,16 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
     setMobileMenuOpen(false);
   };
 
-  const handleStudioOpen = () => {
-    setView('studio');
-    setSolutionsOpen(false);
-    setMobileMenuOpen(false);
-    document.body.style.overflow = 'auto';
+  const renderLanguageControls = (compact = false) => {
+    return <LanguagePicker compact={compact} />;
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[220] isolate transition-all duration-300 
+    <>
+    <nav className={`fixed top-0 left-0 right-0 z-[220] isolate transition-all duration-500 
       ${scrolled || currentView !== 'home' 
-        ? 'bg-sap-paper/90 dark:bg-[#000000]/90 backdrop-blur-md py-2 shadow-md border-b border-slate-300 dark:border-white/[0.08]' 
-        : 'bg-transparent py-4'}`}>
+        ? 'bg-sap-paper/80 dark:bg-dark-base/80 backdrop-blur-xl py-2 border-b border-slate-200/80 dark:border-white/[0.05]' 
+        : 'bg-transparent py-4 border-b border-transparent'}`}>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex min-h-[60px] lg:min-h-[76px] items-center justify-between gap-3">
         <div className="flex h-full items-center">
           <button 
@@ -83,14 +82,23 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
             onClick={() => setView('home')} 
             className={`group flex h-full items-center justify-center focus:outline-none transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}
           >
-             <Logo theme={theme} scrolled={scrolled} className="h-10 sm:h-14 lg:h-16 w-auto max-w-[180px] sm:max-w-[290px] object-contain" />
+             <Logo
+               theme={theme}
+               scrolled={scrolled}
+               className="h-9 sm:h-12 lg:h-14 w-auto max-w-[160px] sm:max-w-[250px] object-contain"
+               imgStyle={{
+                 imageRendering: '-webkit-optimize-contrast',
+                 backfaceVisibility: 'hidden',
+                 transform: 'translateZ(0)',
+               }}
+             />
           </button>
         </div>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
-            <div key={link.name} className="relative" ref={link.view === 'solutions' ? dropdownRef : null}>
+            <div key={link.name} className="relative" ref={link.view === 'solutions' ? solutionsDropdownRef : null}>
               <NavLink 
                 name={link.name}
                 href={link.href}
@@ -113,24 +121,13 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
             </div>
           ))}
 
+          {renderLanguageControls()}
           <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
-          <button
-            type="button"
-            onClick={handleStudioOpen}
-            className="px-5 py-2 bg-sap-blue text-white rounded-md text-[12px] font-bold hover:bg-sap-blue/90 transition-all uppercase tracking-wide shadow-sm"
-          >
-            Event Studio
-          </button>
-
-          <button 
-            className="px-5 py-2 border border-[#F0AB00] bg-[#F0AB00]/10 text-slate-800 dark:text-[#F0AB00] rounded-md text-[12px] font-bold hover:bg-[#F0AB00] hover:text-[#000000] transition-all uppercase tracking-wide"
-          >
-            {content.navigation.badges.partner}
-          </button>
         </div>
 
         <div className="md:hidden flex items-center space-x-2">
+           {renderLanguageControls(true)}
            <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="bg-slate-200 dark:bg-white/5" />
 
           <button 
@@ -155,9 +152,9 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
           solutionSublinks={solutionLinks as any}
           onLinkClick={handleLinkClick}
           onSolutionSelect={handleSolutionSelect}
-          onStudioOpen={handleStudioOpen}
         />
       </nav>
+    </>
   );
 };
 

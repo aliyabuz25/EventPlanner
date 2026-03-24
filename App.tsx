@@ -54,7 +54,7 @@ const pathToView = (pathname: string, content: ReturnType<typeof useSiteContent>
 };
 
 const App: React.FC = () => {
-  const { content } = useSiteContent();
+  const { content, localeStatus, clearLocaleStatus } = useSiteContent();
   const initialView = pathToView(window.location.pathname, content);
   const [loading, setLoading] = useState(initialView !== 'content-admin');
   const [fadingOut, setFadingOut] = useState(false);
@@ -163,7 +163,7 @@ const App: React.FC = () => {
       services: content.pages.services?.sections?.title?.join(' '),
       team: content.pages.team?.sections?.title,
       contact: content.pages.home?.sections?.contact?.title,
-      studio: 'FastLane Studio',
+      studio: 'FastLane Workspace',
       solutions: content.pages.solutions?.sections?.title
     };
 
@@ -238,7 +238,7 @@ const App: React.FC = () => {
       default:
         return (
           <>
-            <Hero />
+            <Hero onOpenStudio={() => setCurrentView('studio')} />
             <CampaignSection />
             <About onReadMore={() => setCurrentView('about')} />
             <Partners />
@@ -250,6 +250,7 @@ const App: React.FC = () => {
 
   const isSurveyView = currentView === 'survey';
   const isStudioView = currentView === 'studio';
+  const mainTransitionClass = isStudioView ? 'view-slide-in-right' : 'view-fade-in-soft';
 
   return (
     <div className="min-h-screen bg-sap-paper dark:bg-[#050505] selection:bg-sap-gold/30 selection:text-black dark:selection:text-white transition-colors duration-500">
@@ -257,6 +258,7 @@ const App: React.FC = () => {
         <LoadingScreen 
           isFadingOut={fadingOut} 
           transformStyle={logoTransform} 
+          theme={theme}
         />
       )}
       
@@ -272,13 +274,35 @@ const App: React.FC = () => {
           />
         )}
 
-        <main>
+        <main key={currentView} className={mainTransitionClass}>
           {renderContent()}
         </main>
 
-        {currentView !== 'content-admin' && !isSurveyView && <Footer setView={setCurrentView} />}
+        {currentView !== 'content-admin' && !isSurveyView && <Footer setView={setCurrentView} theme={theme} />}
         {currentView !== 'content-admin' && !isSurveyView && !isStudioView && <ErpAdvisor assistantOnly />}
       </div>
+
+      {currentView !== 'content-admin' && localeStatus && (
+        <button
+          type="button"
+          onClick={clearLocaleStatus}
+          className="fixed bottom-4 right-4 z-[260] w-[min(92vw,380px)] text-start rounded-4 border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#050505]/95 shadow-2xl backdrop-blur-xl p-4"
+        >
+          <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
+            <div className="small fw-bold text-uppercase text-secondary">Localization</div>
+            <div className={`small fw-semibold ${localeStatus.tone === 'error' ? 'text-danger' : localeStatus.tone === 'success' ? 'text-success' : 'text-primary'}`}>
+              {Math.max(0, Math.min(100, localeStatus.progress))}%
+            </div>
+          </div>
+          <div className="text-dark dark:text-white fw-semibold mb-3">{localeStatus.message}</div>
+          <div className="w-100 rounded-pill bg-slate-200 dark:bg-white/10 overflow-hidden" style={{ height: 8 }}>
+            <div
+              className={`${localeStatus.tone === 'error' ? 'bg-danger' : localeStatus.tone === 'success' ? 'bg-success' : 'bg-primary'} rounded-pill transition-all duration-500`}
+              style={{ width: `${Math.max(4, Math.min(100, localeStatus.progress))}%`, height: '100%' }}
+            />
+          </div>
+        </button>
+      )}
     </div>
   );
 };

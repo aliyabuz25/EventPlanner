@@ -1,15 +1,38 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
-const Hero: React.FC = () => {
+const BLOCKED_BACKGROUND_VIDEO_URLS = new Set([
+  'https://cdn.pixabay.com/video/2023/11/21/189992-887332575_large.mp4'
+]);
+
+const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
   const { content } = useSiteContent();
   const hero = content.pages.home.sections.hero;
   const heroVisual = hero.visual;
+  const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false);
+  const backgroundVideoUrl = BLOCKED_BACKGROUND_VIDEO_URLS.has(heroVisual.backgroundVideoUrl) ? '' : heroVisual.backgroundVideoUrl;
 
   return (
-    <div id="home" className="relative flex items-center pt-24 pb-16 sm:pb-20 lg:min-h-screen overflow-hidden bg-sap-paper dark:bg-gradient-to-b dark:from-[#0a0a0a] dark:via-[#050505] dark:to-[#000000] transition-colors duration-500">
+    <div id="home" className="relative flex items-center pt-24 pb-16 sm:pb-20 lg:min-h-screen overflow-hidden bg-sap-paper dark:bg-dark-base transition-colors duration-500">
+      {backgroundVideoUrl && !hasBackgroundVideoError ? (
+        <div className="absolute inset-0 overflow-hidden">
+          <video
+            className="absolute inset-0 h-full w-full object-cover opacity-[0.28] dark:opacity-[0.22]"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onError={() => setHasBackgroundVideoError(true)}
+          >
+            <source src={backgroundVideoUrl} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(247,244,237,0.92)_0%,rgba(247,244,237,0.78)_42%,rgba(247,244,237,0.56)_100%)] dark:bg-[linear-gradient(90deg,rgba(5,5,5,0.92)_0%,rgba(5,5,5,0.82)_45%,rgba(5,5,5,0.62)_100%)]"></div>
+        </div>
+      ) : null}
+
       {/* SAP-style ambient gradients */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sap-blue/10 dark:bg-sap-blue/10 rounded-full blur-[120px] pointer-events-none translate-x-1/2 -translate-y-1/4 transition-colors duration-500"></div>
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sap-gold/10 rounded-full blur-[100px] pointer-events-none -translate-x-1/3 translate-y-1/4 transition-colors duration-500"></div>
@@ -20,39 +43,40 @@ const Hero: React.FC = () => {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 grid lg:grid-cols-2 gap-10 lg:gap-24 items-center relative z-10 w-full">
         {/* Text Side */}
         <div className="text-left relative z-40">
-          <div className="flex items-center space-x-3 mb-6 sm:mb-8 bg-white dark:bg-[#111] border border-slate-200 dark:border-white/10 w-fit px-3 sm:px-4 py-2 rounded-md backdrop-blur-sm shadow-sm dark:shadow-none transition-all">
-            <span className="w-2 h-2 bg-sap-gold rounded-full shadow-[0_0_10px_#F0AB00]"></span>
+          <div className="inline-flex items-center gap-3 mb-6 sm:mb-8 bg-white/88 dark:bg-white/[0.05] border border-white/70 dark:border-white/10 w-fit px-4 sm:px-5 py-2.5 rounded-full backdrop-blur-md shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-all">
+            <span className="w-2.5 h-2.5 bg-sap-gold rounded-full shadow-[0_0_12px_rgba(216,162,61,0.8)]"></span>
             <span className="text-slate-800 dark:text-white text-xs font-bold tracking-wider uppercase">
               {hero.badge}
             </span>
           </div>
           
-          <h1 className="text-[2.8rem] sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6 sm:mb-8 text-slate-900 dark:text-white transition-colors">
-            {hero.title.lineOne} <br />
-            <span className="text-sap-blue">{hero.title.highlight}</span> <br />
-            <span className="text-slate-500 dark:text-white font-light dark:font-light">{hero.title.lineThree}</span>
+          <h1 className="max-w-[12ch] text-[3rem] sm:text-[4.35rem] lg:text-[5.4rem] font-semibold tracking-[-0.045em] leading-[0.94] mb-6 sm:mb-8 text-slate-900 dark:text-white transition-colors">
+            <span className="block">{hero.title.lineOne}</span>
+            <span className="block text-sap-blue drop-shadow-[0_16px_30px_rgba(22,35,63,0.12)]">{hero.title.highlight}</span>
+            <span className="block text-slate-500 dark:text-white/88 font-light">{hero.title.lineThree}</span>
           </h1>
           
-          <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 mb-8 sm:mb-10 max-w-xl leading-relaxed font-normal border-l-4 border-sap-gold pl-4 sm:pl-6 transition-colors">
+          <p className="text-[1.02rem] sm:text-[1.18rem] text-slate-600 dark:text-slate-300 mb-8 sm:mb-10 max-w-2xl leading-relaxed font-normal pl-5 sm:pl-6 relative transition-colors">
+            <span className="absolute left-0 top-1 bottom-1 w-px bg-gradient-to-b from-sap-gold via-sap-blue/50 to-transparent"></span>
             {hero.description}
           </p>
           
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mb-12 sm:mb-16">
-            <a href={hero.primaryHref} className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-sap-blue hover:bg-[#007db8] text-white font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/20 dark:shadow-blue-900/20 flex items-center justify-center space-x-2">
-              <span>{hero.primaryCta}</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
-            <a href={hero.secondaryHref} className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-white dark:bg-transparent border border-slate-200 dark:border-white/20 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-white rounded-lg font-medium transition-all shadow-sm dark:shadow-none text-center">
-              {hero.secondaryCta}
-            </a>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mb-12 sm:mb-14">
+            <button
+              type="button"
+              onClick={onOpenStudio}
+              className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-[#0f2740] hover:bg-[#0b2034] text-white font-semibold rounded-2xl transition-all shadow-[0_24px_45px_-24px_rgba(15,39,64,0.75)] flex items-center justify-center gap-2"
+            >
+              <span>FastLane Workspace</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </button>
           </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-6 sm:gap-10 border-t border-slate-200 dark:border-white/10 pt-6 sm:pt-8 transition-colors">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-4xl">
              {hero.stats.map((stat) => (
-               <div key={stat.label}>
-                  <div className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{stat.value}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase mt-1">{stat.label}</div>
+               <div key={stat.label} className="rounded-[1.4rem] border border-white/70 dark:border-white/8 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-5 py-4 shadow-[0_18px_44px_-30px_rgba(15,23,42,0.28)]">
+                  <div className="text-[1.7rem] sm:text-[1.9rem] font-semibold text-slate-900 dark:text-white tracking-[-0.03em]">{stat.value}</div>
+                  <div className="mt-1 text-[10px] sm:text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-[0.14em]">{stat.label}</div>
                </div>
              ))}
           </div>
@@ -60,209 +84,97 @@ const Hero: React.FC = () => {
 
         {/* Media Side - 3D Floating Glass Dashboard Composition */}
         <div className="relative mt-4 sm:mt-8 lg:mt-0 flex justify-center lg:justify-end [perspective:2000px] group/scene">
-           <div className="relative w-full max-w-[340px] sm:max-w-[520px] lg:max-w-[650px] h-[320px] sm:h-[420px] lg:h-[500px] [transform-style:preserve-3d] sm:[transform:rotateY(-12deg)_rotateX(5deg)] group-hover/scene:sm:[transform:rotateY(-5deg)_rotateX(2deg)] transition-transform duration-700 ease-out">
+           <div className="relative w-full max-w-[340px] sm:max-w-[520px] lg:max-w-[650px] h-[320px] sm:h-[420px] lg:h-[500px] [transform-style:preserve-3d] sm:[transform:rotateY(-10deg)_rotateX(4deg)] group-hover/scene:sm:[transform:rotateY(-4deg)_rotateX(2deg)] transition-all duration-1000 ease-out">
               
-              {/* Back Card (Right side panel - Event Operations Snapshot) */}
-              <div className="group/card absolute right-0 top-0 sm:top-[-20px] w-[170px] sm:w-[220px] lg:w-[260px] h-[290px] sm:h-[380px] lg:h-[460px] bg-slate-200/40 dark:bg-slate-800/60 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-xl shadow-2xl sm:[transform:translateZ(-40px)] flex flex-col overflow-hidden">
-                 
-                 {/* Shine Effect (Light Refraction) - Improved Softness to remove artifacts */}
-                 <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden rounded-xl">
-                    <div className="absolute top-0 left-[-100%] w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent skew-x-[-15deg] blur-md transition-transform duration-[2000ms] ease-in-out group-hover/scene:translate-x-[200%]"></div>
+              {/* Secondary Card (Background) */}
+              <div className="absolute right-0 top-0 sm:top-[-15px] w-[180px] sm:w-[240px] lg:w-[280px] h-[300px] sm:h-[400px] lg:h-[480px] bg-white/20 dark:bg-white/[0.02] backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl sm:[transform:translateZ(-50px)] flex flex-col overflow-hidden transition-all duration-700">
+                 <div className="p-5 h-full flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-6">
+                        <div className="w-2 h-2 rounded-full bg-sap-gold animate-pulse"></div>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Core Engine</span>
+                      </div>
+                      <div className="space-y-6">
+                        {[
+                          { label: 'Intelligence', val: '88%', color: 'from-sap-blue to-sap-accent' },
+                          { label: 'Security', val: '100%', color: 'from-emerald-400 to-emerald-600' },
+                          { label: 'Performance', val: '94%', color: 'from-sap-gold to-orange-400' }
+                        ].map(item => (
+                          <div key={item.label}>
+                            <div className="flex justify-between text-[10px] font-bold mb-2 text-slate-700 dark:text-white/80 uppercase">
+                              <span>{item.label}</span>
+                              <span className="text-sap-accent">{item.val}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-200/50 dark:bg-white/5 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full bg-gradient-to-r ${item.color}`} style={{ width: item.val }}></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white/40 dark:bg-white/[0.05] p-4 border border-white/20">
+                      <div className="text-[9px] font-bold text-slate-400 uppercase mb-2">System Status</div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-white">Workspace Ready</div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Main Card (Foreground) */}
+              <div className="absolute left-0 top-[40px] w-full sm:w-[420px] lg:w-[480px] h-[240px] sm:h-[340px] lg:h-[380px] bg-white/70 dark:bg-[#080808]/80 backdrop-blur-3xl border border-white dark:border-white/10 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.15)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden sm:[transform:translateZ(60px)] transition-all duration-700">
+                 <div className="h-14 bg-white/40 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5 flex items-center px-6 justify-between">
+                    <div className="flex space-x-2">
+                       <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                       <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                       <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                    </div>
+                    <div className="text-xs font-bold text-sap-blue dark:text-white tracking-widest uppercase opacity-80">AI Workspace</div>
+                    <div className="w-6 h-6 rounded-full bg-sap-gold/20 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-sap-gold"></div>
+                    </div>
                  </div>
 
-                 {heroVisual.sideImageUrl ? (
-                   <img
-                     src={heroVisual.sideImageUrl}
-                     alt={heroVisual.sideImageAlt || 'Analytics panel preview'}
-                     className="w-full h-full object-cover"
-                     referrerPolicy="no-referrer"
-                   />
-                 ) : (
-                   <>
-                     <div className="h-10 bg-[#008FD3]/20 border-b border-white/10 flex items-center px-4 justify-between">
-                        <div className="text-[10px] font-bold text-slate-700 dark:text-white uppercase tracking-wider">Live Event Desk</div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                          <div className="text-[9px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wide">On Site</div>
+                 <div className="flex-1 p-6 flex flex-col justify-between">
+                   <div className="grid grid-cols-2 gap-6">
+                     <div className="space-y-4">
+                       <div className="text-[9px] font-black text-sap-accent uppercase tracking-[0.25em]">Live Briefing</div>
+                       <div className="space-y-3">
+                         <div className="h-4 w-3/4 bg-slate-100 dark:bg-white/5 rounded animate-pulse"></div>
+                         <div className="h-4 w-1/2 bg-slate-100 dark:bg-white/5 rounded"></div>
+                         <div className="h-4 w-2/3 bg-slate-100 dark:bg-white/5 rounded"></div>
+                       </div>
+                     </div>
+                     <div className="space-y-4">
+                       <div className="text-[9px] font-black text-sap-gold uppercase tracking-[0.25em]">Deliverables</div>
+                       <div className="flex flex-wrap gap-2">
+                         {['JSON', 'PDF', 'XLS'].map(tag => (
+                           <div key={tag} className="px-2 py-1 rounded-md bg-sap-blue/5 dark:bg-white/5 text-[9px] font-bold text-sap-blue dark:text-white/60 border border-sap-blue/10 dark:border-white/5">
+                             {tag}
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+
+                   <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sap-blue to-sap-accent flex items-center justify-center shadow-lg">
+                          <div className="w-4 h-4 border-2 border-white/50 rounded-sm rotate-45"></div>
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-800 dark:text-white">Assistant Active</div>
+                          <div className="text-[10px] text-slate-400 font-medium">Listening to requirements...</div>
                         </div>
                      </div>
-                     <div className="p-4 space-y-4 flex-1">
-                        <div className="rounded-xl border border-white/20 bg-white/45 dark:bg-white/[0.04] p-3">
-                           <div className="flex items-center justify-between mb-3">
-                              <div className="text-[9px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-[0.18em]">Entry Lanes</div>
-                              <div className="text-[9px] font-bold text-[#008FD3] bg-[#008FD3]/10 px-2 py-1 rounded-full">3 Gates</div>
-                           </div>
-                           <div className="space-y-2.5">
-                              {[
-                                { label: 'North Entrance', wait: '03 min', width: '34%', accent: 'bg-emerald-500' },
-                                { label: 'VIP / Speaker', wait: '01 min', width: '18%', accent: 'bg-[#F0AB00]' },
-                                { label: 'Expo Access', wait: '06 min', width: '52%', accent: 'bg-[#008FD3]' }
-                              ].map((lane) => (
-                                <div key={lane.label}>
-                                  <div className="flex items-center justify-between text-[10px] mb-1">
-                                    <span className="text-slate-700 dark:text-white/90 font-medium">{lane.label}</span>
-                                    <span className="text-slate-500 dark:text-slate-400">{lane.wait}</span>
-                                  </div>
-                                  <div className="h-2 rounded-full bg-slate-200/80 dark:bg-white/10 overflow-hidden">
-                                    <div className={`h-full rounded-full ${lane.accent}`} style={{ width: lane.width }}></div>
-                                  </div>
-                                </div>
-                              ))}
-                           </div>
-                        </div>
-                        <div className="rounded-xl border border-white/20 bg-white/45 dark:bg-white/[0.04] p-3">
-                           <div className="flex items-center justify-between mb-3">
-                              <div className="text-[9px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-[0.18em]">Badge Production</div>
-                              <div className="text-[9px] font-bold text-slate-700 dark:text-white">4 Printer</div>
-                           </div>
-                           <div className="grid grid-cols-2 gap-2">
-                              <div className="rounded-lg bg-white/60 dark:bg-white/[0.04] border border-white/20 px-2.5 py-2">
-                                <div className="text-[8px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Ready</div>
-                                <div className="mt-1 text-lg font-bold text-slate-800 dark:text-white">1.126</div>
-                              </div>
-                              <div className="rounded-lg bg-white/60 dark:bg-white/[0.04] border border-white/20 px-2.5 py-2">
-                                <div className="text-[8px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Reserve</div>
-                                <div className="mt-1 text-lg font-bold text-slate-800 dark:text-white">174</div>
-                              </div>
-                           </div>
-                           <div className="mt-3 flex items-center gap-2">
-                              {[82, 76, 91, 68].map((height, index) => (
-                                <div key={index} className="flex-1 h-10 rounded-md bg-slate-200/80 dark:bg-white/8 overflow-hidden flex items-end">
-                                  <div className={`${index === 2 ? 'bg-[#F0AB00]' : 'bg-[#008FD3]'} w-full rounded-t-md`} style={{ height: `${height}%` }}></div>
-                                </div>
-                              ))}
-                           </div>
-                        </div>
-                        <div className="rounded-xl border border-white/20 bg-white/45 dark:bg-white/[0.04] p-3">
-                          <div className="text-[9px] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-[0.18em] mb-2">Crew Coverage</div>
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-slate-700 dark:text-white/90">Supervisor</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Active</span>
-                          </div>
-                          <div className="mt-2 flex items-center justify-between text-[10px]">
-                            <span className="text-slate-700 dark:text-white/90">Technicians</span>
-                            <span className="text-slate-500 dark:text-slate-400">3 Onsite</span>
-                          </div>
-                          <div className="mt-3 h-2 rounded-full bg-slate-200/80 dark:bg-white/10 overflow-hidden">
-                            <div className="h-full w-[92%] rounded-full bg-gradient-to-r from-[#008FD3] to-[#F0AB00]"></div>
-                          </div>
-                        </div>
+                     <div className="flex h-1.5 w-24 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full w-2/3 bg-sap-gold rounded-full"></div>
                      </div>
-                   </>
-                 )}
+                   </div>
+                 </div>
               </div>
 
-              {/* Main Card (Front/Left - Event Control Board) */}
-              <div className="absolute left-0 top-[32px] sm:top-[40px] w-[min(100%,300px)] sm:w-[400px] lg:w-[460px] h-[230px] sm:h-[320px] lg:h-[360px] bg-white/60 dark:bg-[#0e1621]/90 backdrop-blur-2xl border border-white/40 dark:border-white/20 rounded-xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden sm:[transform:translateZ(40px)]">
-                 {heroVisual.mainImageUrl ? (
-                   <img
-                     src={heroVisual.mainImageUrl}
-                     alt={heroVisual.mainImageAlt || 'Event control board preview'}
-                     className="w-full h-full object-cover"
-                     referrerPolicy="no-referrer"
-                   />
-                 ) : (
-                   <>
-                     <div className="h-12 bg-white/40 dark:bg-white/5 border-b border-white/20 dark:border-white/10 flex items-center px-4 justify-between">
-                        <div className="flex space-x-2">
-                           <div className="w-3 h-3 rounded-full bg-red-400 shadow-sm"></div>
-                           <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm"></div>
-                           <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm"></div>
-                        </div>
-                        <div className="text-xs font-bold text-slate-700 dark:text-white/90 tracking-wide">Registration Command</div>
-                        <div className="w-4"></div>
-                     </div>
-
-                     <div className="p-5 grid grid-cols-12 gap-4 flex-1">
-                        <div className="col-span-7 rounded-xl border border-white/30 dark:border-white/5 bg-white/55 dark:bg-white/[0.04] p-4 shadow-sm">
-                           <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <div className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.18em]">Venue Timeline</div>
-                                <div className="mt-1 text-lg font-bold text-slate-800 dark:text-white">Doors Open Sequence</div>
-                              </div>
-                              <div className="text-[10px] font-bold text-[#008FD3] bg-[#008FD3]/10 px-2 py-1 rounded-full">17 Sep</div>
-                           </div>
-                           <div className="space-y-3">
-                              {[
-                                { time: '07:00', title: 'Crew Check', note: 'Scanner, printer, LTE fallback live', status: 'bg-emerald-500' },
-                                { time: '07:30', title: 'VIP / Speaker Gate', note: 'Fast-lane opens before general access', status: 'bg-[#F0AB00]' },
-                                { time: '08:00', title: 'General Check-in', note: '12 counter distributed across 3 entries', status: 'bg-[#008FD3]' },
-                                { time: '09:15', title: 'Expo & Session Scan', note: 'Badge validation switches to session mode', status: 'bg-slate-400' }
-                              ].map((item) => (
-                                <div key={item.time} className="flex gap-3">
-                                  <div className="flex flex-col items-center">
-                                    <div className={`w-2.5 h-2.5 rounded-full ${item.status} mt-1`}></div>
-                                    <div className="w-px flex-1 bg-slate-200 dark:bg-white/10 mt-1"></div>
-                                  </div>
-                                  <div className="pb-2">
-                                    <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{item.time}</div>
-                                    <div className="text-sm font-semibold text-slate-800 dark:text-white">{item.title}</div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{item.note}</div>
-                                  </div>
-                                </div>
-                              ))}
-                           </div>
-                        </div>
-
-                        <div className="col-span-5 rounded-xl border border-white/30 dark:border-white/5 bg-white/55 dark:bg-white/[0.04] p-4 shadow-sm">
-                           <div className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.18em]">Badge Mix</div>
-                           <div className="mt-1 text-lg font-bold text-slate-800 dark:text-white">Production Split</div>
-                           <div className="mt-4 space-y-3">
-                              {[
-                                { label: 'Standard Guests', count: '920', color: 'bg-[#008FD3]', width: '78%' },
-                                { label: 'Speaker / VIP', count: '150', color: 'bg-[#F0AB00]', width: '32%' },
-                                { label: 'Reserve & Walk-ins', count: '130', color: 'bg-emerald-500', width: '24%' }
-                              ].map((item) => (
-                                <div key={item.label}>
-                                  <div className="flex items-center justify-between text-[10px] mb-1">
-                                    <span className="text-slate-700 dark:text-white/90 font-medium">{item.label}</span>
-                                    <span className="text-slate-500 dark:text-slate-400">{item.count}</span>
-                                  </div>
-                                  <div className="h-2.5 rounded-full bg-slate-200/80 dark:bg-white/10 overflow-hidden">
-                                    <div className={`h-full rounded-full ${item.color}`} style={{ width: item.width }}></div>
-                                  </div>
-                                </div>
-                              ))}
-                           </div>
-                           <div className="mt-4 grid grid-cols-2 gap-2">
-                              <div className="rounded-lg border border-white/20 bg-white/70 dark:bg-white/[0.03] px-2.5 py-2">
-                                <div className="text-[8px] uppercase tracking-[0.16em] text-slate-400">Printer</div>
-                                <div className="mt-1 text-base font-bold text-slate-800 dark:text-white">4 Live</div>
-                              </div>
-                              <div className="rounded-lg border border-white/20 bg-white/70 dark:bg-white/[0.03] px-2.5 py-2">
-                                <div className="text-[8px] uppercase tracking-[0.16em] text-slate-400">Scanner</div>
-                                <div className="mt-1 text-base font-bold text-slate-800 dark:text-white">14 Ready</div>
-                              </div>
-                           </div>
-                        </div>
-
-                        <div className="col-span-12 rounded-xl border border-white/30 dark:border-white/5 bg-white/55 dark:bg-white/[0.04] p-4 shadow-sm">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.18em]">Operational Status</div>
-                               <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Ready for Doors Open</div>
-                           </div>
-                           <div className="grid grid-cols-4 gap-3">
-                              {[
-                                { label: 'Check-in Lanes', value: '3 Active', tone: 'bg-[#008FD3]/10 text-[#008FD3]' },
-                                { label: 'Onsite Crew', value: '3 + Lead', tone: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-                                { label: 'Fallback Network', value: 'LTE Backup', tone: 'bg-[#F0AB00]/10 text-[#b58100]' },
-                                { label: 'Branding Assets', value: 'Approved', tone: 'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-300' }
-                              ].map((item) => (
-                                <div key={item.label} className="rounded-lg border border-white/20 bg-white/70 dark:bg-white/[0.03] p-3">
-                                  <div className="text-[8px] uppercase tracking-[0.16em] text-slate-400">{item.label}</div>
-                                  <div className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${item.tone}`}>{item.value}</div>
-                                </div>
-                              ))}
-                           </div>
-                        </div>
-                     </div>
-                   </>
-                 )}
-              </div>
-
-              {/* Decorative elements behind cards - CHANGED TO NEUTRAL/GRAY */}
-              <div className="absolute top-[10px] left-[40px] w-24 h-24 bg-sap-blue/5 rounded-full blur-2xl pointer-events-none"></div>
-              <div className="absolute bottom-[20px] right-[40px] w-40 h-40 bg-sap-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+              {/* Decorative blobs */}
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-sap-blue/10 rounded-full blur-[80px] pointer-events-none"></div>
+              <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-sap-gold/10 rounded-full blur-[100px] pointer-events-none"></div>
            </div>
         </div>
       </div>
