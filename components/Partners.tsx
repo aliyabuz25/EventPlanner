@@ -40,16 +40,16 @@ const Partners: React.FC = () => {
   return (
     <section id="partners" className="py-24 bg-slate-50 dark:bg-[#080808] border-y border-slate-200 dark:border-white/[0.05] overflow-hidden transition-colors duration-500">
       <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 reveal reveal-up">
           <h2 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4">{section.title}</h2>
           <div className="h-px w-24 bg-sap-gold/50 mx-auto"></div>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-          {partners.map((partner) => (
+          {partners.map((partner, index) => (
             <div 
               key={partner.name} 
-              className="group h-32 p-8 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-white/5 hover:border-sap-gold dark:hover:border-sap-gold transition-all duration-500 hover:bg-white dark:hover:bg-white/[0.02] shadow-sm hover:shadow-xl"
+              className={`reveal reveal-up delay-${(index % 5) * 100} group h-32 p-8 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-white/5 hover:border-sap-gold dark:hover:border-sap-gold transition-all duration-500 hover:bg-white dark:hover:bg-white/[0.02] shadow-sm hover:shadow-xl`}
               title={partner.name}
             >
               <div className="w-full h-full flex items-center justify-center text-slate-400 group-hover:text-sap-gold dark:group-hover:text-sap-gold transition-all duration-500 grayscale group-hover:grayscale-0">
