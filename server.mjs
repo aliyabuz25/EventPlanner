@@ -16,6 +16,7 @@ import {
   getSiteContent,
   getSiteMap,
   restoreDocumentRevision,
+  restoreDocumentValue,
   syncFastlaneContentIfNeeded,
   upsertFrontendLocalizationEntry,
   updateDocument
@@ -1124,6 +1125,75 @@ Antwort:`;
     temperature: 0.85,
     numPredict: 320
   });
+}
+
+function joinCanonicalList(items) {
+  const values = Array.isArray(items)
+    ? items.map((item) => sanitizeExtractedValue(item)).filter(Boolean)
+    : [];
+
+  return values.join(', ');
+}
+
+function buildHiddenWorkspaceApplyPrompt(rawBrief, userMessage = '') {
+  const brief = briefOrNullIfEmpty(normalizeModelBrief(rawBrief) ?? null);
+  if (!brief) {
+    return '';
+  }
+
+  const lines = ['Create a new event plan and apply it to the workspace.', ''];
+  const pushLine = (label, value) => {
+    const normalizedValue = sanitizeExtractedValue(value);
+    if (normalizedValue) {
+      lines.push(`${label}: ${normalizedValue}`);
+    }
+  };
+
+  pushLine('Customer', brief.customerName);
+  pushLine('Event name', brief.eventName);
+  pushLine('Location', brief.eventLocation);
+  pushLine('Dates', brief.eventDates);
+  pushLine('Expected attendance', brief.attendees ? `${brief.attendees} participants` : '');
+  pushLine('Target budget', brief.budget);
+
+  const operationalNeeds = [
+    sanitizeExtractedValue(brief.checkInScenario),
+    joinCanonicalList(brief.softwareNeeds),
+    brief.supportLevel ? `${brief.supportLevel} onsite support` : ''
+  ].filter(Boolean);
+
+  const planningNeeds = [
+    brief.entryPoints ? `${brief.entryPoints} entrances or counter areas` : '',
+    joinCanonicalList(brief.rentalNeeds),
+    joinCanonicalList(brief.integrations),
+    sanitizeExtractedValue(brief.travelScope)
+  ].filter(Boolean);
+
+  const narrativeIntro = sanitizeExtractedValue(brief.eventLocation)
+    ? `This is an event in ${sanitizeExtractedValue(brief.eventLocation)}.`
+    : 'This is an event plan.';
+
+  lines.push('');
+  lines.push(narrativeIntro);
+
+  if (operationalNeeds.length) {
+    lines.push(`We need ${operationalNeeds.join(', ')}.`);
+  }
+
+  if (planningNeeds.length) {
+    lines.push(`Please plan for ${planningNeeds.join(', ')}.`);
+  }
+
+  lines.push('');
+  lines.push('Use this information to complete the live brief, recommend the right modules, derive assumptions, open questions, pricing drivers and offer logic. Use the given facts as the primary source and infer only the missing operational details when necessary.');
+
+  const normalizedUserMessage = sanitizeExtractedValue(userMessage);
+  if (normalizedUserMessage && normalizedUserMessage.length <= 320 && !brief.eventName && !brief.eventLocation) {
+    lines.push('');
+    lines.push(`Additional user context: ${normalizedUserMessage}`);
+  }
+
+  return lines.join('\n');
 }
 
 function coerceBriefScalar(value) {
@@ -2958,14 +3028,18 @@ async function handleApi(req, res) {
   if (req.method === 'POST' && url.pathname === '/api/site-content/restore') {
     const rawBody = await readBody(req);
     const body = rawBody ? JSON.parse(rawBody) : {};
-    const { key, revisionId } = body;
+    const { key, revisionId, value, summary } = body;
 
     if (!editableDocumentKeys.includes(key)) {
       sendJson(res, 400, { message: 'Unsupported document key' });
       return true;
     }
 
-    const restored = restoreDocumentRevision(key, Number(revisionId));
+    const restored =
+      value !== undefined
+        ? restoreDocumentValue(key, value, typeof summary === 'string' ? summary : 'Restored previous version')
+        : restoreDocumentRevision(key, Number(revisionId));
+
     if (!restored) {
       sendJson(res, 404, { message: 'Revision not found' });
       return true;
@@ -3482,6 +3556,12 @@ Nutze nur dieses Schema und lasse unbekannte Werte leer:
     const recentHistory = widgetMode
       ? (widgetFreshStart ? [] : history.slice(-4))
       : history.slice(-3);
+    const widgetContextBrief = widgetMode
+      ? mergeBriefs(widgetBaseBrief ?? {}, extractedBrief ?? {})
+      : null;
+    const hiddenWorkspacePrompt = widgetMode
+      ? buildHiddenWorkspaceApplyPrompt(widgetContextBrief, userMessage)
+      : '';
     const prompt = [
       systemPrompt,
       ''
@@ -3490,6 +3570,12 @@ Nutze nur dieses Schema und lasse unbekannte Werte leer:
     if (widgetMode) {
       prompt.push(locale === 'en' ? 'Current workspace brief:' : 'Aktuelles Workspace-Briefing:');
       prompt.push(JSON.stringify(briefOrNullIfEmpty(widgetBaseBrief) ?? {}, null, 2));
+      prompt.push('');
+    }
+
+    if (widgetMode && hiddenWorkspacePrompt) {
+      prompt.push(locale === 'en' ? 'Hidden normalized planning brief:' : 'Verstecktes normalisiertes Planungsbriefing:');
+      prompt.push(hiddenWorkspacePrompt);
       prompt.push('');
     }
 
@@ -3511,10 +3597,17 @@ Nutze nur dieses Schema und lasse unbekannte Werte leer:
       const mergedBrief = widgetMode
         ? mergeBriefs(widgetBaseBrief ?? {}, extractedBrief ?? {}, normalizeModelBrief(parsed.brief) ?? {})
         : mergeBriefs(normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {});
+      const finalHiddenWorkspacePrompt = widgetMode ? buildHiddenWorkspaceApplyPrompt(mergedBrief, userMessage) : '';
+      const commercialHistory = widgetMode
+        ? (finalHiddenWorkspacePrompt ? [] : recentHistory)
+        : history;
+      const commercialInput = widgetMode && finalHiddenWorkspacePrompt
+        ? finalHiddenWorkspacePrompt
+        : userMessage;
       const computed = buildAiExplorerOffer(
         mergedBrief,
-        widgetMode ? recentHistory : history,
-        userMessage,
+        commercialHistory,
+        commercialInput,
         locale
       );
       const assistantText = widgetMode

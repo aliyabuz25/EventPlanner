@@ -2096,7 +2096,10 @@ const ContentAdminPage: React.FC = () => {
           ...revision,
           diffs,
           restoreTargetId: previousRevision?.id ?? null,
-          restoreTargetValue: cloneJson(previousValue as JsonValue)
+          restoreTargetValue: cloneJson(previousValue as JsonValue),
+          restoreSummary: previousRevision?.id
+            ? `Restored previous version from revision #${previousRevision.id}`
+            : 'Restored baseline version'
         };
       }),
     [revisions, selectedKey]
@@ -2199,18 +2202,17 @@ const ContentAdminPage: React.FC = () => {
     }
   };
 
-  const handleRestoreRevision = async (revisionId: number | null, fallbackValue: JsonValue) => {
+  const handleRestoreRevision = async (revisionId: number | null, fallbackValue: JsonValue, summary: string) => {
     try {
       setIsRestoringRevisionId(revisionId ?? -1);
       setStatus(null);
 
-      if (revisionId === null) {
-        await saveDocument(selectedKey, fallbackValue);
-        setDraft(cloneJson(fallbackValue));
-      } else {
-        const restored = await restoreDocument(selectedKey, revisionId);
-        setDraft(cloneJson(restored.value as JsonValue));
-      }
+      const restored = await restoreDocument(selectedKey, {
+        revisionId: revisionId ?? undefined,
+        value: fallbackValue,
+        summary
+      });
+      setDraft(cloneJson(restored.value as JsonValue));
 
       setEditorResetToken((prev) => prev + 1);
       handleStatusUpdate(copy.previousVersionRestored, 'success');
@@ -2900,7 +2902,7 @@ const ContentAdminPage: React.FC = () => {
                               </div>
                               <button
                                 type="button"
-                                onClick={() => handleRestoreRevision(revision.restoreTargetId, revision.restoreTargetValue)}
+                                onClick={() => handleRestoreRevision(revision.restoreTargetId, revision.restoreTargetValue, revision.restoreSummary)}
                                 disabled={isRestoringRevisionId === (revision.restoreTargetId ?? -1)}
                                 className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2 oc-admin-revision-restore"
                               >

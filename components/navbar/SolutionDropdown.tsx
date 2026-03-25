@@ -8,6 +8,7 @@ interface SolutionDropdownProps {
   onSelect: (id: SolutionId) => void;
   onOverview: () => void;
   solutions: { name: string; id: SolutionId }[];
+  overviewLabel: string;
 }
 
 const SolutionDropdown: React.FC<SolutionDropdownProps> = ({ 
@@ -15,7 +16,8 @@ const SolutionDropdown: React.FC<SolutionDropdownProps> = ({
   currentView, 
   onSelect, 
   onOverview, 
-  solutions 
+  solutions,
+  overviewLabel
 }) => {
   if (!isOpen) return null;
 
@@ -26,7 +28,7 @@ const SolutionDropdown: React.FC<SolutionDropdownProps> = ({
           onClick={onOverview}
           className="w-full text-left px-4 py-3 text-[14px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-sap-gold dark:hover:text-sap-gold transition-all rounded-md"
         >
-          Tum moduleri gor
+          {overviewLabel}
         </button>
         <div className="h-px bg-slate-200 dark:bg-white/5 my-1 mx-2"></div>
         {solutions.map((s) => (

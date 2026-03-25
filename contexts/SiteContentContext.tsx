@@ -34,7 +34,7 @@ interface SiteContentContextValue {
   translationJob: FrontendTranslationJob | null;
   localeStatus: FrontendLocaleStatus | null;
   saveDocument: (key: string, value: unknown) => Promise<void>;
-  restoreDocument: (key: string, revisionId: number) => Promise<{ value: unknown; updatedAt: string }>;
+  restoreDocument: (key: string, payload: { revisionId?: number; value?: unknown; summary?: string }) => Promise<{ value: unknown; updatedAt: string }>;
   syncFrontendTranslation: (target: string, copy: SiteContent) => void;
   setLocale: (locale: FrontendLocale) => void;
   clearLocaleStatus: () => void;
@@ -62,6 +62,23 @@ const customLocaleMeta: Record<string, { label: string; flag: string }> = {
 };
 
 const englishFrontendOverrides = {
+  global: {
+    company: {
+      sapPartnerLevel: 'Participant Management & OnSite Services'
+    },
+    branding: {
+      siteTitle: 'FastLane | Participant Management for Events'
+    },
+    solutionDetailUi: {
+      notFoundText: 'Solution not found.',
+      capabilitiesTitle: 'Scope of services',
+      benefitsTitle: 'Added value',
+      transformTitle: 'Ready for a smooth event start?',
+      transformDescriptionTemplate: 'With {company}, you integrate {solution} into a clear, resilient on-site participant process.',
+      primaryButtonText: 'Book Appointment',
+      secondaryButtonText: 'Send e-mail'
+    }
+  },
   siteMap: [
     { slug: 'home', view: 'home', title: 'Home', description: 'Landing page with FastLane event entry services.' },
     { slug: 'solutions', view: 'solutions', title: 'Solutions', description: 'FastLane modules for live, hybrid and medical events.' },
@@ -82,6 +99,8 @@ const englishFrontendOverrides = {
       { name: 'Contact', view: 'contact', href: '/contact' }
     ],
     footer: {
+      ecosystemLabel: 'Investor Ecosystem',
+      corporateLabel: 'Corporate',
       ecosystemLinks: [
         { label: 'Live Badging', view: 'sap-s4hana' },
         { label: 'Entry Management', view: 'sap-successfactors' },
@@ -168,7 +187,8 @@ const englishFrontendOverrides = {
             successMessage: 'Your request was sent successfully.',
             errorMessage: 'The request could not be sent right now. Please try again later.'
           }
-        }
+        },
+        footerSummary: 'FastLane supports live, hybrid and medical events with accreditation, entry management, event apps and on-site services.'
       }
     },
     campaign: {
@@ -214,32 +234,190 @@ const englishFrontendOverrides = {
         title: 'Solutions'
       }
     }
+  },
+  solutionDetails: {
+    'sap-s4hana': {
+      title: 'Full-Color Live Badging',
+      category: 'OnSite Print',
+      description: 'Full-color badge printing directly on site.',
+      intro: 'With live badging, you make reception efficient, professional and brand-ready. Name badges are produced in real time during check-in and can still be adjusted at short notice.',
+      features: [
+        'Personalized badges with names, roles, company names or group markers',
+        'Real-time printing with no pre-production required',
+        'Flexible updates for late registrations or role changes',
+        'Seamless connection with check-in and access logic'
+      ],
+      benefits: [
+        'Reduces waiting times at reception',
+        'Strengthens the first impression of your event',
+        'Makes last-minute changes manageable',
+        'Combines branding and process in one step'
+      ],
+      ctaText: 'Contact Us Now'
+    },
+    'sap-successfactors': {
+      title: 'Entry Management',
+      category: 'Check-in',
+      description: 'Controlled access for events of any size.',
+      intro: 'Fast check-in, clear access control and structured processes help guests arrive smoothly and let your event start professionally. With FastLane, participants, permissions and movements can be managed in one connected flow.',
+      features: [
+        'QR-code scanning and manual search in a mobile check-in app',
+        'Live dashboard for visitor counts and occupancy',
+        'Granular access control for areas and sessions',
+        'Deployment via app, kiosk or multiple entry points'
+      ],
+      benefits: [
+        'Short waiting times even with high visitor volume',
+        'Full transparency on entry status and capacities',
+        'Reliable permission checks in real time',
+        'A resilient start even across multiple access zones'
+      ],
+      ctaText: 'Request a Quote'
+    },
+    'sap-ariba': {
+      title: 'Event Apps',
+      category: 'Participant App',
+      description: 'Digital guidance for the entire event day.',
+      intro: 'The FastLane event app extends accreditation and entry with a central information layer for participants. Agenda, bookings, maps, feedback and updates stay accessible throughout the event.',
+      features: [
+        'Agenda, sessions and program items available on mobile',
+        'Bookings, maps and updates in one place',
+        'Feedback and guidance directly inside the event flow',
+        'Clean integration with on-site processes'
+      ],
+      benefits: [
+        'Fewer questions on event day',
+        'Better orientation for participants',
+        'A clear communication channel for last-minute updates',
+        'A smoother experience between reception and program usage'
+      ],
+      ctaText: 'Explore the Event App'
+    },
+    'sap-business-one': {
+      title: 'Medical Events',
+      category: 'Regulated Events',
+      description: 'Participant guidance for sensitive event formats.',
+      intro: 'Medical events require clear processes, structured participant logic and auditable permissions. FastLane supports these formats with controlled check-in, guided participant flows and dependable on-site support.',
+      features: [
+        'Clear participant categories and access rules',
+        'Traceable check-in processes for sensitive formats',
+        'Clean control of entry points and visitor routes',
+        'Personal support for operational special cases'
+      ],
+      benefits: [
+        'More security in regulated event environments',
+        'Clear orientation for teams and participants',
+        'Controlled execution even with complex requirements',
+        'Less operational uncertainty on event day'
+      ],
+      ctaText: 'Discuss a Medical Setup'
+    },
+    opentext: {
+      title: 'Hybrid Events',
+      category: 'Live + Digital',
+      description: 'One event setup for on-site and remote participation.',
+      intro: 'Hybrid events combine physical interaction with digital reach. FastLane designs entry, participant data and information flows so the on-site and remote experience work as one connected setup.',
+      features: [
+        'Connection between live events and digital participation',
+        'Central participant logic across multiple channels',
+        'Clear information flow for teams and attendees',
+        'Flexible setup for different audience sizes and reach'
+      ],
+      benefits: [
+        'More reach without losing the live character',
+        'A cleaner transition between on-site and digital',
+        'Better control of information and updates',
+        'A flexible format for changing requirements'
+      ],
+      ctaText: 'Request a Hybrid Setup'
+    },
+    bimser: {
+      title: 'Badge2Go',
+      category: 'Self-Service',
+      description: 'Self-check-in and badge printing with kiosk logic.',
+      intro: 'Badge2Go brings self-service into event entry. Participants can register at kiosks, scan QR codes and receive badges without breaking the flow. That reduces friction and takes pressure off the reception team.',
+      features: [
+        'Self-check-in via kiosk or QR scan',
+        'Direct badge printing at the terminal',
+        'Suitable for multiple entry points and peak traffic',
+        'Connects with permissions, status and participant data'
+      ],
+      benefits: [
+        'Reduces staffing pressure at busy check-ins',
+        'Speeds up entry during peak phases',
+        'Scales for different event sizes',
+        'Creates a clean process for repeatable standard cases'
+      ],
+      ctaText: 'Explore Badge2Go'
+    },
+    'microsoft-power-bi': {
+      title: 'FastLane Inside',
+      category: 'Control Center',
+      description: 'Central platform for participant management.',
+      intro: 'FastLane Inside is the control center for your on-site event. Bookings, participant management and entry management are bundled in one application so the team keeps a clear overview.',
+      features: [
+        'Central management for bookings and participant data',
+        'Configuration of categories and options before the event',
+        'Connected with entry, check-in and reporting',
+        'Clear workflows for operational teams'
+      ],
+      benefits: [
+        'Fewer system breaks during planning and event day',
+        'More transparency for operational decisions',
+        'Faster access to relevant participant information',
+        'A dependable basis for monitoring and follow-up'
+      ],
+      ctaText: 'View the Platform'
+    }
   }
 } as const;
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-const applyExplicitOverrides = <T,>(base: T, override: unknown): T => {
-  if (override === undefined) {
+const applyFallbackOverrides = <T,>(base: T, fallback: unknown): T => {
+  if (fallback === undefined) {
     return base;
   }
 
-  if (Array.isArray(override)) {
-    return structuredClone(override) as T;
+  if (typeof base === 'string') {
+    return (typeof base === 'string' && base.trim() ? base : typeof fallback === 'string' ? fallback : base) as T;
   }
 
-  if (typeof override === 'string' || typeof override === 'number' || typeof override === 'boolean' || override === null) {
-    return override as T;
+  if (Array.isArray(base)) {
+    if (!Array.isArray(fallback)) {
+      return base as T;
+    }
+
+    const maxLength = Math.max(base.length, fallback.length);
+    return Array.from({ length: maxLength }, (_, index) => {
+      const baseValue = base[index];
+      const fallbackValue = fallback[index];
+
+      if (baseValue === undefined) {
+        return structuredClone(fallbackValue);
+      }
+
+      return applyFallbackOverrides(baseValue, fallbackValue);
+    }) as T;
   }
 
-  if (!isPlainObject(base) || !isPlainObject(override)) {
+  if (typeof base === 'number' || typeof base === 'boolean' || base === null) {
+    return base as T;
+  }
+
+  if (!isPlainObject(base) || !isPlainObject(fallback)) {
     return base;
   }
 
   const result: Record<string, unknown> = { ...base };
-  for (const [key, value] of Object.entries(override)) {
-    result[key] = key in result ? applyExplicitOverrides(result[key], value) : structuredClone(value);
+  for (const [key, fallbackValue] of Object.entries(fallback)) {
+    if (!(key in result)) {
+      result[key] = structuredClone(fallbackValue);
+      continue;
+    }
+
+    result[key] = applyFallbackOverrides(result[key], fallbackValue);
   }
 
   return result as T;
@@ -247,7 +425,7 @@ const applyExplicitOverrides = <T,>(base: T, override: unknown): T => {
 
 export const applyFrontendLocaleOverrides = (target: string, value: SiteContent): SiteContent => {
   if (target === 'en') {
-    return applyExplicitOverrides(value, englishFrontendOverrides);
+    return applyFallbackOverrides(value, englishFrontendOverrides);
   }
 
   return value;
@@ -590,8 +768,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
-  const restoreDocument = async (key: string, revisionId: number) => {
-    const restored = await restoreSiteDocument(key, revisionId);
+  const restoreDocument = async (key: string, payload: { revisionId?: number; value?: unknown; summary?: string }) => {
+    const restored = await restoreSiteDocument(key, payload);
     setLastSavedAt(restored.updatedAt);
     const response = await fetchSiteContent();
     const normalizedContent = normalizeSiteContent(response.content) as SiteContent;

@@ -1468,7 +1468,7 @@
         "company": {
           "name": "FastLane",
           "fullName": "FastLane GmbH",
-          "sapPartnerLevel": "Teilnehmendenmanagement & OnSite Services",
+          "sapPartnerLevel": "Participant Management & OnSite Services",
           "phone": "+49 228 - 91 251 - 300",
           "email": "service@fastlane-gmbh.de",
           "address": {
@@ -1488,7 +1488,7 @@
           }
         },
         "branding": {
-          "siteTitle": "FastLane | Teilnehmermanagement fuer Events",
+          "siteTitle": "FastLane | Participant Management for Events",
           "contentVersion": "2026-03-24-de-palette-v3",
           "logoUrl": "https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png",
           "faviconUrl": "https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png",
@@ -1507,14 +1507,14 @@
           "testRecipientEmail": "service@fastlane-gmbh.de"
         },
         "solutionDetailUi": {
-          "notFoundText": "Loesung nicht gefunden.",
-          "capabilitiesTitle": "Leistungsumfang",
-          "benefitsTitle": "Mehrwert",
-          "transformTitle": "Bereit fuer einen reibungslosen Event-Start?",
-          "transformDescriptionTemplate": "Mit {company} integrierst du {solution} in einen klaren, belastbaren Teilnehmerprozess vor Ort.",
-          "primaryButtonText": "Termin anfragen",
+          "notFoundText": "Solution not found.",
+          "capabilitiesTitle": "Scope of services",
+          "benefitsTitle": "Added value",
+          "transformTitle": "Ready for a smooth event start?",
+          "transformDescriptionTemplate": "With {company}, you integrate {solution} into a clear, resilient on-site participant process.",
+          "primaryButtonText": "Book Appointment",
           "primaryButtonHref": "/#contact",
-          "secondaryButtonText": "E-Mail senden",
+          "secondaryButtonText": "Send e-mail",
           "secondaryButtonHref": "mailto:service@fastlane-gmbh.de"
         },
         "socialLinks": [
@@ -1548,7 +1548,7 @@
         {
           "slug": "solutions",
           "view": "solutions",
-          "title": "Loesungen",
+          "title": "Solutions",
           "description": "FastLane modules for live, hybrid and medical events."
         },
         {
@@ -1560,7 +1560,7 @@
         {
           "slug": "about",
           "view": "about",
-          "title": "Ueber Uns",
+          "title": "About Us",
           "description": "Company profile, values and operating model."
         },
         {
@@ -1570,15 +1570,15 @@
           "description": "How FastLane works onsite with customers and guests."
         },
         {
-          "slug": "kontakt",
+          "slug": "contact",
           "view": "contact",
-          "title": "Kontakt",
+          "title": "Contact",
           "description": "Direct consultation and event inquiry page."
         },
         {
           "slug": "privacy-compliance",
           "view": "corporate-standards",
-          "title": "Datenschutz & Compliance",
+          "title": "Privacy & Compliance",
           "description": "Trust, privacy and operational standards."
         },
         {
@@ -1603,7 +1603,7 @@
       "navigation": {
         "mainLinks": [
           {
-            "name": "Loesungen",
+            "name": "Solutions",
             "view": "solutions",
             "href": "#solutions"
           },
@@ -1618,27 +1618,27 @@
             "href": "#team"
           },
           {
-            "name": "Ueber Uns",
+            "name": "About Us",
             "view": "about",
             "href": "#about"
           },
           {
-            "name": "Kontakt",
+            "name": "Contact",
             "view": "contact",
-            "href": "/kontakt"
+            "href": "/contact"
           }
         ],
         "solutionLinks": [
           {
-            "name": "Live-Badging",
+            "name": "Live Badging",
             "id": "sap-s4hana"
           },
           {
-            "name": "Einlassmanagement",
+            "name": "Entry Management",
             "id": "sap-successfactors"
           },
           {
-            "name": "Event-Apps",
+            "name": "Event Apps",
             "id": "sap-ariba"
           },
           {
@@ -1646,7 +1646,7 @@
             "id": "sap-business-one"
           },
           {
-            "name": "Hybride Events",
+            "name": "Hybrid Events",
             "id": "opentext"
           },
           {
@@ -1661,15 +1661,15 @@
         "footer": {
           "ecosystemLinks": [
             {
-              "label": "Live-Badging",
+              "label": "Live Badging",
               "view": "sap-s4hana"
             },
             {
-              "label": "Einlassmanagement",
+              "label": "Entry Management",
               "view": "sap-successfactors"
             },
             {
-              "label": "Event-Apps",
+              "label": "Event Apps",
               "view": "sap-ariba"
             },
             {
@@ -1679,7 +1679,7 @@
           ],
           "corporateLinks": [
             {
-              "label": "Ueber Uns",
+              "label": "About Us",
               "view": "about"
             },
             {
@@ -1691,11 +1691,11 @@
               "view": "studio"
             },
             {
-              "label": "Datenschutz",
+              "label": "Privacy",
               "view": "corporate-standards"
             },
             {
-              "label": "Kontakt",
+              "label": "Contact",
               "view": "contact"
             }
           ]
@@ -1745,34 +1745,34 @@
               }
             },
             "about": {
-              "eyebrow": "Ueber FastLane",
-              "title": "Teilnehmendenmanagement mit Praxiserfahrung",
+              "eyebrow": "About FastLane",
+              "title": "Participant management with hands-on experience",
               "paragraphs": [
-                "FastLane ist ein unabhaengiger Dienstleister fuer OnSite-Events und unterstuetzt Live-, Hybrid- und Medical-Formate mit strukturierter Akkreditierung, Einlasssteuerung und digital begleiteten Prozessen.",
-                "Das Unternehmen arbeitet seit mehr als 25 Jahren im Teilnehmermanagement und wird in zweiter Generation gefuehrt. Ziel ist immer ein Setup, das zum Event, zum Publikum und zum Ablauf vor Ort passt."
+                "FastLane is an independent on-site event service provider supporting live, hybrid and medical formats with structured accreditation, entry management and digitally guided participant processes.",
+                "The company has worked in participant management for more than 25 years and is led by the second generation. The goal is always a setup that fits the event, the audience and the on-site flow."
               ],
               "badges": [
                 "25+ Years Experience",
                 "2nd Generation"
               ],
-              "buttonText": "Mehr erfahren",
+              "buttonText": "Learn More",
               "buttonHref": "/about",
               "cards": [
                 {
                   "value": "Live",
-                  "label": "Akkreditierung & Badges"
+                  "label": "Accreditation & badges"
                 },
                 {
                   "value": "Mobile",
-                  "label": "Check-in per App oder Kiosk"
+                  "label": "Check-in by app or kiosk"
                 },
                 {
                   "value": "Hybrid",
-                  "label": "Prozesse fuer Vor-Ort und Remote"
+                  "label": "On-site and remote processes"
                 },
                 {
                   "value": "Medical",
-                  "label": "Sichere Teilnehmerfuehrung"
+                  "label": "Secure participant guidance"
                 }
               ]
             },
@@ -1791,73 +1791,73 @@
             },
             "services": {
               "eyebrow": "Unsere Leistungen",
-              "title": "Modulare Services fuer den ersten Eindruck deines Events",
-              "description": "Von Akkreditierung bis Auswertung kombiniert FastLane Technik, Prozesse und OnSite-Betreuung zu einem klaren Einlasskonzept.",
+              "title": "Modular services for your event's first impression",
+              "description": "From accreditation to reporting, FastLane combines technology, processes and on-site support into one clear entry concept.",
               "items": [
                 {
                   "id": "live-badging",
-                  "title": "Live-Badging",
-                  "description": "Full-colour Badge-Druck direkt beim Check-in mit individuellen Layouts und Echtzeit-Anpassungen.",
+                  "title": "Live Badging",
+                  "description": "Full-color badge printing directly at check-in with custom layouts and real-time updates.",
                   "icon": "BadgeCheck"
                 },
                 {
                   "id": "entry",
-                  "title": "Einlassmanagement",
-                  "description": "QR-Scan, Zutrittsrechte und klare Besucherfluesse fuer einen schnellen, kontrollierten Start.",
+                  "title": "Entry Management",
+                  "description": "QR scanning, access permissions and clear visitor flows for a fast, controlled arrival.",
                   "icon": "ScanLine"
                 },
                 {
                   "id": "event-apps",
-                  "title": "Event-Apps",
-                  "description": "Agenda, Lageplaene, Buchungen, Feedback und Updates zentral in einer App gebuendelt.",
+                  "title": "Event Apps",
+                  "description": "Agenda, maps, bookings, feedback and updates bundled in one app.",
                   "icon": "Smartphone"
                 },
                 {
                   "id": "medical",
                   "title": "Medical Events",
-                  "description": "Prozesse fuer sensible Teilnehmergruppen mit klarer Steuerung, Sicherheit und Nachvollziehbarkeit.",
+                  "description": "Processes for sensitive participant groups with clear control, security and traceability.",
                   "icon": "HeartPulse"
                 },
                 {
                   "id": "hybrid",
-                  "title": "Hybride Events",
-                  "description": "Vor-Ort- und Remote-Erlebnisse in einem durchgaengigen Setup verbunden.",
+                  "title": "Hybrid Events",
+                  "description": "On-site and remote experiences connected in one seamless setup.",
                   "icon": "MonitorPlay"
                 },
                 {
                   "id": "onsite-service",
                   "title": "OnSite Service",
-                  "description": "Persoenliche Betreuung, Sonderloesungen und schnelle Entscheidungen direkt am Eventtag.",
+                  "description": "Hands-on support, special-case handling and fast decisions directly on event day.",
                   "icon": "Users"
                 }
               ],
               "cta": {
-                "title": "FastLane fuer dein Event",
-                "description": "Lass uns gemeinsam entscheiden, welches Setup zu Teilnehmerzahl, Format und Einlasslogik passt.",
-                "buttonText": "Zum Loesungskatalog",
+                "title": "FastLane for your event",
+                "description": "Let us decide together which setup fits your audience size, format and entry logic.",
+                "buttonText": "Open Solution Catalog",
                 "buttonHref": "/solutions"
               }
             },
             "contact": {
-              "eyebrow": "Kontakt",
-              "title": "Sprich mit FastLane ueber dein Event",
-              "description": "Wir beraten dich persoenlich und entwickeln gemeinsam die passende Kombination aus Einlass, Badges, App und OnSite-Service.",
-              "phoneLabel": "Telefon",
-              "phoneMeta": "Mo-Fr, 09:00 - 18:00",
-              "emailLabel": "E-Mail",
-              "emailMeta": "Antwort in der Regel innerhalb von 24 Stunden",
+              "eyebrow": "Contact",
+              "title": "Talk to FastLane about your event",
+              "description": "We advise you personally and define the right combination of entry flow, badges, app and on-site service together.",
+              "phoneLabel": "Phone",
+              "phoneMeta": "Mon-Fri, 09:00 - 18:00",
+              "emailLabel": "Email",
+              "emailMeta": "Usually answered within 24 hours",
               "form": {
-                "firstName": "Vorname",
-                "firstNamePlaceholder": "Vorname eingeben",
-                "lastName": "Nachname",
-                "lastNamePlaceholder": "Nachname eingeben",
-                "email": "E-Mail",
-                "emailPlaceholder": "name@unternehmen.de",
-                "details": "Event-Details",
-                "detailsPlaceholder": "Welche Services sind fuer dein Event relevant?",
-                "submitText": "Anfrage senden",
-                "successMessage": "Deine Anfrage wurde erfolgreich uebermittelt.",
-                "errorMessage": "Die Anfrage konnte gerade nicht gesendet werden. Bitte versuche es spaeter erneut."
+                "firstName": "First Name",
+                "firstNamePlaceholder": "Enter first name",
+                "lastName": "Last Name",
+                "lastNamePlaceholder": "Enter last name",
+                "email": "Email",
+                "emailPlaceholder": "name@company.com",
+                "details": "Event Details",
+                "detailsPlaceholder": "Which services are relevant for your event?",
+                "submitText": "Send Request",
+                "successMessage": "Your request was sent successfully.",
+                "errorMessage": "The request could not be sent right now. Please try again later."
               }
             }
           }
@@ -1866,12 +1866,12 @@
           "sections": {
             "badge": "Modular Setup",
             "titleLines": [
-              "Ein Setup,",
-              "mehrere Event-Module"
+              "One setup,",
+              "multiple event modules"
             ],
-            "initiativesLabel": "FastLane Fokus",
-            "initiativesText": "Live-Badging, Einlassmanagement, Event-Apps, Medical Events und hybride Formate lassen sich flexibel kombinieren.",
-            "buttonText": "Kontakt aufnehmen",
+            "initiativesLabel": "FastLane Focus",
+            "initiativesText": "Live badging, entry management, event apps, medical events and hybrid formats can be combined flexibly.",
+            "buttonText": "Get in Touch",
             "buttonHref": "/#contact",
             "sideWords": [
               "OnSite",
@@ -1882,69 +1882,69 @@
         },
         "about": {
           "sections": {
-            "heroBadge": "Ueber Uns",
+            "heroBadge": "About Us",
             "heroTitle": [
-              "Teilnehmerprozesse",
-              "mit Verantwortung."
+              "Participant processes",
+              "with accountability."
             ],
-            "intro": "FastLane begleitet Events mit einem klaren Fokus auf Akkreditierung, Einlass und Teilnehmerfuehrung. Das Unternehmen arbeitet unabhaengig, praxisnah und mit einem Setup, das auf reale Eventablaeufe zugeschnitten ist.",
+            "intro": "FastLane supports events with a clear focus on accreditation, entry and participant flow. The company works independently, pragmatically and with setups tailored to real event operations.",
             "mission": {
-              "title": "Unsere Mission",
-              "description": "Teilnehmendenmanagement so zu gestalten, dass Veranstalter, Teams und Gaeste vom ersten Kontakt bis zur Auswertung einen strukturierten, sicheren und professionellen Ablauf erleben."
+              "title": "Our Mission",
+              "description": "To shape participant management so organizers, teams and guests experience a structured, secure and professional process from first contact to final reporting."
             },
             "vision": {
-              "title": "Unsere Vision",
-              "description": "Fuer Events jeder Groesse die verlaessliche Schnittstelle zwischen Technik, Team und Gaesten zu sein, ohne Komplexitaet in den Vordergrund zu stellen."
+              "title": "Our Vision",
+              "description": "To be the reliable operating layer between technology, teams and guests for events of any size without making complexity visible."
             },
-            "valuesTitle": "Was FastLane ausmacht",
-            "valuesSubtitle": "Arbeitsweise und Haltung",
+            "valuesTitle": "What defines FastLane",
+            "valuesSubtitle": "How we work and what we value",
             "values": [
               {
-                "title": "Praxiserfahrung",
-                "description": "Mehr als 25 Jahre Erfahrung im Teilnehmermanagement fuehren zu belastbaren Entscheidungen vor Ort.",
+                "title": "Hands-on Experience",
+                "description": "More than 25 years of participant management experience lead to dependable decisions on site.",
                 "icon": "ShieldCheck"
               },
               {
-                "title": "Flexibilitaet",
-                "description": "Systeme und Prozesse werden an Eventformat, Publikum und kurzfristige Aenderungen angepasst.",
+                "title": "Flexibility",
+                "description": "Systems and processes are adapted to the event format, the audience and short-notice changes.",
                 "icon": "Zap"
               },
               {
-                "title": "Verantwortung",
-                "description": "Einlass, Rechte und Besucherstroeme werden nachvollziehbar, sauber und stressarm organisiert.",
+                "title": "Responsibility",
+                "description": "Entry, permissions and visitor flows are organized clearly, cleanly and with minimal friction.",
                 "icon": "Award"
               }
             ],
             "timeline": {
-              "title": "Wie FastLane arbeitet",
-              "description": "Keine Standardpakete, sondern passende Event-Setups",
+              "title": "How FastLane works",
+              "description": "No generic packages, only event setups that fit",
               "badge": "25+ Years / 2nd Generation",
               "items": [
                 {
                   "year": "Briefing",
-                  "label": "Verstehen",
-                  "description": "FastLane analysiert Format, Teilnehmerzahl, Einlasspunkte und Sonderfaelle deines Events."
+                  "label": "Understand",
+                  "description": "FastLane analyzes your event format, audience size, entry points and special cases."
                 },
                 {
                   "year": "Setup",
-                  "label": "Konfigurieren",
-                  "description": "Badges, Check-in, App, Kontingente und Rechte werden auf dein Eventmodell abgestimmt."
+                  "label": "Configure",
+                  "description": "Badges, check-in, app flows, quotas and permissions are configured to match your event model."
                 },
                 {
                   "year": "OnSite",
-                  "label": "Begleiten",
-                  "description": "Vor Ort laufen Prozesse, Technik und Teamsteuerung kontrolliert zusammen."
+                  "label": "Run OnSite",
+                  "description": "On site, processes, technology and team coordination come together in a controlled setup."
                 },
                 {
                   "year": "Review",
-                  "label": "Auswerten",
-                  "description": "Nach dem Event lassen sich Bewegungen, Check-ins und Erkenntnisse strukturiert auswerten."
+                  "label": "Review",
+                  "description": "After the event, movements, check-ins and learnings can be reviewed in a structured way."
                 }
               ]
             },
             "cta": {
-              "title": "FastLane denkt vom Eventfluss aus",
-              "description": "Nicht einzelne Tools stehen im Mittelpunkt, sondern ein Einlasskonzept, das fuer dein Event funktioniert und dein Team im laufenden Betrieb entlastet.",
+              "title": "FastLane starts from the event flow",
+              "description": "The focus is not on isolated tools, but on an entry concept that works for your event and reduces pressure on your team during live operations.",
               "cities": [
                 "Bonn",
                 "OnSite",
@@ -2102,24 +2102,24 @@
             ],
             "solutionContent": {
               "sap-s4hana": {
-                "title": "Full-Colour Live-Badging",
-                "description": "Badge-Druck in Echtzeit fuer einen professionellen ersten Eindruck und flexible Anpassungen direkt vor Ort."
+                "title": "Full-Color Live Badging",
+                "description": "Real-time badge printing for a professional first impression and flexible updates directly on site."
               },
               "sap-successfactors": {
-                "title": "Einlassmanagement",
-                "description": "Check-in, QR-Scan und Rechtepruefung fuer kontrollierte Besucherstroeme und kurze Wartezeiten."
+                "title": "Entry Management",
+                "description": "Check-in, QR scanning and permission checks for controlled visitor flow and short waiting times."
               },
               "sap-ariba": {
-                "title": "Event-Apps",
-                "description": "Agenda, Lageplaene, Buchungen, Feedback und Updates gebuendelt in einer App fuer Teilnehmende und Team."
+                "title": "Event Apps",
+                "description": "Agenda, maps, bookings, feedback and updates bundled in one app for participants and the event team."
               },
               "sap-business-one": {
                 "title": "Medical Events",
-                "description": "Strukturierte Prozesse fuer sensible Veranstaltungen mit klaren Zugriffs- und Teilnehmerregeln."
+                "description": "Structured processes for sensitive events with clear access and participant rules."
               },
               "opentext": {
-                "title": "Hybride Events",
-                "description": "Ein Setup, das Vor-Ort-Ablauf und digitale Teilnahme konsistent verbindet."
+                "title": "Hybrid Events",
+                "description": "A setup that connects on-site operations and digital participation consistently."
               },
               "bimser": {
                 "title": "Badge2Go / Self-Check-in",
@@ -2605,57 +2605,57 @@
         },
         "solutions": {
           "sections": {
-            "eyebrow": "FastLane Loesungen",
-            "title": "Teilnehmendenmanagement als modulares System",
-            "description": "Jede Loesung ist auf einen konkreten Teil des Eventflusses ausgerichtet und laesst sich mit weiteren Modulen kombinieren.",
+            "eyebrow": "FastLane Solutions",
+            "title": "Participant management as a modular system",
+            "description": "Each solution is designed for a specific part of the event flow and can be combined with additional modules.",
             "products": [
               {
                 "id": "sap-s4hana",
-                "title": "Full-Colour Live-Badging",
+                "title": "Full-Color Live Badging",
                 "category": "OnSite Print",
-                "description": "Personalisierte Badges in Echtzeit direkt beim Event.",
+                "description": "Personalized badges printed in real time directly at the event.",
                 "icon": "BadgeCheck"
               },
               {
                 "id": "sap-successfactors",
-                "title": "Einlassmanagement",
+                "title": "Entry Management",
                 "category": "Check-in",
-                "description": "QR-Scan, Rechtepruefung und transparente Besuchersteuerung.",
+                "description": "QR scanning, permission checks and transparent visitor control.",
                 "icon": "ScanLine"
               },
               {
                 "id": "sap-ariba",
-                "title": "Event-Apps",
+                "title": "Event Apps",
                 "category": "Participant App",
-                "description": "Agenda, Buchungen, Navigation und Updates in einer mobilen Begleitung.",
+                "description": "Agenda, bookings, navigation and updates in one mobile companion.",
                 "icon": "Smartphone"
               },
               {
                 "id": "sap-business-one",
                 "title": "Medical Events",
                 "category": "Regulated Events",
-                "description": "Strukturierte Teilnehmerfuehrung fuer sensible und stark geregelte Formate.",
+                "description": "Structured participant guidance for sensitive and highly regulated formats.",
                 "icon": "HeartPulse"
               },
               {
                 "id": "opentext",
-                "title": "Hybride Events",
+                "title": "Hybrid Events",
                 "category": "Live + Digital",
-                "description": "Verbindung aus Vor-Ort-Erlebnis und digitaler Teilnahme.",
+                "description": "A connected experience for on-site and digital participation.",
                 "icon": "MonitorPlay"
               },
               {
                 "id": "bimser",
                 "title": "Badge2Go",
                 "category": "Self-Service",
-                "description": "Self-check-in und Badge-Ausgabe mit klarer Kiosklogik.",
+                "description": "Self-check-in and badge printing with a clear kiosk flow.",
                 "icon": "TabletSmartphone"
               },
               {
                 "id": "microsoft-power-bi",
                 "title": "FastLane Inside",
                 "category": "Control Center",
-                "description": "Eine Plattform fuer Teilnehmerdaten, Buchungen und operative Uebersicht.",
+                "description": "One platform for participant data, bookings and operational oversight.",
                 "icon": "LayoutDashboard"
               }
             ]
@@ -2664,143 +2664,143 @@
       },
       "solutionDetails": {
         "sap-s4hana": {
-          "title": "Full-Colour Live-Badging",
+          "title": "Full-Color Live Badging",
           "category": "OnSite Print",
-          "description": "Badge-Druck in Farbe direkt vor Ort.",
-          "intro": "Mit Live-Badging gestaltest du den Empfang effizient, professionell und markengerecht. Namensschilder werden beim Check-in in Echtzeit produziert und koennen auch kurzfristig angepasst werden.",
+          "description": "Full-color badge printing directly on site.",
+          "intro": "With live badging, you make reception efficient, professional and brand-ready. Name badges are produced in real time during check-in and can still be adjusted at short notice.",
           "features": [
-            "Personalisierte Badges mit Namen, Rolle, Firma oder Gruppenmerkmalen",
-            "Echtzeit-Druck ohne Vorproduktion",
-            "Flexible Anpassungen bei Nachmeldungen oder Rollenwechseln",
-            "Nahtlose Verbindung mit Check-in und Zutrittslogik"
+            "Personalized badges with names, roles, company names or group markers",
+            "Real-time printing with no pre-production required",
+            "Flexible updates for late registrations or role changes",
+            "Seamless connection with check-in and access logic"
           ],
           "benefits": [
-            "Reduziert Wartezeiten am Empfang",
-            "Staerkt den ersten Eindruck deiner Veranstaltung",
-            "Macht kurzfristige Aenderungen beherrschbar",
-            "Verbindet Branding und Prozess in einem Schritt"
+            "Reduces waiting times at reception",
+            "Strengthens the first impression of your event",
+            "Makes last-minute changes manageable",
+            "Combines branding and process in one step"
           ],
-          "ctaText": "Jetzt Kontakt aufnehmen",
+          "ctaText": "Contact Us Now",
           "ctaHref": "/#contact"
         },
         "sap-successfactors": {
-          "title": "Einlassmanagement",
+          "title": "Entry Management",
           "category": "Check-in",
-          "description": "Kontrollierter Zutritt fuer Events jeder Groesse.",
-          "intro": "Schneller Check-in, klare Zutrittskontrolle und strukturierte Ablaeufe sorgen dafuer, dass Gaeste entspannt ankommen und dein Event professionell startet. Mit FastLane lassen sich Teilnehmer, Rechte und Bewegungen in einem durchgaengigen Prozess steuern.",
+          "description": "Controlled access for events of any size.",
+          "intro": "Fast check-in, clear access control and structured processes help guests arrive smoothly and let your event start professionally. With FastLane, participants, permissions and movements can be managed in one connected flow.",
           "features": [
-            "QR-Code-Scan und manuelle Suche in einer mobilen Check-in-App",
-            "Live-Dashboard fuer Besucherzahlen und Auslastungen",
-            "Individuelle Rechtekontrolle fuer Bereiche und Sessions",
-            "Einsatz ueber App, Kiosk oder mehrere Einlasspunkte"
+            "QR-code scanning and manual search in a mobile check-in app",
+            "Live dashboard for visitor counts and occupancy",
+            "Granular access control for areas and sessions",
+            "Deployment via app, kiosk or multiple entry points"
           ],
           "benefits": [
-            "Kurze Wartezeiten auch bei hohem Besucheraufkommen",
-            "Volle Transparenz ueber Einlassstatus und Kontingente",
-            "Sichere Rechtepruefung in Echtzeit",
-            "Belastbarer Start auch bei mehreren Zugangszonen"
+            "Short waiting times even with high visitor volume",
+            "Full transparency on entry status and capacities",
+            "Reliable permission checks in real time",
+            "A resilient start even across multiple access zones"
           ],
-          "ctaText": "Angebot anfordern",
+          "ctaText": "Request a Quote",
           "ctaHref": "/#contact"
         },
         "sap-ariba": {
-          "title": "Event-Apps",
+          "title": "Event Apps",
           "category": "Participant App",
-          "description": "Digitale Begleitung fuer den gesamten Eventtag.",
-          "intro": "Die FastLane Event-App ergaenzt Akkreditierung und Einlass mit einer zentralen Informationsschicht fuer Teilnehmende. Agenda, Buchungen, Lageplaene, Feedback und Updates bleiben waehrend der Veranstaltung jederzeit erreichbar.",
+          "description": "Digital guidance for the entire event day.",
+          "intro": "The FastLane event app extends accreditation and entry with a central information layer for participants. Agenda, bookings, maps, feedback and updates stay accessible throughout the event.",
           "features": [
-            "Agenda, Sessions und Programmpunkte mobil verfuegbar",
-            "Buchungen, Lageplaene und Updates an einem Ort",
-            "Feedback und Orientierung direkt im Eventfluss",
-            "Saubere Verzahnung mit Vor-Ort-Prozessen"
+            "Agenda, sessions and program items available on mobile",
+            "Bookings, maps and updates in one place",
+            "Feedback and guidance directly inside the event flow",
+            "Clean integration with on-site processes"
           ],
           "benefits": [
-            "Weniger Rueckfragen am Eventtag",
-            "Mehr Orientierung fuer Teilnehmende",
-            "Klarer Informationskanal fuer kurzfristige Updates",
-            "Stimmiges Erlebnis zwischen Empfang und Programmnutzung"
+            "Fewer questions on event day",
+            "Better orientation for participants",
+            "A clear communication channel for last-minute updates",
+            "A smoother experience between reception and program usage"
           ],
-          "ctaText": "Event-App entdecken",
+          "ctaText": "Explore the Event App",
           "ctaHref": "/#contact"
         },
         "sap-business-one": {
           "title": "Medical Events",
           "category": "Regulated Events",
-          "description": "Teilnehmerfuehrung fuer sensible Veranstaltungsformate.",
-          "intro": "Medical Events benoetigen eindeutige Prozesse, saubere Teilnehmerlogik und dokumentierbare Rechte. FastLane unterstuetzt solche Formate mit kontrolliertem Check-in, strukturierten Teilnehmerwegen und verlaesslicher OnSite-Betreuung.",
+          "description": "Participant guidance for sensitive event formats.",
+          "intro": "Medical events require clear processes, structured participant logic and auditable permissions. FastLane supports these formats with controlled check-in, guided participant flows and dependable on-site support.",
           "features": [
-            "Klare Teilnehmerkategorien und Zutrittsregeln",
-            "Nachvollziehbare Check-in-Prozesse fuer sensible Formate",
-            "Saubere Steuerung von Einlasspunkten und Besucherwegen",
-            "Persoenliche Begleitung bei operativen Sonderfaellen"
+            "Clear participant categories and access rules",
+            "Traceable check-in processes for sensitive formats",
+            "Clean control of entry points and visitor routes",
+            "Personal support for operational special cases"
           ],
           "benefits": [
-            "Mehr Sicherheit in regulierten Eventumgebungen",
-            "Klare Orientierung fuer Team und Teilnehmende",
-            "Kontrollierte Umsetzung auch bei komplexen Vorgaben",
-            "Weniger operative Unsicherheit am Eventtag"
+            "More security in regulated event environments",
+            "Clear orientation for teams and participants",
+            "Controlled execution even with complex requirements",
+            "Less operational uncertainty on event day"
           ],
-          "ctaText": "Medical Setup besprechen",
+          "ctaText": "Discuss a Medical Setup",
           "ctaHref": "/#contact"
         },
         "opentext": {
-          "title": "Hybride Events",
+          "title": "Hybrid Events",
           "category": "Live + Digital",
-          "description": "Ein Event fuer Vor-Ort- und Remote-Teilnahme.",
-          "intro": "Hybride Events verbinden physische Begegnung mit digitaler Reichweite. FastLane denkt Einlass, Teilnehmerdaten und Informationsfluss so, dass Vor-Ort- und Remote-Erlebnis aus einem durchgehenden Setup heraus funktionieren.",
+          "description": "One event setup for on-site and remote participation.",
+          "intro": "Hybrid events combine physical interaction with digital reach. FastLane designs entry, participant data and information flows so the on-site and remote experience work as one connected setup.",
           "features": [
-            "Verbindung von Live-Event und digitaler Teilnahme",
-            "Zentrale Teilnehmerlogik fuer mehrere Nutzungskanaele",
-            "Klarer Informationsfluss fuer Team und Teilnehmende",
-            "Flexibles Setup fuer unterschiedliche Reichweiten"
+            "Connection between live events and digital participation",
+            "Central participant logic across multiple channels",
+            "Clear information flow for teams and attendees",
+            "Flexible setup for different audience sizes and reach"
           ],
           "benefits": [
-            "Mehr Reichweite ohne Verlust des Live-Charakters",
-            "Sauberer Uebergang zwischen Vor-Ort und digital",
-            "Bessere Steuerung von Informationen und Updates",
-            "Flexibles Format fuer wechselnde Anforderungen"
+            "More reach without losing the live character",
+            "A cleaner transition between on-site and digital",
+            "Better control of information and updates",
+            "A flexible format for changing requirements"
           ],
-          "ctaText": "Hybrid-Setup anfragen",
+          "ctaText": "Request a Hybrid Setup",
           "ctaHref": "/#contact"
         },
         "bimser": {
           "title": "Badge2Go",
           "category": "Self-Service",
-          "description": "Self-check-in und Badge-Ausgabe mit Kiosklogik.",
-          "intro": "Badge2Go bringt Self-service in den Event-Einlass. Teilnehmende koennen sich an Kiosken anmelden, QR-Codes scannen und Badges ohne Medienbruch erhalten. Das beschleunigt Stoerungen nicht nur, sondern entlastet auch das Empfangsteam.",
+          "description": "Self-check-in and badge printing with kiosk logic.",
+          "intro": "Badge2Go brings self-service into event entry. Participants can register at kiosks, scan QR codes and receive badges without breaking the flow. That reduces friction and takes pressure off the reception team.",
           "features": [
-            "Self-check-in ueber Kiosk oder QR-Scan",
-            "Direkte Ausgabe von Badges am Terminal",
-            "Geeignet fuer mehrere Einlasspunkte und Peaks",
-            "Verbindbar mit Rechten, Status und Teilnehmerdaten"
+            "Self-check-in via kiosk or QR scan",
+            "Direct badge printing at the terminal",
+            "Suitable for multiple entry points and peak traffic",
+            "Connects with permissions, status and participant data"
           ],
           "benefits": [
-            "Entlastet Personal an stark frequentierten Check-ins",
-            "Beschleunigt den Zutritt in Peak-Phasen",
-            "Skalierbar fuer verschiedene Eventgroessen",
-            "Sauberer Prozess fuer wiederkehrende Standardfaelle"
+            "Reduces staffing pressure at busy check-ins",
+            "Speeds up entry during peak phases",
+            "Scales for different event sizes",
+            "Creates a clean process for repeatable standard cases"
           ],
-          "ctaText": "Badge2Go pruefen",
+          "ctaText": "Explore Badge2Go",
           "ctaHref": "/#contact"
         },
         "microsoft-power-bi": {
           "title": "FastLane Inside",
           "category": "Control Center",
-          "description": "Zentrale Plattform fuer Teilnehmermanagement.",
-          "intro": "FastLane Inside ist die Steuerungszentrale fuer dein OnSite-Event. Buchungen, Teilnehmerverwaltung und Einlassmanagement werden in einer Anwendung gebuendelt, damit das Team den Ueberblick behaelt.",
+          "description": "Central platform for participant management.",
+          "intro": "FastLane Inside is the control center for your on-site event. Bookings, participant management and entry management are bundled in one application so the team keeps a clear overview.",
           "features": [
-            "Zentrale Verwaltung fuer Buchungen und Teilnehmerdaten",
-            "Konfiguration von Kategorien und Optionen vor dem Event",
-            "Verknuepfung mit Einlass, Check-in und Auswertung",
-            "Uebersichtliche Bedienung fuer operative Teams"
+            "Central management for bookings and participant data",
+            "Configuration of categories and options before the event",
+            "Connected with entry, check-in and reporting",
+            "Clear workflows for operational teams"
           ],
           "benefits": [
-            "Weniger Systembrueche im Projekt und am Eventtag",
-            "Mehr Transparenz fuer operative Entscheidungen",
-            "Schneller Zugriff auf relevante Teilnehmerinformationen",
-            "Belastbare Grundlage fuer Monitoring und Nachbereitung"
+            "Fewer system breaks during planning and event day",
+            "More transparency for operational decisions",
+            "Faster access to relevant participant information",
+            "A dependable basis for monitoring and follow-up"
           ],
-          "ctaText": "Plattform ansehen",
+          "ctaText": "View the Platform",
           "ctaHref": "/#contact"
         },
         "sap-sam": {

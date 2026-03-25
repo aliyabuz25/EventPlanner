@@ -403,6 +403,20 @@ export function restoreDocumentRevision(key, revisionId) {
   };
 }
 
+export function restoreDocumentValue(key, value, summary = 'Restored previous version') {
+  const timestamp = nowIso();
+
+  upsertOne.run(key, JSON.stringify(value), timestamp);
+  createRevision(key, value, timestamp, 'restore', summary);
+
+  return {
+    key,
+    value,
+    updatedAt: timestamp,
+    restoredFrom: null
+  };
+}
+
 export function createAiExplorerLog(payload) {
   insertAiExplorerLog.run(
     payload.createdAt ?? nowIso(),

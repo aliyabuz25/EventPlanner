@@ -217,13 +217,16 @@ export async function fetchSiteDocumentRevisions(key: string, limit = 12) {
   return response.json() as Promise<{ key: string; revisions: SiteDocumentRevision[] }>;
 }
 
-export async function restoreSiteDocument(key: string, revisionId: number) {
+export async function restoreSiteDocument(
+  key: string,
+  payload: { revisionId?: number; value?: unknown; summary?: string }
+) {
   const response = await fetch('/api/site-content/restore', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ key, revisionId })
+    body: JSON.stringify({ key, ...payload })
   });
 
   if (!response.ok) {

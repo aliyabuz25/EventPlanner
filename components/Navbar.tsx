@@ -40,6 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
   const solutionsDropdownRef = useRef<HTMLDivElement>(null);
   const navLinks = content.navigation.mainLinks;
   const solutionLinks = content.navigation.solutionLinks;
+  const solutionsOverviewLabel = locale === 'en' ? 'See All Modules' : 'Tum modulleri gor';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -218,6 +219,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
                   onSelect={handleSolutionSelect}
                   onOverview={handleSolutionsOverview}
                   solutions={solutionLinks as any}
+                  overviewLabel={solutionsOverviewLabel}
                 />
               )}
             </div>
@@ -252,6 +254,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
           currentView={currentView}
           navLinks={navLinks as any}
           solutionSublinks={solutionLinks as any}
+          solutionsOverviewLabel={solutionsOverviewLabel}
           onLinkClick={handleLinkClick}
           onSolutionsOverview={handleSolutionsOverview}
           onSolutionSelect={handleSolutionSelect}
