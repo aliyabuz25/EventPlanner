@@ -773,6 +773,127 @@
   background: transparent;
 }
 
+.oc-admin-ai-report-card {
+  border-radius: 1rem;
+}
+
+.oc-admin-ai-report-summary {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.oc-admin-ai-summary-meta {
+  max-width: 22rem;
+}
+
+.oc-admin-ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #dbe5ef;
+  background: #f8fbff;
+  color: #135e96;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.oc-admin-ai-panel {
+  height: 100%;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e3e8ef;
+  background: linear-gradient(180deg, #fbfcfe 0%, #f7f9fc 100%);
+}
+
+.oc-admin-ai-panel-title {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+}
+
+.oc-admin-ai-panel-subtitle {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+
+.oc-admin-ai-field {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.oc-admin-ai-field-label {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.oc-admin-ai-field-value {
+  min-height: 3.25rem;
+  padding: 0.78rem 0.88rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe1e8;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.oc-admin-ai-field-value.is-multiline {
+  min-height: 8.5rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.oc-admin-ai-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.oc-admin-ai-list-item,
+.oc-admin-ai-empty {
+  padding: 0.72rem 0.82rem;
+  border-radius: 0.85rem;
+  border: 1px solid #dbe1e8;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.oc-admin-ai-raw {
+  border: 1px solid #e3e8ef;
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.7);
+  padding: 0.9rem 1rem 1rem;
+}
+
+.oc-admin-ai-raw-summary {
+  cursor: pointer;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.oc-admin-ai-raw-summary::-webkit-details-marker {
+  display: none;
+}
+
 .oc-admin-collapsible-trigger {
   width: 100%;
   padding: 1rem 1.1rem;

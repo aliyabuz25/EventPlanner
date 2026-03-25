@@ -133,7 +133,7 @@ const adminCopy = {
     editableFields: 'Bearbeitbare Felder',
     group: 'Gruppe',
     editorIntro: 'Bearbeite die Felder unten. Aenderungen werden in der Live-Quelle gespeichert und nach dem Update auf der Website sichtbar.',
-    aiIntro: 'Jede KI-Nutzung wird hier mit Prompt, Event-Details, User-Agent und Zeitstempel protokolliert.',
+    aiIntro: 'Jede KI-Sitzung wird hier als uebersichtliche Formularansicht mit Anfrage, Eventdaten und Ergebnis dargestellt.',
     loadingAiReports: 'KI-Berichte werden geladen...',
     noAiReports: 'Noch keine KI-Nutzungsdaten vorhanden.',
     untitledAiUsage: 'Unbenannte KI-Nutzung',
@@ -166,7 +166,7 @@ const adminCopy = {
     editorNotes: 'Editor-Hinweise',
     savedChangeNote: 'Jede gespeicherte Aenderung wird mit Zeitstempel abgelegt und kann wiederhergestellt werden.',
     recentChangesNote: 'Die letzten Aenderungen dieses Dokuments sind unten aufgefuehrt.',
-    aiUsageNote: 'Alle KI-Nutzungen werden mit Prompt, Event-Details, User-Agent und Zeitstempel protokolliert.',
+    aiUsageNote: 'Die KI-Sitzungen koennen hier als Zusammenfassung und Detailformular nachvollzogen werden.',
     aiUsageSummary: 'KI-Nutzungsuebersicht',
     recentChanges: 'Letzte Aenderungen',
     records: 'Eintraege',
@@ -190,6 +190,36 @@ const adminCopy = {
     restoreFailed: 'Wiederherstellung fehlgeschlagen',
     globalSettings: 'Globale Einstellungen',
     aiExplorerLogs: 'KI-Explorer-Protokolle',
+    aiReportsDescription: 'Pruefen Sie jede KI-Sitzung in einer klaren Formularansicht mit Anfrage, Eventdaten und Ergebnis.',
+    sessionOverview: 'Sitzungsueberblick',
+    requestAndResponse: 'Anfrage & Antwort',
+    eventForm: 'Extrahierte Eventdaten',
+    commercialOverview: 'Kommerzielle Uebersicht',
+    technicalContext: 'Technischer Kontext',
+    quickSummary: 'Kurzuebersicht',
+    sessionId: 'Sitzungs-ID',
+    modelLabel: 'Modell',
+    phaseLabel: 'Phase',
+    attendeesLabel: 'Teilnehmer',
+    datesLabel: 'Datum / Zeiten',
+    scenarioLabel: 'Check-in-Szenario',
+    supportLevelLabel: 'Support-Level',
+    softwareNeedsLabel: 'Software-Bedarf',
+    integrationsLabel: 'Integrationen',
+    nextStepLabel: 'Naechster Schritt',
+    budgetLabel: 'Budget',
+    budgetStatusLabel: 'Budget-Status',
+    moduleCountLabel: 'Module',
+    variantCountLabel: 'Varianten',
+    assumptionsLabel: 'Annahmen',
+    openQuestionsLabel: 'Offene Fragen',
+    rawData: 'Rohdaten',
+    rawBrief: 'Rohes Briefing',
+    rawOffer: 'Rohes Angebot',
+    noCommercialData: 'Noch keine kommerziellen Daten vorhanden.',
+    noEventData: 'Noch keine extrahierten Eventdaten vorhanden.',
+    errorMessage: 'Fehlermeldung',
+    userAgentLabel: 'User-Agent',
     routesAndPages: 'Routen und Seiten',
     navigation: 'Navigation',
     customPages: 'Benutzerdefinierte Seiten',
@@ -232,7 +262,7 @@ const adminCopy = {
     editableFields: 'Editable fields',
     group: 'Group',
     editorIntro: 'Edit the fields below. Changes are saved to the live content source and reflected on the site after update.',
-    aiIntro: 'Every AI assistant usage is logged here with prompt, generated event detail, user-agent and created date.',
+    aiIntro: 'Each AI session is shown here as a clear form view with request, event data and result.',
     loadingAiReports: 'Loading AI usage reports...',
     noAiReports: 'No AI usage records yet.',
     untitledAiUsage: 'Untitled AI usage',
@@ -265,7 +295,7 @@ const adminCopy = {
     editorNotes: 'Editor Notes',
     savedChangeNote: 'Every saved change is stored with a timestamp and can be restored.',
     recentChangesNote: 'Recent changes for this document are listed below.',
-    aiUsageNote: 'All assistant usages are logged with prompt, event detail, user-agent and timestamp.',
+    aiUsageNote: 'Review AI sessions here as a summary plus a readable detail form.',
     aiUsageSummary: 'AI Usage Summary',
     recentChanges: 'Recent Changes',
     records: 'records',
@@ -289,6 +319,36 @@ const adminCopy = {
     restoreFailed: 'Restore failed',
     globalSettings: 'Global Settings',
     aiExplorerLogs: 'AI Explorer Logs',
+    aiReportsDescription: 'Review each AI session in a clear form view with request, event data and outcome.',
+    sessionOverview: 'Session Overview',
+    requestAndResponse: 'Request & Response',
+    eventForm: 'Extracted Event Data',
+    commercialOverview: 'Commercial Overview',
+    technicalContext: 'Technical Context',
+    quickSummary: 'Quick Summary',
+    sessionId: 'Session ID',
+    modelLabel: 'Model',
+    phaseLabel: 'Phase',
+    attendeesLabel: 'Attendees',
+    datesLabel: 'Dates / Timing',
+    scenarioLabel: 'Check-in Scenario',
+    supportLevelLabel: 'Support Level',
+    softwareNeedsLabel: 'Software Needs',
+    integrationsLabel: 'Integrations',
+    nextStepLabel: 'Next Step',
+    budgetLabel: 'Budget',
+    budgetStatusLabel: 'Budget Status',
+    moduleCountLabel: 'Modules',
+    variantCountLabel: 'Variants',
+    assumptionsLabel: 'Assumptions',
+    openQuestionsLabel: 'Open Questions',
+    rawData: 'Raw Data',
+    rawBrief: 'Raw Brief',
+    rawOffer: 'Raw Offer',
+    noCommercialData: 'No commercial data available yet.',
+    noEventData: 'No extracted event data available yet.',
+    errorMessage: 'Error Message',
+    userAgentLabel: 'User-Agent',
     routesAndPages: 'Routes & Pages',
     navigation: 'Navigation',
     customPages: 'Custom Pages',
@@ -358,7 +418,7 @@ const adminCopy = {
     editableFields: 'Duzenlenebilir alanlar',
     group: 'Grup',
     editorIntro: 'Asagidaki alanlari duzenle. Degisiklikler canli icerik kaynagina kaydedilir ve guncellemeden sonra sitede gorunur.',
-    aiIntro: 'Tum yapay zeka kullanimi burada prompt, etkinlik detayi, user-agent ve zaman bilgisi ile kayit altina alinir.',
+    aiIntro: 'Her yapay zeka oturumu burada istek, etkinlik verisi ve sonuc ile daha okunabilir bir form gorunumunde sunulur.',
     loadingAiReports: 'Yapay zeka kayitlari yukleniyor...',
     noAiReports: 'Henuz yapay zeka kullanim kaydi yok.',
     untitledAiUsage: 'Isimsiz yapay zeka kullanimi',
@@ -391,7 +451,7 @@ const adminCopy = {
     editorNotes: 'Editor Notlari',
     savedChangeNote: 'Her kaydedilen degisiklik zaman damgasi ile saklanir ve geri yuklenebilir.',
     recentChangesNote: 'Bu belgeye ait son degisiklikler asagida listelenir.',
-    aiUsageNote: 'Tum yapay zeka kullanimlari prompt, etkinlik detayi, user-agent ve zaman bilgisiyle loglanir.',
+    aiUsageNote: 'Yapay zeka oturumlarini burada ozet ve detay formu olarak inceleyebilirsiniz.',
     aiUsageSummary: 'Yapay Zeka Kullanim Ozeti',
     recentChanges: 'Son Degisiklikler',
     records: 'kayit',
@@ -415,6 +475,36 @@ const adminCopy = {
     restoreFailed: 'Geri yukleme basarisiz',
     globalSettings: 'Global Ayarlar',
     aiExplorerLogs: 'YZ Explorer Kayitlari',
+    aiReportsDescription: 'Her yapay zeka oturumunu istek, etkinlik verisi ve sonuc ile daha anlasilir bir form gorunumunde inceleyin.',
+    sessionOverview: 'Oturum Ozeti',
+    requestAndResponse: 'Istek ve Yanit',
+    eventForm: 'Cikarilan Etkinlik Verisi',
+    commercialOverview: 'Ticari Ozet',
+    technicalContext: 'Teknik Baglam',
+    quickSummary: 'Kisa Ozet',
+    sessionId: 'Oturum ID',
+    modelLabel: 'Model',
+    phaseLabel: 'Faz',
+    attendeesLabel: 'Katilimcilar',
+    datesLabel: 'Tarih / Zaman',
+    scenarioLabel: 'Check-in Senaryosu',
+    supportLevelLabel: 'Destek Seviyesi',
+    softwareNeedsLabel: 'Yazilim Ihtiyaclari',
+    integrationsLabel: 'Entegrasyonlar',
+    nextStepLabel: 'Sonraki Adim',
+    budgetLabel: 'Butce',
+    budgetStatusLabel: 'Butce Durumu',
+    moduleCountLabel: 'Moduller',
+    variantCountLabel: 'Varyantlar',
+    assumptionsLabel: 'Varsayimlar',
+    openQuestionsLabel: 'Acik Sorular',
+    rawData: 'Ham Veri',
+    rawBrief: 'Ham Brief',
+    rawOffer: 'Ham Teklif',
+    noCommercialData: 'Henuz ticari veri yok.',
+    noEventData: 'Henuz cikarilmis etkinlik verisi yok.',
+    errorMessage: 'Hata Mesaji',
+    userAgentLabel: 'User-Agent',
     routesAndPages: 'Rotalar ve Sayfalar',
     navigation: 'Navigasyon',
     customPages: 'Ozel Sayfalar',
@@ -499,7 +589,7 @@ const OctopusMark: React.FC = () => <GiOctopus size={20} aria-hidden />;
 
 const labels: Record<string, { title: string; description: string; group: string }> = {
   global: { title: 'Global Settings', description: 'Company identity, contact channels, branding and shared CTA settings.', group: 'Core' },
-  aiReports: { title: 'AI Explorer Logs', description: 'AI Explorer sessions, extracted briefs, user-agent and timestamps.', group: 'Core' },
+  aiReports: { title: 'AI Explorer Logs', description: 'Review AI sessions in a form-like view with request, event data and result.', group: 'Core' },
   siteMap: { title: 'Routes & Pages', description: 'Public routes, slugs, titles and page descriptions.', group: 'Core' },
   navigation: { title: 'Navigation', description: 'Top navbar, footer links and solution dropdown items.', group: 'Core' },
   customPages: { title: 'Custom Pages', description: 'Extra pages created from the admin panel.', group: 'Core' },
@@ -535,7 +625,7 @@ const shortLabels: Record<string, string> = {
 
 const localizedLabels = (copy: typeof adminCopy.en) => ({
   global: { title: copy.globalSettings, description: 'Company identity, contact channels, branding and shared CTA settings.', group: copy.core },
-  aiReports: { title: copy.aiExplorerLogs, description: 'AI Explorer sessions, extracted briefs, user-agent and timestamps.', group: copy.core },
+  aiReports: { title: copy.aiExplorerLogs, description: copy.aiReportsDescription, group: copy.core },
   siteMap: { title: copy.routesAndPages, description: 'Public routes, slugs, titles and page descriptions.', group: copy.core },
   navigation: { title: copy.navigation, description: 'Top navbar, footer links and solution dropdown items.', group: copy.core },
   customPages: { title: copy.customPages, description: 'Extra pages created from the admin panel.', group: copy.core },
@@ -575,18 +665,40 @@ const itemIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   solutionDetails: FileText
 };
 
-const readableReportLines = (report: AiExplorerReport) => {
+const readableReportLines = (report: AiExplorerReport, copy: typeof adminCopy.en) => {
   const brief = report.brief;
   return [
-    brief?.eventDates ? `Event tarihi: ${brief.eventDates}` : '',
-    brief?.checkInScenario ? `Check-in senaryosu: ${brief.checkInScenario}` : '',
-    brief?.supportLevel ? `Destek seviyesi: ${brief.supportLevel}` : '',
-    brief?.softwareNeeds?.length ? `Yazılım ihtiyaçları: ${brief.softwareNeeds.join(', ')}` : '',
-    brief?.integrations?.length ? `Entegrasyonlar: ${brief.integrations.join(', ')}` : '',
-    brief?.missingItems?.length ? `Eksik kalan noktalar: ${brief.missingItems.join(', ')}` : '',
-    brief?.nextStep ? `Sonraki adım: ${brief.nextStep}` : ''
+    brief?.eventDates ? `${copy.datesLabel}: ${brief.eventDates}` : '',
+    brief?.checkInScenario ? `${copy.scenarioLabel}: ${brief.checkInScenario}` : '',
+    brief?.supportLevel ? `${copy.supportLevelLabel}: ${brief.supportLevel}` : '',
+    brief?.softwareNeeds?.length ? `${copy.softwareNeedsLabel}: ${brief.softwareNeeds.join(', ')}` : '',
+    brief?.integrations?.length ? `${copy.integrationsLabel}: ${brief.integrations.join(', ')}` : '',
+    brief?.missingItems?.length ? `${copy.openQuestionsLabel}: ${brief.missingItems.join(', ')}` : '',
+    brief?.nextStep ? `${copy.nextStepLabel}: ${brief.nextStep}` : ''
   ].filter(Boolean);
 };
+
+const joinReportValues = (values?: string[]) => values?.filter(Boolean).join(', ') || '';
+
+const formatJsonBlock = (value: unknown) => {
+  if (!value) return '';
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return '';
+  }
+};
+
+const AdminReadonlyField: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  multiline?: boolean;
+}> = ({ label, value, multiline = false }) => (
+  <div className="oc-admin-ai-field">
+    <div className="oc-admin-ai-field-label">{label}</div>
+    <div className={`oc-admin-ai-field-value${multiline ? ' is-multiline' : ''}`}>{value}</div>
+  </div>
+);
 
 const isObject = (value: JsonValue): value is Record<string, JsonValue> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -2484,58 +2596,179 @@ const ContentAdminPage: React.FC = () => {
                       <div className="small text-secondary">{copy.noAiReports}</div>
                     ) : (
                       aiReports.map((report) => (
-                        <details key={report.id} className="card oc-admin-editor-card">
-                          <summary className="card-body d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3" style={{ cursor: 'pointer', listStyle: 'none' }}>
+                        <details key={report.id} className="card oc-admin-editor-card oc-admin-ai-report-card">
+                          <summary className="card-body oc-admin-ai-report-summary d-flex flex-column flex-xl-row align-items-start justify-content-between gap-3" style={{ cursor: 'pointer', listStyle: 'none' }}>
                             <div className="min-w-0">
                               <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                                 <span className={`badge ${report.status === 'success' ? 'text-bg-success' : 'text-bg-danger'}`}>{report.status}</span>
-                                <span className="badge text-bg-light border">{report.model}</span>
                                 <span className="small text-secondary">{new Date(report.createdAt).toLocaleString()}</span>
                               </div>
-                              <div className="fw-semibold text-dark">{report.eventName || report.customerName || copy.untitledAiUsage}</div>
+                              <div className="fw-semibold text-dark fs-6">{report.eventName || report.customerName || copy.untitledAiUsage}</div>
                               <div className="small text-secondary mt-1">
                                 {report.eventLocation || copy.locationOpen} · {report.attendees || copy.attendeesOpen} · {report.currentPhase || copy.phaseOpen}
                               </div>
+                              <div className="d-flex flex-wrap gap-2 mt-3">
+                                <span className="oc-admin-ai-chip">{copy.customer}: {report.customerName || copy.open}</span>
+                                <span className="oc-admin-ai-chip">{copy.attendeesLabel}: {report.attendees || copy.open}</span>
+                                <span className="oc-admin-ai-chip">{copy.phaseLabel}: {report.currentPhase || copy.open}</span>
+                              </div>
                             </div>
-                            <div className="small text-secondary text-break text-lg-end" style={{ maxWidth: 320 }}>
-                              {report.userAgent || copy.unknownUserAgent}
+                            <div className="oc-admin-ai-summary-meta">
+                              <div className="small text-secondary">{copy.userAgentLabel}</div>
+                              <div className="small text-dark text-break">{report.userAgent || copy.unknownUserAgent}</div>
                             </div>
                           </summary>
                           <div className="card-body border-top pt-4">
                             <div className="row g-3">
-                              <div className="col-12 col-xl-6">
-                                <div className="oc-admin-field-help mb-2">{copy.prompt}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark oc-admin-scroll-panel">{report.userMessage}</div>
+                              <div className="col-12 col-xl-5">
+                                <div className="oc-admin-ai-panel h-100">
+                                  <div className="oc-admin-ai-panel-title">{copy.sessionOverview}</div>
+                                  <div className="row g-3">
+                                    <div className="col-12 col-md-6">
+                                      <AdminReadonlyField label={copy.customer} value={report.customerName || copy.open} />
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                      <AdminReadonlyField label={copy.event} value={report.eventName || copy.open} />
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                      <AdminReadonlyField label={copy.location} value={report.eventLocation || copy.open} />
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                      <AdminReadonlyField label={copy.attendeesLabel} value={report.attendees || copy.open} />
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                      <AdminReadonlyField label={copy.phaseLabel} value={report.currentPhase || copy.open} />
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                      <AdminReadonlyField label={copy.created} value={new Date(report.createdAt).toLocaleString()} />
+                                    </div>
+                                  </div>
+                                  <div className="mt-3">
+                                    <div className="oc-admin-ai-panel-subtitle">{copy.quickSummary}</div>
+                                    <div className="oc-admin-ai-list">
+                                      {readableReportLines(report, copy).length > 0 ? (
+                                        readableReportLines(report, copy).map((line) => (
+                                          <div key={line} className="oc-admin-ai-list-item">{line}</div>
+                                        ))
+                                      ) : (
+                                        <div className="oc-admin-ai-empty">{copy.noReadableSummary}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="col-12 col-xl-6">
-                                <div className="oc-admin-field-help mb-2">{copy.assistantResponse}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark oc-admin-scroll-panel">{report.assistantText || report.errorMessage || copy.noResponseText}</div>
+
+                              <div className="col-12 col-xl-7">
+                                <div className="oc-admin-ai-panel h-100">
+                                  <div className="oc-admin-ai-panel-title">{copy.requestAndResponse}</div>
+                                  <div className="row g-3">
+                                    <div className="col-12 col-xl-6">
+                                      <AdminReadonlyField label={copy.prompt} value={report.userMessage || copy.open} multiline />
+                                    </div>
+                                    <div className="col-12 col-xl-6">
+                                      <AdminReadonlyField label={copy.assistantResponse} value={report.assistantText || report.errorMessage || copy.noResponseText} multiline />
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">{copy.customer}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.customerName || copy.open}</div>
-                              </div>
-                              <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">{copy.event}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.eventName || copy.open}</div>
-                              </div>
-                              <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">{copy.location}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{report.eventLocation || copy.open}</div>
-                              </div>
-                              <div className="col-12 col-md-6 col-xl-3">
-                                <div className="oc-admin-field-help mb-2">{copy.created}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark">{new Date(report.createdAt).toLocaleString()}</div>
-                              </div>
-                              <div className="col-12">
-                                <div className="oc-admin-field-help mb-2">{copy.userFriendlySummary}</div>
-                                <div className="border rounded-3 bg-light p-3 small text-dark d-grid gap-2 oc-admin-scroll-panel">
-                                  {readableReportLines(report).length > 0 ? (
-                                    readableReportLines(report).map((line) => <div key={line}>{line}</div>)
+
+                              <div className="col-12 col-xl-7">
+                                <div className="oc-admin-ai-panel h-100">
+                                  <div className="oc-admin-ai-panel-title">{copy.eventForm}</div>
+                                  {report.brief ? (
+                                    <div className="row g-3">
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.datesLabel} value={report.brief.eventDates || copy.open} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.budgetLabel} value={report.brief.budget || copy.open} />
+                                      </div>
+                                      <div className="col-12">
+                                        <AdminReadonlyField label={copy.scenarioLabel} value={report.brief.checkInScenario || copy.open} multiline />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.supportLevelLabel} value={report.brief.supportLevel || copy.open} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.nextStepLabel} value={report.brief.nextStep || copy.open} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.softwareNeedsLabel} value={joinReportValues(report.brief.softwareNeeds) || copy.open} multiline />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.integrationsLabel} value={joinReportValues(report.brief.integrations) || copy.open} multiline />
+                                      </div>
+                                    </div>
                                   ) : (
-                                    <div>{copy.noReadableSummary}</div>
+                                    <div className="oc-admin-ai-empty">{copy.noEventData}</div>
                                   )}
                                 </div>
+                              </div>
+
+                              <div className="col-12 col-xl-5">
+                                <div className="oc-admin-ai-panel h-100">
+                                  <div className="oc-admin-ai-panel-title">{copy.commercialOverview}</div>
+                                  {report.offer ? (
+                                    <div className="row g-3">
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.budgetLabel} value={report.offer.budget || copy.open} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.budgetStatusLabel} value={report.offer.budgetStatus || copy.open} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.moduleCountLabel} value={String(report.offer.modules?.length ?? 0)} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.variantCountLabel} value={String(report.offer.variants?.length ?? 0)} />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.assumptionsLabel} value={joinReportValues(report.offer.assumptions) || copy.open} multiline />
+                                      </div>
+                                      <div className="col-12 col-md-6">
+                                        <AdminReadonlyField label={copy.openQuestionsLabel} value={joinReportValues(report.offer.openQuestions) || copy.open} multiline />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="oc-admin-ai-empty">{copy.noCommercialData}</div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="col-12">
+                                <div className="oc-admin-ai-panel">
+                                  <div className="oc-admin-ai-panel-title">{copy.technicalContext}</div>
+                                  <div className="row g-3">
+                                    <div className="col-12 col-md-6 col-xl-3">
+                                      <AdminReadonlyField label={copy.sessionId} value={String(report.id)} />
+                                    </div>
+                                    <div className="col-12 col-md-6 col-xl-3">
+                                      <AdminReadonlyField label={copy.status} value={report.status || copy.open} />
+                                    </div>
+                                    <div className="col-12 col-md-6 col-xl-3">
+                                      <AdminReadonlyField label={copy.userAgentLabel} value={report.userAgent || copy.unknownUserAgent} multiline />
+                                    </div>
+                                    {report.errorMessage ? (
+                                      <div className="col-12">
+                                        <AdminReadonlyField label={copy.errorMessage} value={report.errorMessage} multiline />
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="col-12">
+                                <details className="oc-admin-ai-raw">
+                                  <summary className="oc-admin-ai-raw-summary">{copy.rawData}</summary>
+                                  <div className="row g-3 mt-1">
+                                    <div className="col-12 col-xl-6">
+                                      <AdminReadonlyField label={copy.rawBrief} value={formatJsonBlock(report.brief) || copy.open} multiline />
+                                    </div>
+                                    <div className="col-12 col-xl-6">
+                                      <AdminReadonlyField label={copy.rawOffer} value={formatJsonBlock(report.offer) || copy.open} multiline />
+                                    </div>
+                                  </div>
+                                </details>
                               </div>
                             </div>
                           </div>
