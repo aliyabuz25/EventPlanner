@@ -12,7 +12,9 @@ const Hero: React.FC = () => {
   const companyName = content.global.company.name;
   const hero = content.pages.home.sections.hero;
   const heroVisual = hero.visual;
-  const workspaceLabel = content.siteMap.find((entry) => entry.view === 'studio')?.title || `${companyName} Workspace`;
+  const studioRoute = content.siteMap.find((entry) => entry.view === 'studio');
+  const studioPath = studioRoute ? (studioRoute.slug === 'home' ? '/' : `/${studioRoute.slug}`) : '/studio';
+  const workspaceLabel = studioRoute?.title || `${companyName} Workspace`;
   const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false);
   const backgroundVideoUrl = BLOCKED_BACKGROUND_VIDEO_URLS.has(heroVisual.backgroundVideoUrl) ? '' : heroVisual.backgroundVideoUrl;
 
@@ -114,20 +116,12 @@ const Hero: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mb-12 sm:mb-14">
             <a
-              href={hero.primaryHref}
+              href={studioPath}
               className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-[#0f2740] hover:bg-[#0b2034] text-white font-semibold rounded-2xl transition-all shadow-[0_24px_45px_-24px_rgba(15,39,64,0.75)] flex items-center justify-center gap-2"
             >
-              <span>{hero.primaryCta}</span>
+              <span>AI Event Planner</span>
               <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
             </a>
-            {hero.secondaryCta && hero.secondaryHref ? (
-              <a
-                href={hero.secondaryHref}
-                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-white/80 hover:bg-white text-slate-900 font-semibold rounded-2xl border border-slate-200/70 transition-all flex items-center justify-center gap-2 backdrop-blur-md"
-              >
-                <span>{hero.secondaryCta}</span>
-              </a>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-4xl">
