@@ -25,10 +25,15 @@ import { CustomPageView, SolutionId, ViewType } from './types';
 const ContentAdminPage = lazy(() => import('./components/ContentAdminPage'));
 
 const adminPath = '/oc-admin';
+const studioPath = '/studio';
 
 const viewToPath = (view: ViewType, content: ReturnType<typeof useSiteContent>['content']) => {
   if (view === 'content-admin') {
     return adminPath;
+  }
+
+  if (view === 'studio') {
+    return studioPath;
   }
 
   const mapped = content.siteMap.find((entry) => entry.view === view);
@@ -42,6 +47,10 @@ const viewToPath = (view: ViewType, content: ReturnType<typeof useSiteContent>['
 const pathToView = (pathname: string, content: ReturnType<typeof useSiteContent>['content']): ViewType => {
   if (pathname === adminPath) {
     return 'content-admin';
+  }
+
+  if (pathname === studioPath) {
+    return 'studio';
   }
 
   const normalized = pathname.replace(/^\/+|\/+$/g, '') || 'home';

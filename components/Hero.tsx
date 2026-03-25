@@ -13,7 +13,6 @@ const Hero: React.FC = () => {
   const hero = content.pages.home.sections.hero;
   const heroVisual = hero.visual;
   const studioRoute = content.siteMap.find((entry) => entry.view === 'studio');
-  const studioPath = studioRoute ? (studioRoute.slug === 'home' ? '/' : `/${studioRoute.slug}`) : '/studio';
   const workspaceLabel = studioRoute?.title || `${companyName} Workspace`;
   const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false);
   const backgroundVideoUrl = BLOCKED_BACKGROUND_VIDEO_URLS.has(heroVisual.backgroundVideoUrl) ? '' : heroVisual.backgroundVideoUrl;
@@ -116,7 +115,7 @@ const Hero: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mb-12 sm:mb-14">
             <a
-              href={studioPath}
+              href="/studio"
               className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-[#0f2740] hover:bg-[#0b2034] text-white font-semibold rounded-2xl transition-all shadow-[0_24px_45px_-24px_rgba(15,39,64,0.75)] flex items-center justify-center gap-2"
             >
               <span>AI Event Planner</span>
