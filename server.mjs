@@ -24,9 +24,9 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT ?? 3000);
-const uploadsDir = path.resolve(__dirname, 'data', 'uploads');
-const adminTranslationsPath = path.resolve(__dirname, 'data', 'admin-translations.json');
-const frontendEnglishLocalePath = path.resolve(__dirname, 'public', 'locales', 'frontend-en.json');
+const contentDataDir = path.resolve(process.env.CONTENT_DATA_DIR ?? path.join(__dirname, 'data'));
+const uploadsDir = path.resolve(process.env.UPLOADS_DIR ?? path.join(__dirname, 'uploads'));
+const adminTranslationsPath = path.join(contentDataDir, 'admin-translations.json');
 const OLLAMA_GENERATE_URL = process.env.OLLAMA_GENERATE_URL || process.env.OLLAMA_CHAT_URL || 'https://qwen.octotech.az/api/generate';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2:0.5b';
 const OLLAMA_TIMEOUT_MS = Math.max(5000, Number(process.env.OLLAMA_TIMEOUT_MS ?? 90000) || 90000);
@@ -72,12 +72,7 @@ function readJsonFile(filePath, fallbackValue) {
 }
 
 function loadStaticFrontendTranslation(target) {
-  if (target !== 'en') {
-    return null;
-  }
-
-  const value = readJsonFile(frontendEnglishLocalePath, null);
-  return value && typeof value === 'object' ? normalizeSiteContent(value) : null;
+  return null;
 }
 
 function writeJsonFile(filePath, value) {
@@ -3028,7 +3023,7 @@ async function createAppServer() {
   const syncResult = syncFastlaneContentIfNeeded();
   if (syncResult.changed) {
     console.log(
-      `FastLane content synchronized to ${syncResult.version}: ${syncResult.updatedKeys.join(', ')}`
+      `Site content synchronized to ${syncResult.version}: ${syncResult.updatedKeys.join(', ')}`
     );
   }
 
@@ -3117,8 +3112,8 @@ async function createAppServer() {
       const injectedHtml = fs
         .readFileSync(indexHtml, 'utf-8')
         .replace(
-          '<title>FastLane | Teilnehmermanagement fuer Events</title>',
-          `<title>${branding.siteTitle || 'FastLane | Teilnehmermanagement fuer Events'}</title>`
+          /<title>.*?<\/title>/,
+          `<title>${branding.siteTitle || 'Site'}</title>`
         )
         .replace(
           '</head>',

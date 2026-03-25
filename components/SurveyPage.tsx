@@ -30,6 +30,7 @@ type Question = {
 
 const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
   const { content } = useSiteContent();
+  const companyName = content.global.company.name;
   const section = content.pages.survey.sections;
   const [mode, setMode] = useState<'quick' | 'advisor'>('advisor');
   const [step, setStep] = useState(0);
@@ -83,7 +84,7 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
   };
 
   const getSolutionDesc = (id: SolutionId) => {
-    return section.solutionContent[id]?.description || 'Auf Basis deiner Angaben empfehlen wir das naechstliegende FastLane-Modul fuer dein Event.';
+    return section.solutionContent[id]?.description || `Auf Basis deiner Angaben empfehlen wir das naechstliegende ${companyName}-Modul.`;
   };
 
   const isAdvisorMode = mode === 'advisor';

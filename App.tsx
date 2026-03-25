@@ -182,6 +182,7 @@ const App: React.FC = () => {
       ? content.customPages.find((page) => page.view === currentView)
       : null;
     const branding = content.global?.branding;
+    const studioTitle = content.siteMap.find((entry) => entry.view === 'studio')?.title;
 
     const titleMap: Partial<Record<ViewType, string>> = {
       home: content.pages.home?.seoTitle,
@@ -189,7 +190,7 @@ const App: React.FC = () => {
       services: content.pages.services?.sections?.title?.join(' '),
       team: content.pages.team?.sections?.title,
       contact: content.pages.home?.sections?.contact?.title,
-      studio: 'FastLane Workspace',
+      studio: studioTitle,
       solutions: content.pages.solutions?.sections?.title
     };
 
@@ -264,7 +265,7 @@ const App: React.FC = () => {
       default:
         return (
           <>
-            <Hero onOpenStudio={() => setCurrentView('studio')} />
+            <Hero />
             <CampaignSection />
             <About onReadMore={() => setCurrentView('about')} />
             <Partners />

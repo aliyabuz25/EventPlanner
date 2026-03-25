@@ -244,11 +244,7 @@ const applyExplicitOverrides = <T,>(base: T, override: unknown): T => {
 };
 
 export const applyFrontendLocaleOverrides = (target: string, value: SiteContent): SiteContent => {
-  if (target !== 'en') {
-    return value;
-  }
-
-  return applyExplicitOverrides(value, englishFrontendOverrides);
+  return value;
 };
 
 const sanitizeTranslatedCopyValue = (value: unknown): unknown => {
@@ -379,24 +375,7 @@ const getInitialTranslationJob = (): FrontendTranslationJob | null => {
 };
 
 const fetchStaticFrontendTranslation = async (target: string): Promise<SiteContent | null> => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  if (target !== 'en') {
-    return null;
-  }
-
-  const response = await fetch('/locales/frontend-en.json', {
-    cache: 'no-cache'
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const result = await response.json().catch(() => null);
-  return result ? applyFrontendLocaleOverrides(target, normalizeSiteContent(sanitizeTranslatedCopyValue(result)) as SiteContent) : null;
+  return null;
 };
 
 const getInitialTranslationSupport = (): boolean => {

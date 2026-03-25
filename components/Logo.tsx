@@ -2,8 +2,6 @@
 import React from 'react';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
-const DEFAULT_FASTLANE_LOGO_URL = 'https://image.jimcdn.com/app/cms/image/transf/dimension=200x10000:format=png/path/s610c0f1f85cf6198/image/i4680b6c988b29d66/version/1715170961/image.png';
-
 interface LogoProps {
   theme?: 'light' | 'dark';
   scrolled?: boolean;
@@ -17,7 +15,8 @@ const Logo: React.FC<LogoProps> = ({
   imgStyle,
 }) => {
   const { content } = useSiteContent();
-  const rawLogoUrl = content.global?.branding?.logoUrl || DEFAULT_FASTLANE_LOGO_URL;
+  const companyName = content.global?.company?.name || 'Site';
+  const rawLogoUrl = content.global?.branding?.logoUrl || '';
   
   // Professional Upscale: Enhance resolution via CDN query parameters
   const logoUrl = rawLogoUrl.includes('jimcdn.com') 
@@ -26,10 +25,21 @@ const Logo: React.FC<LogoProps> = ({
 
   const resolvedClassName = `${className} block shrink-0 select-none transition-all duration-500`;
 
+  if (!logoUrl) {
+    return (
+      <span
+        className={`${resolvedClassName} inline-flex items-center text-lg font-black tracking-[0.22em] text-slate-900 dark:text-white`}
+        style={imgStyle}
+      >
+        {companyName}
+      </span>
+    );
+  }
+
   return (
     <img
       src={logoUrl}
-      alt={content.global?.company?.name || 'FastLane logo'}
+      alt={`${companyName} logo`}
       className={resolvedClassName}
       loading="eager"
       decoding="sync"

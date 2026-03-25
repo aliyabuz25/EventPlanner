@@ -93,5 +93,8 @@ docker ps | grep fastlane
 - The default Ollama model for this app is `qwen2:0.5b`
 - The default Ollama timeout for this app is `90000ms`
 - The default generation budget for this app is `160` tokens via `OLLAMA_NUM_PREDICT`
+- Content database and JSON metadata live under `/app/data`
+- Uploads live under `/app/uploads`
+- Do not mount `/app/data/uploads`; nested mounts caused content DB and media storage to overlap
 - Traefik labels may remain, but Cloudflare can point directly to `localhost:3000` for this app
 - If new static paths are added later, extend the API router rule, for example with `PathPrefix(`/cdn`)`

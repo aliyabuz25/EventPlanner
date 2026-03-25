@@ -70,7 +70,7 @@ const HeroVideoPlayer: React.FC<HeroVideoPlayerProps> = ({ src, poster }) => {
           className="h-full w-full"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
-          title="FastLane Vimeo showcase"
+          title="Company showcase video"
         />
       </div>
     );

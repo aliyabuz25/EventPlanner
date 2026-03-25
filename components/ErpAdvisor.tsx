@@ -159,7 +159,7 @@ const starterPromptsByPhase: Record<string, string[]> = {
   ]
 };
 
-const initialMessage = `Guten Tag. Ich bin Ihr FastLane Assistant (Pre-Sales KI-Agent).
+const createInitialMessage = (companyName: string) => `Guten Tag. Ich bin Ihr ${companyName} Assistant (Pre-Sales KI-Agent).
 
 Ich führe mit Ihnen ein strukturiertes Angebots-Interview durch, um Ihr Event-Setup (Software, PM, Miettechnik, Verbrauchsmaterial, Support & Logistik) zu erfassen. Unterstützte Sprachen: Deutsch, Englisch, Türkisch.
 
@@ -559,7 +559,9 @@ const deriveLocationDetails = (brief?: AiExplorerBrief | null) => {
 const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly = false }) => {
   const { content } = useSiteContent();
   const companyName = content.global.company.name;
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'model', text: initialMessage }]);
+  const workspaceExportLabel = `${companyName} Workspace Export`;
+  const initialMessage = useMemo(() => createInitialMessage(companyName), [companyName]);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'model', text: createInitialMessage(companyName) }]);
   const [brief, setBrief] = useState<AiExplorerBrief | null>(null);
   const [offer, setOffer] = useState<AiExplorerOffer | null>(null);
   const [manualBrief, setManualBrief] = useState<ManualBriefFields>({
@@ -1049,7 +1051,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     printWindow.document.write(`
       <html>
         <head>
-          <title>${escapeHtml(mergedBrief?.eventName || 'FastLane Workspace Export')}</title>
+          <title>${escapeHtml(mergedBrief?.eventName || workspaceExportLabel)}</title>
           <style>
             @page { size: A4; margin: 16mm; }
             * { box-sizing: border-box; }
@@ -1085,8 +1087,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           <div class="page">
             <div class="header">
               <div class="header-copy">
-                <div class="header-kicker">FastLane Workspace Export</div>
-                <h1>${escapeHtml(mergedBrief?.eventName || 'FastLane Workspace Export')}</h1>
+                <div class="header-kicker">${escapeHtml(workspaceExportLabel)}</div>
+                <h1>${escapeHtml(mergedBrief?.eventName || workspaceExportLabel)}</h1>
                 <div class="muted">Event-Brief, Angebotslogik, Varianten und operative Leitplanken.</div>
               </div>
               <div class="total-box">
@@ -1406,7 +1408,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               </div>
               <div className="min-w-0">
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sap-blue">KI-Agent</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">FastLane Assistant</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">{companyName} Assistant</div>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -1759,7 +1761,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       <div className={`mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] ${msg.role === 'user' ? 'text-white/60' : 'text-sap-blue/60 dark:text-sap-blue/80'
                         }`}>
                         {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
-                        {msg.role === 'user' ? 'Direct Input' : 'FastLane Analysis'}
+                        {msg.role === 'user' ? 'Direct Input' : `${companyName} Analysis`}
                       </div>
                       <div className="whitespace-pre-wrap break-words font-medium antialiased">{msg.text}</div>
                     </div>
@@ -2206,7 +2208,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               <Bot className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sap-blue mb-0.5">FastLane Engine</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sap-blue mb-0.5">{companyName} Engine</div>
               <div className="text-[14px] font-black text-slate-900 dark:text-white leading-tight">Analysing Brief...</div>
               <div className="mt-3 h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                 <div className="h-full bg-sap-blue animate-progress-indefinite"></div>
@@ -2236,4 +2238,3 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 };
 
 export default ErpAdvisor;
-

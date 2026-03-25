@@ -8,6 +8,8 @@ services:
       NODE_ENV: 'production'
       HOST: '0.0.0.0'
       PORT: '3000'
+      CONTENT_DATA_DIR: '/app/data'
+      UPLOADS_DIR: '/app/uploads'
       PUBLIC_BASE_URL: 'https://fastlane.octotech.az'
       OLLAMA_GENERATE_URL: 'https://qwen.octotech.az/api/generate'
       OLLAMA_MODEL: 'qwen2:0.5b'
@@ -16,8 +18,8 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - /datastore/fastlane/uploads:/app/data/uploads
       - /datastore/fastlane/data:/app/data
+      - /datastore/fastlane/uploads:/app/uploads
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     networks:

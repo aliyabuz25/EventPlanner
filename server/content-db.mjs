@@ -4,7 +4,7 @@ import Database from 'better-sqlite3';
 import { editableDocumentKeys, normalizeSiteContent, siteContentSeed } from '../shared/siteContentSeed.js';
 import { FASTLANE_CONTENT_VERSION, fastlaneContentDocuments } from '../shared/fastlaneContentImport.js';
 
-const dataDir = path.resolve(process.cwd(), 'data');
+const dataDir = path.resolve(process.env.CONTENT_DATA_DIR ?? path.resolve(process.cwd(), 'data'));
 const dbPath = path.join(dataDir, 'site-content.sqlite');
 const frontendTranslationsJsonPath = path.join(dataDir, 'frontend-translations.json');
 

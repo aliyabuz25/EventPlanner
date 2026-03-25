@@ -7,10 +7,12 @@ const BLOCKED_BACKGROUND_VIDEO_URLS = new Set([
   'https://cdn.pixabay.com/video/2023/11/21/189992-887332575_large.mp4'
 ]);
 
-const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
+const Hero: React.FC = () => {
   const { content } = useSiteContent();
+  const companyName = content.global.company.name;
   const hero = content.pages.home.sections.hero;
   const heroVisual = hero.visual;
+  const workspaceLabel = content.siteMap.find((entry) => entry.view === 'studio')?.title || `${companyName} Workspace`;
   const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false);
   const backgroundVideoUrl = BLOCKED_BACKGROUND_VIDEO_URLS.has(heroVisual.backgroundVideoUrl) ? '' : heroVisual.backgroundVideoUrl;
 
@@ -111,14 +113,21 @@ const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
           </p>
           
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mb-12 sm:mb-14">
-            <button
-              type="button"
-              onClick={onOpenStudio}
+            <a
+              href={hero.primaryHref}
               className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-[#0f2740] hover:bg-[#0b2034] text-white font-semibold rounded-2xl transition-all shadow-[0_24px_45px_-24px_rgba(15,39,64,0.75)] flex items-center justify-center gap-2"
             >
-              <span>FastLane Workspace</span>
+              <span>{hero.primaryCta}</span>
               <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
+            </a>
+            {hero.secondaryCta && hero.secondaryHref ? (
+              <a
+                href={hero.secondaryHref}
+                className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-white/80 hover:bg-white text-slate-900 font-semibold rounded-2xl border border-slate-200/70 transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+              >
+                <span>{hero.secondaryCta}</span>
+              </a>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-4xl">
@@ -195,7 +204,7 @@ const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
                         <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                       </div>
                       <div className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white flex items-baseline gap-1">
-                        Workspace <span className="text-[8px] sm:text-[10px] text-emerald-500">{phase === 'result' ? 'Ready' : 'Analyzing'}</span>
+                        {workspaceLabel} <span className="text-[8px] sm:text-[10px] text-emerald-500">{phase === 'result' ? 'Ready' : 'Analyzing'}</span>
                       </div>
                     </div>
                  </div>
@@ -212,7 +221,7 @@ const Hero: React.FC<{ onOpenStudio: () => void }> = ({ onOpenStudio }) => {
                        <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-[#febc2e] shadow-[0_0_8px_rgba(254,188,46,0.4)]"></div>
                        <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-[#28c840] shadow-[0_0_8px_rgba(40,200,64,0.4)]"></div>
                     </div>
-                    <div className="text-[8px] sm:text-[11px] font-black text-sap-blue dark:text-white tracking-[0.2em] sm:tracking-[0.3em] uppercase opacity-90 px-2 sm:px-4">FastLane Core Terminal</div>
+                    <div className="text-[8px] sm:text-[11px] font-black text-sap-blue dark:text-white tracking-[0.2em] sm:tracking-[0.3em] uppercase opacity-90 px-2 sm:px-4">{companyName} Core Terminal</div>
                     <div className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-white shadow-xl transition-all duration-500 scale-90 sm:scale-95 origin-right ${phase === 'result' ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-sap-blue shadow-sap-blue/30'}`}>
                       <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white ${phase !== 'result' ? 'animate-pulse' : ''}`}></div>
                       <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] shrink-0">
