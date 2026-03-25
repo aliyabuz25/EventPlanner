@@ -8,6 +8,7 @@ interface MobileMenuProps {
   navLinks: { name: string; view: ViewType; href: string }[];
   solutionSublinks: { name: string; id: SolutionId }[];
   onLinkClick: (e: React.MouseEvent, link: any) => void;
+  onSolutionsOverview: () => void;
   onSolutionSelect: (id: SolutionId) => void;
 }
 
@@ -17,6 +18,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   navLinks, 
   solutionSublinks, 
   onLinkClick, 
+  onSolutionsOverview,
   onSolutionSelect
 }) => {
   return (
@@ -33,6 +35,12 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             </a>
             {link.view === 'solutions' && (
               <div className="mt-4 pl-4 space-y-3 border-l-2 border-sap-blue/30">
+                 <button
+                   onClick={onSolutionsOverview}
+                   className="block text-sm font-semibold text-sap-blue text-left w-full py-1"
+                 >
+                   Tum moduleri gor
+                 </button>
                  {solutionSublinks.map(s => (
                    <button 
                      key={s.id}

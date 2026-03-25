@@ -80,11 +80,11 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
   const currentQ = questions[step];
 
   const getSolutionTitle = (id: SolutionId) => {
-    return section.solutionContent[id]?.title || 'Passendes Event-Modul';
+    return section.solutionContent[id]?.title || section.advisor.recommendation;
   };
 
   const getSolutionDesc = (id: SolutionId) => {
-    return section.solutionContent[id]?.description || `Auf Basis deiner Angaben empfehlen wir das naechstliegende ${companyName}-Modul.`;
+    return section.solutionContent[id]?.description || section.advisor.recommendation;
   };
 
   const isAdvisorMode = mode === 'advisor';
@@ -112,13 +112,13 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
         
         {/* Header */}
         <div className={`text-center ${isAdvisorMode ? 'mb-4 md:mb-5 flex-shrink-0' : 'mb-8'}`}>
-          <div className="inline-block px-5 py-2 bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-sap-blue mb-4 shadow-sm">
+          <div className="inline-block px-6 py-2.5 bg-white dark:bg-white/10 border border-slate-300 dark:border-white/20 rounded-full text-sm font-black uppercase tracking-widest text-sap-blue dark:text-sap-blue/90 mb-6 shadow-sm">
             {section.badge}
           </div>
           <h1 className={`font-bold text-slate-900 dark:text-white tracking-tight transition-colors ${isAdvisorMode ? 'text-3xl md:text-5xl mb-3' : 'text-4xl md:text-6xl mb-4'}`}>
             {section.title} <span className="text-sap-gold">{section.titleHighlight}</span>
           </h1>
-          <p className={`text-slate-600 dark:text-slate-400 max-w-3xl mx-auto transition-colors font-normal ${isAdvisorMode ? 'text-sm md:text-base mb-5' : 'text-lg mb-12'}`}>
+          <p className={`text-slate-700 dark:text-slate-300 max-w-3xl mx-auto transition-colors font-bold leading-relaxed ${isAdvisorMode ? 'text-base md:text-lg mb-6' : 'text-xl mb-12'}`}>
             {section.description}
           </p>
           
@@ -127,24 +127,24 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
             <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm p-1.5 rounded-full border border-slate-200 dark:border-white/10 inline-flex shadow-inner">
               <button 
                 onClick={() => setMode('quick')}
-                className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-500 flex items-center ${
+                className={`px-10 py-4 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-500 flex items-center ${
                   mode === 'quick' 
-                    ? 'bg-sap-blue text-white shadow-lg' 
+                    ? 'bg-sap-blue text-white shadow-xl scale-105' 
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 }`}
               >
-                <Search className="w-4 h-4 mr-2" />
+                <Search className="w-5 h-5 mr-3" />
                 {section.modeQuick}
               </button>
               <button 
                 onClick={() => setMode('advisor')}
-                className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-500 flex items-center ${
+                className={`px-10 py-4 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-500 flex items-center ${
                   mode === 'advisor' 
-                    ? 'bg-sap-blue text-white shadow-lg' 
+                    ? 'bg-sap-blue text-white shadow-xl scale-105' 
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 }`}
               >
-                <Bot className="w-4 h-4 mr-2" />
+                <Bot className="w-5 h-5 mr-3" />
                 {section.modeAdvisor}
               </button>
             </div>
@@ -177,7 +177,7 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
                      <Zap className="w-8 h-8 text-sap-blue" />
                   </div>
                 </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">{section.calculatingTitle}</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">{section.advisor.calculating}</h3>
                   <p className="text-slate-500 dark:text-slate-400 font-normal">{section.calculatingDescription}</p>
                 </div>
               )}
@@ -239,9 +239,9 @@ const SurveyPage: React.FC<SurveyPageProps> = ({ onNavigate }) => {
                      {step > 0 && (
                        <button 
                          onClick={() => setStep(s => s - 1)}
-                         className="text-xs font-bold text-slate-400 hover:text-sap-blue transition-all uppercase tracking-widest flex items-center group"
+                         className="text-sm font-black text-slate-500 hover:text-sap-blue transition-all uppercase tracking-widest flex items-center group"
                        >
-                         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                         <ArrowLeft className="w-5 h-5 mr-3 group-hover:-translate-x-1 transition-transform" />
                          {section.backButton}
                        </button>
                      )}

@@ -72,11 +72,6 @@ const pathToView = (pathname: string, content: ReturnType<typeof useSiteContent>
   }
 
   const normalized = pathname.replace(/^\/+|\/+$/g, '') || 'home';
-  const customPage = content.customPages.find((entry) => entry.slug === normalized);
-  if (customPage) {
-    return customPage.view;
-  }
-
   if (solutionIds.includes(normalized as SolutionId)) {
     return normalized as SolutionId;
   }
@@ -84,6 +79,11 @@ const pathToView = (pathname: string, content: ReturnType<typeof useSiteContent>
   const mapped = content.siteMap.find((entry) => entry.slug === normalized);
   if (mapped) {
     return mapped.view;
+  }
+
+  const customPage = content.customPages.find((entry) => entry.slug === normalized);
+  if (customPage) {
+    return customPage.view;
   }
 
   return 'home';

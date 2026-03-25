@@ -111,12 +111,21 @@ export interface SiteContent {
       secondaryButtonHref: string;
     };
     socialLinks: Array<{ name: string; href: string; label: string }>;
+    ui: {
+      localization: string;
+      syncing: string;
+      success: string;
+      error: string;
+      idle: string;
+    };
   };
   siteMap: SiteMapEntry[];
   navigation: {
     mainLinks: NavLinkItem[];
     solutionLinks: SolutionNavLinkItem[];
     footer: {
+      ecosystemLabel: string;
+      corporateLabel: string;
       ecosystemLinks: FooterNavItem[];
       corporateLinks: FooterNavItem[];
     };
@@ -148,6 +157,37 @@ export interface SiteContent {
             mainImageAlt: string;
             sideImageUrl: string;
             sideImageAlt: string;
+          };
+          aiTerminal: {
+            badge: string;
+            title: string;
+            typewriterText: string;
+            statusLabels: {
+              idle: string;
+              reasoning: string;
+              success: string;
+              completed: string;
+              analyzing: string;
+              ready: string;
+            };
+            neuralEngine: {
+              label: string;
+              version: string;
+              intelligence: string;
+              reliability: string;
+              performance: string;
+              activeThreads: string;
+              clusterA: string;
+              connected: string;
+              latency: string;
+              traffic: string;
+              systemStatus: string;
+            };
+            reasoningLogs: string[];
+            assetsTitle: string;
+            efficiency: string;
+            genAiSystem: string;
+            plannerCta: string;
           };
         };
         about: {
@@ -197,6 +237,7 @@ export interface SiteContent {
             errorMessage: string;
           };
         };
+        footerSummary: string;
       };
     };
     campaign: {
@@ -290,6 +331,107 @@ export interface SiteContent {
           }>;
         }>;
         solutionContent: Partial<Record<SolutionId, { title: string; description: string }>>;
+        advisor: {
+          welcome: string;
+          consultingLead: string;
+          phases: Record<string, string>;
+          fields: Record<string, { label: string; placeholder: string }>;
+          starterPrompts: Record<string, string[]>;
+          calculating: string;
+          recommendation: string;
+          viewProduct: string;
+          retake: string;
+          back: string;
+          ui: {
+            sidebar: {
+              progress: string;
+              mode: string;
+              status: string;
+              analyzing: string;
+              ready: string;
+              step1Open: string;
+            };
+            phases: string[];
+            workspace: {
+              eyebrow: string;
+              title: string;
+              description: string;
+              modeLabel: string;
+              statusLabel: string;
+              inputPlaceholder: string;
+              easyModeNotice: string;
+              promptModeNotice: string;
+              consultingModeNotice: string;
+              step1Notice: string;
+            };
+            activity: {
+              eyebrow: string;
+              title: string;
+              description: string;
+              processingNotice: string;
+            };
+            structuredInput: {
+              eyebrow: string;
+              title: string;
+              description: string;
+              exampleButton: string;
+              transferButton: string;
+              sendButton: string;
+              transferNotice: string;
+              exampleNotice: string;
+              syncLabel: string;
+              syncDescription: string;
+              priceLabel: string;
+              priceDescription: string;
+              editLabel: string;
+              editDescription: string;
+              fields: Record<string, { label: string; placeholder: string }>;
+            };
+            liveBrief: {
+              eyebrow: string;
+              title: string;
+              description: string;
+              locationDetails: string;
+              sections: {
+                location: string;
+                modules: string;
+                drivers: string;
+                questions: string;
+                assumptions: string;
+              };
+            };
+            lockedMessages: {
+              inputs: string;
+              console: string;
+            };
+            console: {
+              eyebrow: string;
+              status: string;
+              mode: string;
+              consultingTitle: string;
+              pricingTitle: string;
+              consultingDescription: string;
+              pricingDescription: string;
+              consultingFocusTitle: string;
+              consultingFocusDesc: string;
+              deliverablesTitle: string;
+              deliverablesDesc: string;
+              pricingTitleInternal: string;
+              pricingDescInternal: string;
+              totalLabel: string;
+              totalOpen: string;
+              budgetLabel: string;
+              modulesTitle: string;
+              modulesDesc: string;
+              variantsTitle: string;
+              variantsDesc: string;
+              knowledgeTitle: string;
+              knowledgeDesc: string;
+              lockedTitle: string;
+              lockedDescription: string;
+            };
+          };
+        };
       };
     };
     team: {

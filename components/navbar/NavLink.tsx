@@ -41,10 +41,10 @@ const NavLink: React.FC<NavLinkProps> = ({
     <a
       href={href}
       onClick={onClick}
-      className={`relative py-1 text-[15px] lg:text-[16px] font-semibold transition-all flex items-center tracking-tight group ${
+      className={`relative py-1 text-[15px] lg:text-[16px] xl:text-[17px] font-bold transition-all flex items-center tracking-tight group ${
         isActive
         ? 'text-sap-blue dark:text-dark-text-primary' 
-        : 'text-slate-600 dark:text-dark-text-secondary hover:text-sap-blue dark:hover:text-dark-text-primary'
+        : 'text-slate-700 dark:text-dark-text-secondary hover:text-sap-blue dark:hover:text-dark-text-primary'
       }`}
     >
       <span className="relative z-10">{name}</span>

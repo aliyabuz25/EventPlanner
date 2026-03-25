@@ -16,7 +16,7 @@ const About: React.FC<AboutProps> = ({ onReadMore }) => {
       <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
         <div className="flex flex-col lg:flex-row gap-24 items-center">
           <div className="w-full lg:w-1/2">
-            <div className="reveal reveal-up text-sap-gold font-semibold uppercase tracking-wide text-xs mb-3">{about.eyebrow}</div>
+            <div className="reveal reveal-up text-sap-gold font-black uppercase tracking-widest text-sm mb-3">{about.eyebrow}</div>
             <h2 className="reveal reveal-up delay-100 text-4xl sm:text-5xl font-semibold mb-8 leading-tight tracking-tight text-slate-900 dark:text-dark-text-primary transition-colors">{about.title}</h2>
             <div className="reveal reveal-up delay-200 space-y-6 text-slate-600 dark:text-dark-text-secondary text-lg leading-relaxed font-normal transition-colors">
               {about.paragraphs.map((paragraph) => (
@@ -25,12 +25,12 @@ const About: React.FC<AboutProps> = ({ onReadMore }) => {
             </div>
             
             <div className="mt-10 flex flex-wrap gap-4">
-               {about.badges.map((badge, idx) => (
-                 <div key={badge} className={`reveal reveal-up delay-${(idx + 3) * 100} flex items-center space-x-3 bg-white dark:bg-dark-elevated/40 border border-slate-200 dark:border-white/5 px-6 py-3 rounded-full shadow-sm dark:shadow-none transition-all`}>
-                    <CheckCircle2 className="w-5 h-5 text-sap-gold" />
-                    <span className="text-xs font-semibold text-slate-800 dark:text-dark-text-primary tracking-wide">{badge}</span>
-                 </div>
-               ))}
+                {about.badges.map((badge, idx) => (
+                  <div key={badge} className={`reveal reveal-up delay-${(idx + 3) * 100} flex items-center space-x-3 bg-white dark:bg-dark-elevated/40 border border-slate-300 dark:border-white/10 px-6 py-3 rounded-full shadow-sm dark:shadow-none transition-all`}>
+                     <CheckCircle2 className="w-5 h-5 text-sap-gold" />
+                     <span className="text-sm font-bold text-slate-800 dark:text-dark-text-primary tracking-wide">{badge}</span>
+                  </div>
+                ))}
             </div>
             
             <div className="reveal reveal-up delay-500 mt-10">
@@ -46,9 +46,9 @@ const About: React.FC<AboutProps> = ({ onReadMore }) => {
           
           <div className="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-6">
             {about.cards.map((card, index) => (
-              <div key={card.label} className={`reveal reveal-up delay-${(index + 1) * 200} p-10 border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02] hover:shadow-lg dark:hover:bg-white/[0.04] transition-all rounded-3xl group relative overflow-hidden shadow-sm ${index % 2 === 1 ? 'sm:mt-12' : ''}`}>
-                <div className="text-5xl font-bold mb-2 group-hover:text-sap-gold transition-colors text-slate-900 dark:text-white tracking-tight">{card.value}</div>
-                <div className="text-sm text-slate-500 font-medium group-hover:text-sap-gold/80 transition-colors">{card.label}</div>
+              <div key={card.label} className={`reveal reveal-up delay-${(index + 1) * 200} p-6 sm:p-8 md:p-10 border border-slate-300 dark:border-white/15 bg-white dark:bg-white/[0.02] hover:shadow-xl dark:hover:bg-white/[0.04] transition-all rounded-[2.5rem] group relative overflow-hidden shadow-sm ${index % 2 === 1 ? 'sm:mt-12' : ''}`}>
+                <div className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 group-hover:text-sap-gold transition-colors text-slate-900 dark:text-white tracking-tight">{card.value}</div>
+                <div className="text-[10px] sm:text-xs lg:text-sm text-slate-700 dark:text-slate-300 font-black group-hover:text-sap-gold transition-colors uppercase tracking-widest leading-relaxed break-words">{card.label}</div>
               </div>
             ))}
           </div>

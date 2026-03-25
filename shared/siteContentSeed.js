@@ -58,7 +58,14 @@ export const siteContentSeed = {
       { name: 'LN', href: '#', label: 'LinkedIn' },
       { name: 'TW', href: '#', label: 'Twitter' },
       { name: 'IG', href: '#', label: 'Instagram' }
-    ]
+    ],
+    ui: {
+      localization: 'Localization',
+      syncing: 'Syncing',
+      success: 'Success',
+      error: 'Error',
+      idle: 'Idle'
+    }
   },
   siteMap: [
     { slug: 'home', view: 'home', title: 'Home', description: 'Landing page with hero, services and contact blocks.' },
@@ -89,6 +96,8 @@ export const siteContentSeed = {
       { name: 'MS Power BI', id: 'microsoft-power-bi' }
     ],
     footer: {
+      ecosystemLabel: 'Ecosystem',
+      corporateLabel: 'Corporate',
       ecosystemLinks: [
         { label: 'SAP S/4HANA', view: 'sap-s4hana' },
         { label: 'SuccessFactors', view: 'sap-successfactors' },
@@ -134,6 +143,37 @@ export const siteContentSeed = {
             mainImageAlt: 'ERP dashboard preview',
             sideImageUrl: '',
             sideImageAlt: 'Analytics panel preview'
+          },
+          aiTerminal: {
+            badge: 'Incoming Strategy',
+            title: '3ILINE Core Terminal',
+            typewriterText: 'Architect a global ERP Migration for Fortune 500 client with automated ROI reporting...',
+            statusLabels: {
+              idle: 'Idle',
+              reasoning: 'Reasoning',
+              success: 'Success',
+              completed: 'Completed',
+              analyzing: 'Analyzing',
+              ready: 'Ready'
+            },
+            neuralEngine: {
+              label: 'Neural Engine',
+              version: 'v4.2.0',
+              intelligence: 'Intelligence',
+              reliability: 'Reliability',
+              performance: 'Performance',
+              activeThreads: 'Active Threads',
+              clusterA: 'Cluster_A',
+              connected: 'Connected',
+              latency: 'Latency',
+              traffic: 'Traffic',
+              systemStatus: 'System Status'
+            },
+            reasoningLogs: ['IDENTIFY_STAKE', 'SYSTEM_NODES', 'PHASE_COSTS', 'SOW_MODULES'],
+            assetsTitle: 'Assets',
+            efficiency: 'Efficiency',
+            genAiSystem: 'GenAI System',
+            plannerCta: 'AI Event Planner'
           }
         },
         about: {
@@ -238,7 +278,8 @@ export const siteContentSeed = {
             successMessage: 'Your request has been sent successfully.',
             errorMessage: 'We could not send your request right now. Please try again shortly.'
           }
-        }
+        },
+        footerSummary: '3ILINE supports live, hybrid and medical events with accreditation, entry management, event apps and on-site services.'
       }
     },
     campaign: {
@@ -423,6 +464,159 @@ export const siteContentSeed = {
           'sap-bw4hana': {
             title: 'SAP BW/4HANA',
             description: 'Consolidate enterprise data into a high-performance warehouse for real-time analytics.'
+          }
+        },
+        advisor: {
+          welcome: 'Willkommen beim FastLane KI-Berater. Wie kann ich Ihre Event-Planung heute unterstützen?',
+          consultingLead: 'FastLane Consulting — Architektur, Preisfindung & Systemlogik',
+          phases: {
+            'Phase A': 'Event-Basisdaten',
+            'Phase B': 'Software-Konfiguration',
+            'Phase C': 'Projektmanagement',
+            'Phase D': 'Miettechnik',
+            'Phase E': 'Verbrauchsmaterial',
+            'Phase F': 'Support vor Ort',
+            'Phase G': 'Transport & Reise'
+          },
+          fields: {
+            customerName: { label: 'KUNDE (PO)', placeholder: 'z.B. Laura Demir' },
+            eventName: { label: 'EVENTNAME', placeholder: 'z.B. Annual Growth Summit 2026' },
+            eventLocation: { label: 'ORT (VENUES)', placeholder: 'z.B. Filderhalle in Leinfelden-Echterdingen' },
+            eventDates: { label: 'DATUM / ZEITEN', placeholder: 'z.B. 17.-18. September 2026, Aufbau ab 14:00 Uhr' },
+            attendees: { label: 'TEILNEHMER', placeholder: 'z.B. 1200' },
+            checkInScenario: { label: 'SZENARIO', placeholder: 'z.B. Print-on-Demand, 3 Eingänge, 12 Counter' },
+            softwareNeeds: { label: 'SOFTWARE', placeholder: 'z.B. Check-in, Scanning, Lead-Capture' },
+            integrations: { label: 'INTEGRATIONEN', placeholder: 'z.B. Salesforce, Event-App' },
+            projectManagement: { label: 'PROJEKTMANAGEMENT', placeholder: 'z.B. Kickoff, Jour fixes, Generalprobe' },
+            rentalNeeds: { label: 'MIETTECHNIK', placeholder: 'z.B. 12 iPads, 4 Badge-Drucker, 2 LTE-Router' },
+            consumables: { label: 'VERBRAUCHSMATERIAL', placeholder: 'z.B. Papier-Badges, Lanyards' },
+            supportLevel: { label: 'SUPPORT-LEVEL', placeholder: 'z.B. Extended, 2 Techniker' },
+            logistics: { label: 'LOGISTIK', placeholder: 'z.B. Spedition, 2 Hotelnächte' },
+            budget: { label: 'BUDGET', placeholder: 'z.B. 25.000 EUR' }
+          },
+          starterPrompts: {
+            default: [
+              'Tesla Brand Experience Galata, 12. April 2026. 500 PAX, Print-on-Demand.',
+              'Tech-Konferenz in Berlin, 3 Tage, 1.200 PAX, 12 Counter.',
+              'Check-in Szenarien mit Preispunkten vergleichen.'
+            ]
+          },
+          calculating: 'Analysiere Anforderungen...',
+          recommendation: 'Empfohlene Event-Architektur',
+          viewProduct: 'Details ansehen',
+          retake: 'Neustart',
+          back: 'Zurück',
+          ui: {
+            sidebar: {
+              progress: 'Fortschritt',
+              mode: 'Modus',
+              status: 'Status',
+              analyzing: 'Analysiert...',
+              ready: 'Bereit',
+              step1Open: 'Schritt 1 offen'
+            },
+            phases: [
+              'Phase A — Event-Basisdaten',
+              'Phase B — Software-Konfiguration',
+              'Phase C — Projektmanagement',
+              'Phase D — Miettechnik',
+              'Phase E — Verbrauchsmaterial',
+              'Phase F — Support vor Ort',
+              'Phase G — Transport & Reise'
+            ],
+            workspace: {
+              eyebrow: 'Workspace',
+              title: 'Aktuelle Eingabe',
+              description: 'Antworten Sie direkt auf die aktuelle Phase oder senden Sie einen kompletten Briefing-Text.',
+              modeLabel: '01 / MODE',
+              statusLabel: '02 / STATUS',
+              inputPlaceholder: 'Ihre Antwort...',
+              easyModeNotice: 'Easy Mode erzeugt einen workspacefähigen Prompt. Versendet wird erst nach der Optimierung.',
+              promptModeNotice: 'Prompt Mode eignet sich für komplette Event-Briefings in einem freien Text.',
+              consultingModeNotice: 'Consulting Mode eignet sich für Agent-Design, Architektur und Kalkulation.',
+              step1Notice: 'Warten auf Modus-Wahl'
+            },
+            activity: {
+              eyebrow: 'Aktivität',
+              title: 'Workspace Aktivität',
+              description: 'Live-Historie der Eingaben und Analysen.',
+              processingNotice: 'Die Anfrage wird verarbeitet. Analyse läuft...'
+            },
+            liveBrief: {
+              eyebrow: 'Live Brief',
+              title: 'Aktueller Projektstand',
+              description: 'Eckdaten werden laufend aus dem Dialog abgeleitet.',
+              locationDetails: 'Standortdetails',
+              sections: {
+                location: 'Location & Team',
+                modules: 'Service Module',
+                drivers: 'Cost Drivers',
+                questions: 'Open Questions',
+                assumptions: 'Assumptions'
+              }
+            },
+            structuredInput: {
+              eyebrow: 'Manuelle Eingabe',
+              title: 'Strukturierte Felder',
+              description: 'Pflegen Sie Daten manuell und übernehmen Sie diese als Prompt.',
+              exampleButton: 'Beispiel füllen',
+              transferButton: 'In Prompt übernehmen',
+              sendButton: 'Direkt senden',
+              transferNotice: 'Prompt wurde in den Workspace übernommen.',
+              exampleNotice: 'Beispiel-Daten wurden geladen.',
+              syncLabel: 'Live Sync',
+              syncDescription: 'Ergebnisse aus Brief und Kostenlogik.',
+              priceLabel: 'Preis Snapshot',
+              priceDescription: 'Aktuelle Kalkulation.',
+              editLabel: 'Feinschliff',
+              editDescription: 'Direkt editierbar.',
+              fields: {
+                customerName: { label: 'Kunde (PO)', placeholder: 'Name des Kunden' },
+                eventName: { label: 'Eventname', placeholder: 'Event Titel' },
+                eventLocation: { label: 'Ort (Venues)', placeholder: 'Stadt, Location' },
+                eventDates: { label: 'Datum', placeholder: 'z.B. 12.-14. Mai 2026' },
+                attendees: { label: 'Teilnehmer', placeholder: 'z.B. 500' },
+                checkInScenario: { label: 'Szenario', placeholder: 'Print-on-Demand, Scan etc.' },
+                softwareNeeds: { label: 'Software', placeholder: 'App, Lead, Scanning' },
+                integrations: { label: 'Integrations', placeholder: 'CRM, Salesforce' },
+                projectManagement: { label: 'PM Scope', placeholder: 'Setup, Betreuung' },
+                rentalNeeds: { label: 'Miettechnik', placeholder: 'iPads, Drucker' },
+                consumables: { label: 'Material', placeholder: 'Badges, Lanyards' },
+                supportLevel: { label: 'Support', placeholder: 'Basic / Extended' },
+                logistics: { label: 'Logistik', placeholder: 'Versand, Hotel' },
+                budget: { label: 'Budget', placeholder: 'Max. Budget (EUR)' }
+              }
+            },
+            lockedMessages: {
+              inputs: 'Wählen Sie zuerst einen Modus in Step 1.',
+              console: 'Die Kostenübersicht wird nach Technik-Angaben freigegeben.'
+            },
+            console: {
+              eyebrow: 'Offer Console',
+              status: 'Status',
+              mode: 'Modus',
+              consultingTitle: 'Consulting & Konzept',
+              pricingTitle: 'Preis, Module & Varianten',
+              consultingDescription: 'Architektur und Strategie.',
+              pricingDescription: 'Zusammenfassung der Kosten.',
+              consultingFocusTitle: 'CONSULTING FOKUS',
+              consultingFocusDesc: 'Architektur- und Angebotsfragen.',
+              deliverablesTitle: 'DELIVERABLES',
+              deliverablesDesc: 'Ergebnisbausteine des Consulting-Prozesses.',
+              pricingTitleInternal: 'KALKULATION',
+              pricingDescInternal: 'Gesamtsumme und Budget.',
+              totalLabel: 'Gesamtsumme (Est.)',
+              totalOpen: 'OFFEN',
+              budgetLabel: 'Budget',
+              modulesTitle: 'Module & Positionen',
+              modulesDesc: 'Alle empfohlenen Module.',
+              variantsTitle: 'Angebotsvarianten',
+              variantsDesc: 'Alternative Angebotspakete.',
+              knowledgeTitle: 'Knowledge Cards',
+              knowledgeDesc: 'Empfehlungen und Risiken.',
+              lockedTitle: 'Kostenübersicht',
+              lockedDescription: 'Wird nach Technik- und Scope-Angaben freigegeben.'
+            }
           }
         }
       }

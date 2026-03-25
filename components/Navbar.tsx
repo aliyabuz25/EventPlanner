@@ -9,6 +9,21 @@ import ThemeToggle from './navbar/ThemeToggle';
 import LanguagePicker from './navbar/LanguagePicker';
 import { useSiteContent } from '../contexts/SiteContentContext';
 
+const solutionViews = new Set<SolutionId>([
+  'sap-s4hana',
+  'sap-ariba',
+  'sap-successfactors',
+  'sap-sam',
+  'sap-fsm',
+  'sap-business-one',
+  'sap-bw4hana',
+  'sap-analytics',
+  'sap-bydesign',
+  'microsoft-power-bi',
+  'opentext',
+  'bimser'
+]);
+
 interface NavbarProps {
   scrolled: boolean;
   setView: (view: ViewType) => void;
@@ -36,26 +51,99 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const scrollToTarget = (targetId: string) => {
+    if (!targetId) {
+      return;
+    }
+
+    const attemptScroll = () => {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    window.requestAnimationFrame(() => {
+      attemptScroll();
+      window.setTimeout(attemptScroll, 120);
+    });
+  };
+
+  const resolveViewFromHref = (href: string): ViewType | null => {
+    const normalized = href.replace(/^https?:\/\/[^/]+/i, '').replace(/^\/+|\/+$/g, '');
+
+    if (!normalized) {
+      return 'home';
+    }
+
+    if (normalized === 'studio') {
+      return 'studio';
+    }
+
+    if (solutionViews.has(normalized as SolutionId)) {
+      return normalized as SolutionId;
+    }
+
+    const siteMapMatch = content.siteMap.find((entry) => entry.slug === normalized);
+    if (siteMapMatch) {
+      return siteMapMatch.view;
+    }
+
+    const customPageMatch = content.customPages.find((page) => page.slug === normalized);
+    return customPageMatch?.view ?? null;
+  };
+
   const handleLinkClick = (e: React.MouseEvent, link: any) => {
     setMobileMenuOpen(false);
     document.body.style.overflow = 'auto';
 
-    if (link.view === 'solutions') {
+    const href = String(link.href ?? '').trim();
+    const isSolutionsOverviewTrigger = link.view === 'solutions' && ['#solutions', '/#solutions', '/solutions'].includes(href);
+
+    if (isSolutionsOverviewTrigger) {
       e.preventDefault();
       setSolutionsOpen(!solutionsOpen);
       return;
     }
 
+    if (/^(mailto:|tel:|https?:\/\/)/i.test(href)) {
+      setSolutionsOpen(false);
+      return;
+    }
+
+    if (href.startsWith('#') || href.startsWith('/#')) {
+      e.preventDefault();
+      setSolutionsOpen(false);
+      const targetId = href.replace(/^\/?#/, '');
+
+      if (currentView !== 'home') {
+        setView('home');
+      } else {
+        scrollToTarget(targetId);
+      }
+
+      scrollToTarget(targetId);
+      return;
+    }
+
+    const resolvedView = resolveViewFromHref(href);
+    if (resolvedView) {
+      e.preventDefault();
+      setSolutionsOpen(false);
+
+      if (resolvedView === 'home' && currentView === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      setView(resolvedView);
+      return;
+    }
+
     if (link.view !== 'home') {
+      setSolutionsOpen(false);
       setView(link.view);
       e.preventDefault();
-    } else if (link.view === 'home' && currentView === 'home') {
-      const targetId = link.href.substring(1);
-      const element = document.getElementById(targetId);
-      if (element) {
-        e.preventDefault();
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
     }
   };
 
@@ -63,6 +151,13 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
     setView(id);
     setSolutionsOpen(false);
     setMobileMenuOpen(false);
+  };
+
+  const handleSolutionsOverview = () => {
+    setView('solutions');
+    setSolutionsOpen(false);
+    setMobileMenuOpen(false);
+    document.body.style.overflow = 'auto';
   };
 
   const renderLanguageControls = (compact = false) => {
@@ -73,13 +168,20 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
     <>
     <nav className={`fixed top-0 left-0 right-0 z-[220] isolate transition-all duration-500 
       ${scrolled || currentView !== 'home' 
-        ? 'bg-sap-paper/80 dark:bg-dark-base/80 backdrop-blur-xl py-2 border-b border-slate-200/80 dark:border-white/[0.05]' 
-        : 'bg-transparent py-4 border-b border-transparent'}`}>
+        ? 'bg-sap-paper/90 dark:bg-dark-base/90 backdrop-blur-2xl py-2.5 border-b border-slate-300 dark:border-white/10 shadow-sm' 
+        : 'bg-transparent py-5 border-b border-transparent'}`}>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 flex min-h-[60px] lg:min-h-[76px] items-center justify-between gap-3">
         <div className="flex h-full items-center">
           <button 
             id="nav-logo-anchor" 
-            onClick={() => setView('home')} 
+            onClick={() => {
+              if (currentView === 'home') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+              }
+
+              setView('home');
+            }}
             className={`group flex h-full items-center justify-center focus:outline-none transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}
           >
              <Logo
@@ -106,15 +208,15 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
                 currentView={currentView}
                 onClick={(e) => handleLinkClick(e, link)}
                 hasDropdown={link.view === 'solutions'}
-                isOpen={solutionsOpen}
-              />
+                  isOpen={solutionsOpen}
+                />
               
               {link.view === 'solutions' && (
                 <SolutionDropdown 
                   isOpen={solutionsOpen}
                   currentView={currentView}
                   onSelect={handleSolutionSelect}
-                  onOverview={() => { setView('solutions'); setSolutionsOpen(false); }}
+                  onOverview={handleSolutionsOverview}
                   solutions={solutionLinks as any}
                 />
               )}
@@ -151,6 +253,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, setView, currentView, theme, 
           navLinks={navLinks as any}
           solutionSublinks={solutionLinks as any}
           onLinkClick={handleLinkClick}
+          onSolutionsOverview={handleSolutionsOverview}
           onSolutionSelect={handleSolutionSelect}
         />
       </nav>
