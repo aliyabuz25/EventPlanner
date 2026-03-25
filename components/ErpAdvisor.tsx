@@ -195,7 +195,7 @@ Zusammengefasst generiere ich daraus:
 Starten wir mit **Phase A (Event-Basisdaten)**: Wie heisst das Event, wo findet es statt, Datum, erwartete Teilnehmerzahl, Aufbau/Abbau-Zeiten, wie sieht Ihr Check-in-Szenario aus und gibt es bereits ein Budget oder einen Budgetrahmen?`;
 
 const createWidgetInitialMessage = (companyName: string, isEnglish: boolean) => isEnglish
-  ? `Hello. I am your ${companyName} FastLane Chat workspace copilot.
+  ? `Hello. I am your FastLane Chat workspace copilot.
 
 Tell me directly what should change and I will apply it to the live brief, scope and pricing logic immediately.
 
@@ -204,7 +204,7 @@ Examples:
 - Change the attendee count to 1,200 and add 14 counters
 - Move the venue to Istanbul Congress Center and set the dates to 14-16 October 2026
 - Add VIP fast lane, badge printing and Salesforce integration`
-  : `Hallo. Ich bin Ihr ${companyName} FastLane-Chat-Workspace-Copilot.
+  : `Hallo. Ich bin Ihr FastLane-Chat-Workspace-Copilot.
 
 Sagen Sie mir direkt, was geaendert werden soll, und ich uebernehme es sofort in Live-Briefing, Scope und Preislogik.
 
@@ -215,8 +215,8 @@ Beispiele:
 - Fuege VIP-Fast-Lane, Badge-Druck und Salesforce-Integration hinzu`;
 
 const widgetLeadMessage = (isEnglish: boolean) => isEnglish
-  ? 'Open the FastLane Chat widget in the bottom-right corner and tell it what to change. The workspace will apply your updates directly to the brief, modules and pricing.'
-  : 'Oeffnen Sie den FastLane-Chat-Widget-Chat rechts unten und sagen Sie direkt, was geaendert werden soll. Der Workspace uebernimmt die Aenderungen sofort in Briefing, Modulen und Preislogik.';
+  ? 'Use the prompt field below to describe the event or tell the workspace what should change. The brief, modules and pricing update directly from your input.'
+  : 'Nutzen Sie das Prompt-Feld unten, um das Event zu beschreiben oder Aenderungen direkt vorzugeben. Briefing, Module und Preislogik werden sofort aktualisiert.';
 
 const formatCurrency = (value: number, locale: 'de' | 'en' = 'de') =>
   new Intl.NumberFormat(locale === 'en' ? 'en-GB' : 'de-DE', {
@@ -633,12 +633,64 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const t = content.pages.survey.sections.advisor;
   const companyName = content.global.company.name;
   const isEnglish = locale === 'en';
+  const isTurkish = locale === 'tr';
   const openLabel = isEnglish ? 'Open' : 'Noch offen';
   const priceOpenLabel = isEnglish ? 'Price open' : 'Preis offen';
-  const structuredDraftDemo = isEnglish ? structuredDraftDemoEn : structuredDraftDemoDe;
   const fallbackPhases = isEnglish
     ? ['Event Basics', 'Software', 'Project Management', 'Rental Hardware', 'Consumables', 'Support', 'Transport']
     : ['Basisdaten', 'Software', 'Projektmanagement', 'Miettechnik', 'Verbrauchsmaterial', 'Support', 'Transport'];
+  const studioText = useMemo(() => ({
+    workspaceEyebrow: isEnglish ? 'Workspace' : isTurkish ? 'Calisma Alani' : 'Arbeitsbereich',
+    workspaceTitle: isEnglish ? 'Current Input' : isTurkish ? 'Guncel Girdi' : 'Aktuelle Eingabe',
+    workspacePromptDescription: isEnglish
+      ? 'Use the prompt input below for direct live changes to the brief, modules and pricing.'
+      : isTurkish
+        ? 'Brief, moduller ve fiyatlama uzerinde dogrudan canli degisiklikler icin asagidaki prompt alanini kullanin.'
+        : 'Nutzen Sie die Prompt-Eingabe unten fuer direkte Live-Aenderungen an Briefing, Modulen und Preislogik.',
+    promptInputTitle: isEnglish ? 'Prompt Input' : isTurkish ? 'Prompt Girisi' : 'Prompt-Eingabe',
+    promptInputDescription: isEnglish
+      ? 'Enter the event details or describe what should change. The workspace applies your prompt directly to the live brief, modules and pricing.'
+      : isTurkish
+        ? 'Etkinlik detaylarini veya neyin degisecegini yazin. Workspace promptunuzu dogrudan live brief, moduller ve fiyatlamaya uygular.'
+        : 'Geben Sie Eventdetails ein oder beschreiben Sie direkt, was sich aendern soll. Der Workspace uebernimmt Ihren Prompt direkt in Live-Briefing, Module und Preislogik.',
+    promptInputPlaceholder: isEnglish
+      ? 'Example: Create a new event in Berlin for 800 attendees with badge printing, 10 counters and a EUR 45,000 budget.'
+      : isTurkish
+        ? 'Ornek: Berlinde 800 kisilik, badge printing, 10 counter ve 45.000 EUR butceli yeni bir event olustur.'
+        : 'Beispiel: Erstellen Sie ein neues Event in Berlin fuer 800 Teilnehmer mit Badge-Druck, 10 Counter und 45.000 EUR Budget.',
+    promptInputHint: isEnglish
+      ? 'Use this prompt input for direct event changes like name, venue, attendees, counters, integrations and budget.'
+      : isTurkish
+        ? 'Bu prompt alanini isim, venue, katilimci, counter, entegrasyon ve butce gibi dogrudan event degisiklikleri icin kullanin.'
+        : 'Nutzen Sie diese Prompt-Eingabe fuer direkte Event-Aenderungen wie Name, Venue, Teilnehmer, Counter, Integrationen und Budget.',
+    modeLabel: isEnglish ? 'Prompt Input' : isTurkish ? 'Prompt Girisi' : 'Prompt-Eingabe',
+    liveBriefLocationSection: isEnglish ? 'Location & Team' : isTurkish ? 'Lokasyon ve Ekip' : 'Standort & Team',
+    liveBriefModulesSection: isEnglish ? 'Service Modules' : isTurkish ? 'Servis Modulleri' : 'Leistungsmodule',
+    liveBriefDriversSection: isEnglish ? 'Cost Drivers' : isTurkish ? 'Maliyet Suruculeri' : 'Kostentreiber',
+    liveBriefQuestionsSection: isEnglish ? 'Open Questions' : isTurkish ? 'Acik Sorular' : 'Offene Fragen',
+    liveBriefAssumptionsSection: isEnglish ? 'Assumptions' : isTurkish ? 'Varsayimlar' : 'Annahmen',
+    structuredBasisDescription: isEnglish ? 'Core details about the location and customer.' : isTurkish ? 'Lokasyon ve musteriyle ilgili temel detaylar.' : 'Kunde, Ort, Datum und Kernparameter des Events.',
+    structuredCheckinDescription: isEnglish ? 'Check-in scenarios and technical requirements.' : isTurkish ? 'Check-in senaryolari ve teknik gereksinimler.' : 'Check-in-Szenarien und technische Anforderungen.',
+    structuredOperationsDescription: isEnglish ? 'Project management and operational delivery.' : isTurkish ? 'Proje yonetimi ve operasyonel teslimat.' : 'Projektmanagement und operative Umsetzung.',
+    structuredLogisticsDescription: isEnglish ? 'Service level and budget parameters.' : isTurkish ? 'Servis seviyesi ve butce parametreleri.' : 'Service-Level, Logistik und Budgetparameter.',
+    noSyncedEventYet: isEnglish ? 'No synced event yet' : isTurkish ? 'Henuz senkronize etkinlik yok' : 'Noch kein Event synchronisiert',
+    directlyEditable: isEnglish ? 'Directly editable' : isTurkish ? 'Dogrudan duzenlenebilir' : 'Direkt editierbar',
+    directlyEditableDescription: isEnglish
+      ? 'Adjust individual event, scope and budget details here and send the updated version straight back into the workspace.'
+      : isTurkish
+        ? 'Etkinlik, kapsam ve butce detaylarini burada duzenleyip guncel halini dogrudan workspacee gonderin.'
+        : 'Passen Sie hier Event-, Scope- und Budgetdetails an und senden Sie die aktualisierte Fassung direkt wieder in den Workspace.',
+    estimatedTotal: isEnglish ? 'Estimated Total' : isTurkish ? 'Tahmini Toplam' : 'Gesamtsumme',
+    modulesAndItems: isEnglish ? 'Modules & Line Items' : isTurkish ? 'Moduller ve Kalemler' : 'Module & Positionen',
+    modulesAndItemsDescription: isEnglish ? 'All recommended modules with the currently derived line items.' : isTurkish ? 'Mevcut kalemlerle birlikte onerilen tum moduller.' : 'Alle empfohlenen Module mit den aktuell abgeleiteten Positionen.',
+    offerVariants: isEnglish ? 'Offer Variants' : isTurkish ? 'Teklif Varyantlari' : 'Angebotsvarianten',
+    offerVariantsDescription: isEnglish ? 'Alternative offer packages based on the current scope and risk assumptions.' : isTurkish ? 'Mevcut kapsam ve risk varsayimlarina gore alternatif teklif paketleri.' : 'Alternative Angebotspakete auf Basis der aktuellen Scope- und Risikoannahmen.',
+    knowledgeCards: isEnglish ? 'Knowledge Cards' : isTurkish ? 'Bilgi Kartlari' : 'Wissenskarten',
+    knowledgeCardsDescription: isEnglish ? 'Recommendations, risks and typical add-ons per module.' : isTurkish ? 'Her modul icin oneriler, riskler ve tipik ekler.' : 'Empfehlungen, Risiken und typische Zusatzoptionen pro Modul.',
+    recommendationLabel: isEnglish ? 'Recommendation' : isTurkish ? 'Oneri' : 'Empfehlung',
+    liveWorkspaceSync: isEnglish ? 'Live workspace sync' : isTurkish ? 'Canli workspace senkronu' : 'Live-Workspace-Sync',
+    workspaceExport: isEnglish ? 'Workspace Export' : isTurkish ? 'Workspace Disa Aktarma' : 'Workspace-Export'
+  }), [isEnglish, isTurkish]);
 
   const starterPromptsByPhase = t.starterPrompts;
 
@@ -655,49 +707,49 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const structuredSections = useMemo(() => ([
     {
       key: 'basis',
-      title: t.ui.liveBrief.sections.location,
-      description: isEnglish ? 'Core details about the location and customer.' : 'Eckdaten zur Location und zum Kunden.',
+      title: studioText.liveBriefLocationSection,
+      description: studioText.structuredBasisDescription,
       fields: [
         { key: 'customerName', label: t.ui.structuredInput.fields.customerName.label, placeholder: t.ui.structuredInput.fields.customerName.placeholder },
         { key: 'eventName', label: t.ui.structuredInput.fields.eventName.label, placeholder: t.ui.structuredInput.fields.eventName.placeholder },
-        { key: 'eventLocation', label: t.ui.structuredInput.fields.eventLocation.label, placeholder: t.ui.structuredInput.fields.eventLocation.placeholder },
+        { key: 'eventLocation', label: isEnglish ? t.ui.structuredInput.fields.eventLocation.label : (isTurkish ? 'Lokasyon / Venue' : 'Ort / Venue'), placeholder: t.ui.structuredInput.fields.eventLocation.placeholder },
         { key: 'eventDates', label: t.ui.structuredInput.fields.eventDates.label, placeholder: t.ui.structuredInput.fields.eventDates.placeholder },
         { key: 'attendees', label: t.ui.structuredInput.fields.attendees.label, placeholder: t.ui.structuredInput.fields.attendees.placeholder }
       ]
     },
     {
       key: 'checkin',
-      title: t.ui.liveBrief.sections.modules,
-      description: isEnglish ? 'Check-in scenarios and technical requirements.' : 'Check-in Szenarien und technische Anforderungen.',
+      title: studioText.liveBriefModulesSection,
+      description: studioText.structuredCheckinDescription,
       fields: [
         { key: 'checkInScenario', label: t.ui.structuredInput.fields.checkInScenario.label, placeholder: t.ui.structuredInput.fields.checkInScenario.placeholder },
         { key: 'softwareNeeds', label: t.ui.structuredInput.fields.softwareNeeds.label, placeholder: t.ui.structuredInput.fields.softwareNeeds.placeholder },
-        { key: 'integrations', label: t.ui.structuredInput.fields.integrations.label, placeholder: t.ui.structuredInput.fields.integrations.placeholder }
+        { key: 'integrations', label: isEnglish ? t.ui.structuredInput.fields.integrations.label : (isTurkish ? 'Entegrasyonlar' : 'Integrationen'), placeholder: t.ui.structuredInput.fields.integrations.placeholder }
       ]
     },
     {
       key: 'operations',
-      title: t.ui.liveBrief.sections.drivers,
-      description: isEnglish ? 'Project management and operational delivery.' : 'Projektmanagement und operative Durchfuehrung.',
+      title: studioText.liveBriefDriversSection,
+      description: studioText.structuredOperationsDescription,
       fields: [
-        { key: 'projectManagement', label: t.ui.structuredInput.fields.projectManagement.label, placeholder: t.ui.structuredInput.fields.projectManagement.placeholder },
+        { key: 'projectManagement', label: isEnglish ? t.ui.structuredInput.fields.projectManagement.label : (isTurkish ? 'Proje Yonetimi' : 'Projektmanagement'), placeholder: t.ui.structuredInput.fields.projectManagement.placeholder },
         { key: 'rentalNeeds', label: t.ui.structuredInput.fields.rentalNeeds.label, placeholder: t.ui.structuredInput.fields.rentalNeeds.placeholder },
         { key: 'consumables', label: t.ui.structuredInput.fields.consumables.label, placeholder: t.ui.structuredInput.fields.consumables.placeholder }
       ]
     },
     {
       key: 'logistics',
-      title: t.ui.liveBrief.sections.location,
-      description: isEnglish ? 'Service level and budget parameters.' : 'Service-Level und Budgetvorgaben.',
+      title: studioText.liveBriefLocationSection,
+      description: studioText.structuredLogisticsDescription,
       fields: [
         { key: 'supportLevel', label: t.ui.structuredInput.fields.supportLevel.label, placeholder: t.ui.structuredInput.fields.supportLevel.placeholder },
         { key: 'logistics', label: t.ui.structuredInput.fields.logistics.label, placeholder: t.ui.structuredInput.fields.logistics.placeholder },
         { key: 'budget', label: t.ui.structuredInput.fields.budget.label, placeholder: t.ui.structuredInput.fields.budget.placeholder }
       ]
     }
-  ] as Array<StructuredSection>), [isEnglish, t]);
+  ] as Array<StructuredSection>), [isEnglish, isTurkish, studioText, t]);
 
-  const workspaceExportLabel = `${companyName} ${isEnglish ? 'Workspace Export' : 'Workspace Export'}`;
+  const workspaceExportLabel = `${companyName} ${studioText.workspaceExport}`;
   const initialMessage = useMemo(() => createInitialMessage(companyName, isEnglish), [companyName, isEnglish]);
   const widgetInitialMessage = useMemo(() => createWidgetInitialMessage(companyName, isEnglish), [companyName, isEnglish]);
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'model', text: createInitialMessage(companyName, isEnglish) }]);
@@ -764,6 +816,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   });
   const [isTyping, setIsTyping] = useState(false);
   const [isPromptGenerating, setIsPromptGenerating] = useState(false);
+  const [isApplyingStructured, setIsApplyingStructured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [structuredActionNotice, setStructuredActionNotice] = useState<string | null>(null);
@@ -878,13 +931,13 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     () => [
       { label: isEnglish ? 'CUSTOMER (PO)' : 'KUNDE (PO)', value: mergedBrief?.customerName || openLabel, icon: ClipboardList },
       { label: isEnglish ? 'EVENT NAME' : 'EVENTNAME', value: mergedBrief?.eventName || openLabel, icon: CalendarDays },
-      { label: isEnglish ? 'LOCATION' : 'ORT (VENUES)', value: mergedBrief?.eventLocation || openLabel, icon: MapPin },
+      { label: isEnglish ? 'LOCATION' : isTurkish ? 'LOKASYON' : 'ORT', value: mergedBrief?.eventLocation || openLabel, icon: MapPin },
       { label: isEnglish ? 'ATTENDEES' : 'TEILNEHMER', value: mergedBrief?.attendees || openLabel, icon: Users },
       { label: 'BUDGET', value: mergedBrief?.budget || openLabel, icon: ReceiptText },
       { label: isEnglish ? 'SCENARIO' : 'SZENARIO', value: mergedBrief?.checkInScenario || openLabel, icon: WandSparkles },
       { label: 'SUPPORT-LEVEL', value: mergedBrief?.supportLevel || openLabel, icon: ShieldCheck }
     ],
-    [isEnglish, mergedBrief, openLabel]
+    [isEnglish, isTurkish, mergedBrief, openLabel]
   );
   const locationDetails = useMemo(() => deriveLocationDetails(mergedBrief, isEnglish), [isEnglish, mergedBrief]);
 
@@ -895,12 +948,15 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const knowledgeCards: AiExplorerKnowledgeCard[] = offer?.knowledgeCards ?? [];
   const widgetChatLabel = 'FastLane Chat';
   const isWidgetMode = inputMode === 'widget';
+  const showAssistantWidget = false;
   const leadQuestionText = isWidgetMode
     ? widgetLeadMessage(isEnglish)
     : (mergedBrief?.currentQuestion || initialMessage);
   const recentMessages = messages.slice(-4);
   const isStepTwoLocked = !isModeStepComplete;
-  const currentModeLabel = isEnglish ? 'Easy Chat' : 'Easy Chat';
+  const currentModeLabel = isWidgetMode
+    ? studioText.modeLabel
+    : (isEnglish ? 'Easy Chat' : isTurkish ? 'Kolay Sohbet' : 'Einfacher Chat');
 
   useEffect(() => {
     if (!mergedBrief && !offer) return;
@@ -966,69 +1022,36 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     return sections.join(' ');
   };
 
-  const openAllStructuredSections = () => {
-    setOpenStructuredSections({
-      basis: true,
-      checkin: true,
-      operations: true,
-      logistics: true
-    });
-  };
+  const applyStructuredDraftToWorkspace = async () => {
+    const source = buildStructuredPrompt();
+    if (!source) {
+      setStructuredActionNotice(
+        isEnglish
+          ? 'Add your event details first.'
+          : isTurkish
+            ? 'Once event bilgilerinizi ekleyin.'
+            : 'Tragen Sie zuerst Ihre Eventdetails ein.'
+      );
+      structuredInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
 
-  const applyStructuredDemo = () => {
-    setStructuredDraft(structuredDraftDemo);
-    openAllStructuredSections();
-    setStructuredActionNotice(isEnglish ? 'Example data was inserted.' : 'Beispieldaten wurden eingefuellt.');
-    structuredInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  };
-
-  const buildEffectiveStructuredPrompt = () => {
-    const prompt = buildStructuredPrompt();
-    if (prompt) return prompt;
-
-    const fallbackSections = [
-      structuredDraftDemo.customerName ? `${isEnglish ? 'Customer-side contact' : 'Ansprechpartner auf Kundenseite'}: ${structuredDraftDemo.customerName}.` : '',
-      structuredDraftDemo.eventName ? `${isEnglish ? 'Event name' : 'Eventname'}: ${structuredDraftDemo.eventName}.` : '',
-      structuredDraftDemo.eventLocation ? `${isEnglish ? 'Location / venue' : 'Ort / Venue'}: ${structuredDraftDemo.eventLocation}.` : '',
-      structuredDraftDemo.eventDates ? `${isEnglish ? 'Dates / timings' : 'Datum / Zeiten'}: ${structuredDraftDemo.eventDates}.` : '',
-      structuredDraftDemo.attendees ? `${isEnglish ? 'Attendance' : 'Teilnehmerzahl'}: ${structuredDraftDemo.attendees}.` : '',
-      structuredDraftDemo.checkInScenario ? `${isEnglish ? 'Check-in scenario' : 'Check-in-Szenario'}: ${structuredDraftDemo.checkInScenario}.` : '',
-      structuredDraftDemo.softwareNeeds ? `${isEnglish ? 'Software scope' : 'Software-Bedarf'}: ${structuredDraftDemo.softwareNeeds}.` : '',
-      structuredDraftDemo.integrations ? `${isEnglish ? 'Integrations' : 'Integrationen'}: ${structuredDraftDemo.integrations}.` : '',
-      structuredDraftDemo.projectManagement ? `${isEnglish ? 'Project management / preparation' : 'Projektmanagement / Vorbereitung'}: ${structuredDraftDemo.projectManagement}.` : '',
-      structuredDraftDemo.rentalNeeds ? `${isEnglish ? 'Rental hardware' : 'Miettechnik'}: ${structuredDraftDemo.rentalNeeds}.` : '',
-      structuredDraftDemo.consumables ? `${isEnglish ? 'Consumables' : 'Verbrauchsmaterial'}: ${structuredDraftDemo.consumables}.` : '',
-      structuredDraftDemo.supportLevel ? `${isEnglish ? 'Onsite support' : 'Support vor Ort'}: ${structuredDraftDemo.supportLevel}.` : '',
-      structuredDraftDemo.logistics ? `${isEnglish ? 'Transport / travel / hotel' : 'Transport / Reise / Hotel'}: ${structuredDraftDemo.logistics}.` : '',
-      structuredDraftDemo.budget ? `${isEnglish ? 'Budget range' : 'Budgetrahmen'}: ${structuredDraftDemo.budget}.` : ''
-    ].filter(Boolean);
-
-    return fallbackSections.join(' ');
-  };
-
-  const generateStructuredPromptWithAi = async () => {
-    const source = buildEffectiveStructuredPrompt();
-    if (!source) return '';
-
-    setIsPromptGenerating(true);
+    setIsApplyingStructured(true);
 
     try {
-      const result = await generateAiExplorerPrompt(source, 'structured-brief', isEnglish ? 'en' : 'de');
-      return String(result.text ?? '').trim();
-    } catch (generationError) {
-      const fallbackDraft = buildStructuredPrompt() ? structuredDraft : structuredDraftDemo;
-      const fallbackPrompt = buildLocalStructuredPrompt(fallbackDraft, isEnglish);
-      const message = generationError instanceof Error ? generationError.message : (isEnglish ? 'AI prompt could not be created.' : 'AI-Prompt konnte nicht erzeugt werden.');
+      handleSelectInputMode('widget');
+      const applied = await handleSend(source, 'widget');
+      if (!applied) return;
 
-      if (/404/.test(message)) {
-        setStructuredActionNotice(isEnglish ? 'AI prompt service is not available yet. A local prompt was created.' : 'AI-Prompt-Service noch nicht verfuegbar. Lokaler Prompt wurde erzeugt.');
-        return fallbackPrompt;
-      }
-
-      setStructuredActionNotice(isEnglish ? 'AI prompt could not be created. A local fallback prompt was generated.' : 'AI-Prompt konnte nicht erzeugt werden. Lokaler Prompt wurde als Fallback erstellt.');
-      return fallbackPrompt;
+      setStructuredActionNotice(
+        isEnglish
+          ? 'Your changes were applied directly to the workspace.'
+          : isTurkish
+            ? 'Ekledikleriniz dogrudan workspacee uygulandı.'
+            : 'Ihre Eingaben wurden direkt auf den Workspace angewendet.'
+      );
     } finally {
-      setIsPromptGenerating(false);
+      setIsApplyingStructured(false);
     }
   };
 
@@ -1453,8 +1476,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
   const handleSend = async (prefill?: string, modeOverride?: AiExplorerInputMode) => {
     const nextText = (prefill ?? input).trim();
-    if (!nextText || isTyping) return;
-    if (!isModeStepComplete && !modeOverride) return;
+    if (!nextText || isTyping) return false;
+    if (!isModeStepComplete && !modeOverride) return false;
     const effectiveMode = modeOverride ?? inputMode;
 
     setError(null);
@@ -1472,11 +1495,13 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
       setBrief(response.brief ?? null);
       setOffer(response.offer ?? null);
       setAssistantOpen(true);
+      return true;
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : (isEnglish ? 'AI explorer could not respond.' : 'AI Explorer konnte nicht antworten.');
       setMessages((prev) => [...prev, { role: 'model', text: message }]);
       setError(message);
       setAssistantOpen(true);
+      return false;
     } finally {
       setIsTyping(false);
     }
@@ -1623,7 +1648,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     </div>
   ) : null;
 
-  const assistantOverlayPortal = typeof document !== 'undefined'
+  const assistantOverlayPortal = showAssistantWidget && typeof document !== 'undefined'
     ? createPortal(assistantOverlay, document.body)
     : null;
 
@@ -1687,10 +1712,10 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
         <section className="min-h-0 flex flex-col bg-white dark:bg-dark-base border-r border-slate-200/60 dark:border-white/5">
           <div className="px-4 sm:px-6 md:px-8 pt-5 sm:pt-6 pb-4">
             <StudioSection
-              eyebrow="Workspace"
-              title={isEnglish ? 'Current Input' : 'Aktuelle Eingabe'}
+              eyebrow={studioText.workspaceEyebrow}
+              title={studioText.workspaceTitle}
               description={isWidgetMode
-                ? (isEnglish ? 'Use the bottom-right FastLane Chat widget for direct live changes to the brief, modules and pricing.' : 'Nutzen Sie den FastLane-Chat-Widget-Chat rechts unten fuer direkte Live-Aenderungen an Briefing, Modulen und Preislogik.')
+                ? studioText.workspacePromptDescription
                 : (isEnglish ? 'Answer the current phase directly or send a complete event brief.' : 'Antworten Sie direkt auf die aktuelle Phase oder senden Sie einen kompletten Briefing-Text.')}
             >
               <div className="flex items-start gap-3">
@@ -1702,30 +1727,39 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
               {isWidgetMode ? (
                 <div className="mt-12 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="max-w-xl">
-                      <div className="text-xs font-black uppercase tracking-[0.3em] text-sap-blue">Easy Chat</div>
-                      <div className="mt-2 text-sm font-bold leading-relaxed text-slate-700 dark:text-dark-text-primary">
-                        {isEnglish
-                          ? 'Open the live chat and tell FastLane Chat what should change. Brief, modules and pricing update directly from the conversation.'
-                          : 'Oeffnen Sie den Live-Chat und sagen Sie FastLane Chat direkt, was geaendert werden soll. Briefing, Module und Preise werden direkt aus dem Chat aktualisiert.'}
-                      </div>
+                  <div className="max-w-3xl">
+                    <div className="text-xs font-black uppercase tracking-[0.3em] text-sap-blue">
+                      {studioText.promptInputTitle}
                     </div>
+                    <div className="mt-2 text-sm font-bold leading-relaxed text-slate-700 dark:text-dark-text-primary">
+                      {studioText.promptInputDescription}
+                    </div>
+                  </div>
+                  <div className="mt-6 relative group">
+                    <textarea
+                      ref={workspaceComposerRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend(undefined, 'widget');
+                        }
+                      }}
+                      disabled={isStepTwoLocked}
+                      placeholder={studioText.promptInputPlaceholder}
+                      className="w-full rounded-[1.6rem] border border-slate-200 bg-white py-5 pl-5 pr-16 text-base text-slate-900 shadow-sm transition-all focus:border-sap-blue focus:outline-none focus:ring-4 focus:ring-sap-blue/10 resize-none scrollbar-hide min-h-[180px] dark:border-white/10 dark:bg-[#0e1621] dark:text-white"
+                    />
                     <button
-                      type="button"
-                      onClick={openAssistantWidget}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-sap-blue px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-sap-blue/90"
+                      onClick={() => handleSend(undefined, 'widget')}
+                      disabled={isStepTwoLocked || !input.trim() || isTyping}
+                      className="absolute right-3 bottom-3 p-3 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
                     >
-                      <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/15">
-                        <FSChatAvatar className="h-5 w-5" />
-                      </span>
-                      {isEnglish ? 'Open Easy Chat' : 'Easy Chat oeffnen'}
+                      <Send className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="mt-4 text-xs font-bold leading-relaxed text-slate-500 dark:text-dark-text-secondary">
-                    {isEnglish
-                      ? 'Use the chat for direct event changes like name, venue, attendees, counters, integrations and budget.'
-                      : 'Nutzen Sie den Chat fuer direkte Event-Aenderungen wie Name, Venue, Teilnehmer, Counter, Integrationen und Budget.'}
+                    {studioText.promptInputHint}
                   </div>
                 </div>
               ) : (
@@ -1848,7 +1882,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 {(mergedBrief?.serviceModules?.length || mergedBrief?.costDrivers?.length || offer?.assumptions?.length || offer?.openQuestions?.length) ? (
                   <div className="grid lg:grid-cols-2 gap-4 mt-6">
                     <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{t.ui.liveBrief.sections.modules}</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{studioText.liveBriefModulesSection}</div>
                       <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(mergedBrief?.serviceModules ?? []).map((item) => (
                           <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
@@ -1856,7 +1890,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       </div>
                     </div>
                     <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{t.ui.liveBrief.sections.drivers}</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{studioText.liveBriefDriversSection}</div>
                       <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(mergedBrief?.costDrivers ?? []).map((item) => (
                           <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
@@ -1864,7 +1898,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       </div>
                     </div>
                     <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{t.ui.liveBrief.sections.assumptions}</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{studioText.liveBriefAssumptionsSection}</div>
                       <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(offer?.assumptions ?? []).map((item) => (
                           <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
@@ -1872,7 +1906,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       </div>
                     </div>
                     <div className="rounded-3xl bg-slate-50 dark:bg-dark-surface/40 p-5 border border-slate-200/60 dark:border-white/5 shadow-sm">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{t.ui.liveBrief.sections.questions}</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-dark-text-secondary mb-3 leading-tight break-words">{studioText.liveBriefQuestionsSection}</div>
                       <div className="space-y-2 text-[13px] text-slate-700 dark:text-dark-text-primary font-medium">
                         {(offer?.openQuestions ?? []).map((item) => (
                           <div key={item} className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-sap-blue shrink-0" />{item}</div>
@@ -1890,57 +1924,20 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 title={t.ui.structuredInput.title}
                 description={t.ui.structuredInput.description}
                 actions={
-                  <>
-                    <button
-                      type="button"
-                      onClick={applyStructuredDemo}
-                      disabled={isPromptGenerating}
-                      className={`${subtleToolbarButtonClass} relative z-10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
-                    >
-                      {t.ui.structuredInput.actions?.fillExample || t.ui.structuredInput.exampleButton}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        let draftWasEmpty = false;
-                        if (!buildStructuredPrompt()) {
-                          draftWasEmpty = true;
-                          applyStructuredDemo();
-                        }
-                        const prompt = await generateStructuredPromptWithAi();
-                        if (!prompt) return;
-                        handleSelectInputMode('prompt');
-                        setInput(prompt);
-                        setStructuredActionNotice(draftWasEmpty ? (t.ui.structuredInput.actions?.exampleNotice || t.ui.structuredInput.exampleNotice) : (t.ui.structuredInput.actions?.transferNotice || t.ui.structuredInput.transferNotice));
-                        requestAnimationFrame(() => focusWorkspaceComposer());
-                      }}
-                      disabled={isPromptGenerating}
-                      className={`${subtleToolbarButtonClass} relative z-10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
-                    >
-                      {isPromptGenerating ? '...' : (t.ui.structuredInput.actions?.copyAsPrompt || t.ui.structuredInput.transferButton)}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        let draftWasEmpty = false;
-                        if (!buildStructuredPrompt()) {
-                          draftWasEmpty = true;
-                          applyStructuredDemo();
-                        }
-                        const prompt = await generateStructuredPromptWithAi();
-                        if (!prompt) return;
-                        handleSelectInputMode('prompt');
-                        setInput(prompt);
-                        setStructuredActionNotice(draftWasEmpty ? '...' : '...');
-                        requestAnimationFrame(() => focusWorkspaceComposer());
-                        handleSend(prompt, 'prompt');
-                      }}
-                      disabled={isPromptGenerating || isTyping}
-                      className={`${primaryToolbarButtonClass} relative z-10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
-                    >
-                      {isPromptGenerating ? '...' : (t.ui.structuredInput.actions?.sendToWorkspace || t.ui.structuredInput.sendButton)}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={applyStructuredDraftToWorkspace}
+                    disabled={isApplyingStructured || isTyping}
+                    className={`${primaryToolbarButtonClass} relative z-10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    {isApplyingStructured
+                      ? '...'
+                      : (isEnglish
+                          ? 'Apply my changes'
+                          : isTurkish
+                            ? 'Eklediklerimi uygula'
+                            : 'Meine Eingaben anwenden')}
+                  </button>
                 }
               >
                 <div ref={structuredInputRef} className="mt-4 space-y-3">
@@ -1952,7 +1949,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                   <div className="grid gap-3 lg:grid-cols-3">
                     <div className="rounded-[1.25rem] bg-white/75 dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_-24px_rgba(32,41,57,0.28)] border border-slate-300 dark:border-white/15">
                       <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">{t.ui.structuredInput.syncLabel}</div>
-                      <div className="text-base font-semibold text-slate-900 dark:text-white">{mergedBrief?.eventName || (isEnglish ? 'No synced event yet' : 'Noch kein Event synchronisiert')}</div>
+                      <div className="text-base font-semibold text-slate-900 dark:text-white">{mergedBrief?.eventName || studioText.noSyncedEventYet}</div>
                       <div className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 font-medium">
                         {isEnglish ? 'Results from the brief, modules and pricing logic prefill these fields automatically. Your manual edits stay intact.' : 'Ergebnisse aus Brief, Modulen und Kostenlogik fuellen diese Felder automatisch vor. Eigene Aenderungen bleiben erhalten.'}
                       </div>
@@ -1966,9 +1963,9 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                     </div>
                     <div className="rounded-[1.25rem] bg-white/75 dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_-24px_rgba(32,41,57,0.28)] border border-slate-300 dark:border-white/15">
                       <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">{t.ui.structuredInput.editLabel}</div>
-                      <div className="text-base font-semibold text-slate-900 dark:text-white">{isEnglish ? 'Directly editable' : 'Direkt editierbar'}</div>
+                      <div className="text-base font-semibold text-slate-900 dark:text-white">{studioText.directlyEditable}</div>
                       <div className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 font-medium">
-                        {isEnglish ? 'Adjust individual event, scope and budget details here and send the updated version straight back into the workspace.' : 'Aendern Sie hier einzelne Event-, Scope- und Budgetdetails und senden Sie die aktualisierte Fassung direkt wieder in den Workspace.'}
+                        {studioText.directlyEditableDescription}
                       </div>
                     </div>
                   </div>
@@ -2053,7 +2050,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 }
               >
                 <div className="px-6 py-10 rounded-[2.5rem] bg-white dark:bg-dark-base border border-slate-300 dark:border-white/15 shadow-xl shadow-slate-200/40 dark:shadow-black/20 flex flex-col items-center justify-center text-center">
-                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-dark-text-secondary mb-4">{isEnglish ? 'Estimated Total' : 'Gesamtsumme (Est.)'}</div>
+                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-dark-text-secondary mb-4">{studioText.estimatedTotal}</div>
                   <div className="text-5xl font-black text-sap-blue dark:text-dark-text-primary tracking-tighter">
                     {offer?.hasPricing ? offer?.subtotalFormatted || formatPriceValue(offer?.subtotal, priceOpenLabel, locale) : (isEnglish ? 'OPEN' : 'OFFEN')}
                   </div>
@@ -2076,8 +2073,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
               {offer?.modules?.length ? (
                 <ConsoleSection
-                  title={isEnglish ? 'Modules & Line Items' : 'Module & Positionen'}
-                  description={isEnglish ? 'All recommended modules with the currently derived line items.' : 'Alle empfohlenen Module mit den aktuell abgeleiteten Positionen.'}
+                  title={studioText.modulesAndItems}
+                  description={studioText.modulesAndItemsDescription}
                 >
                   <div className="space-y-4">
                     {offer.modules.map((module) => (
@@ -2110,8 +2107,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
               {offer?.variants?.length ? (
                 <ConsoleSection
-                  title={isEnglish ? 'Offer Variants' : 'Angebotsvarianten'}
-                  description={isEnglish ? 'Alternative offer packages based on the current scope and risk assumptions.' : 'Alternative Angebotspakete auf Basis der aktuellen Scope- und Risikoannahmen.'}
+                  title={studioText.offerVariants}
+                  description={studioText.offerVariantsDescription}
                 >
                   <div className="space-y-3">
                     {offer.variants.map((variant) => (
@@ -2129,14 +2126,14 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
               {knowledgeCards.length ? (
                 <ConsoleSection
-                  title="Knowledge Cards"
-                  description={isEnglish ? 'Recommendations, risks and typical add-ons per module.' : 'Fachliche Empfehlungen, Risiken und typische Zusatzoptionen pro Modul.'}
+                  title={studioText.knowledgeCards}
+                  description={studioText.knowledgeCardsDescription}
                 >
                   <div className="space-y-4">
                     {knowledgeCards.map((card) => (
                       <div key={card.title} className="rounded-[1.25rem] bg-white/80 dark:bg-white/[0.04] p-4">
                         <div className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</div>
-                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">{isEnglish ? 'Recommendation' : 'Empfehlung'}: {card.recommendation}</div>
+                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">{studioText.recommendationLabel}: {card.recommendation}</div>
                       </div>
                     ))}
                   </div>

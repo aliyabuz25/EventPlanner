@@ -946,6 +946,7 @@ function normalizeEventNameValue(value) {
     .replace(/\s+in der\s+[A-ZÄÖÜ].*$/i, '')
     .replace(/\s+im\s+[A-ZÄÖÜ].*$/i, '')
     .replace(/\s+am\s+\d{1,2}\..*$/i, '')
+    .replace(/\s*(?:,|;|\band\b)\s*(?:attendees?|atendees?|participants?|guests?|budget|location|venue|ort|veranstaltungsort|date|dates|datum|customer|client|organizer|support(?:-level)?|supportlevel|check-?in(?:\s+scenario)?|scenario|szenario)\b.*$/i, '')
     .trim();
 
   return isLikelyEventName(normalized) ? normalized : '';
@@ -1002,7 +1003,8 @@ function shouldAcceptBriefField(key, value) {
     case 'attendees':
       return isLikelyAttendeesValue(normalized);
     case 'eventDates':
-      return /\d/.test(normalized) || /\b(januar|februar|maerz|märz|april|mai|juni|juli|august|september|oktober|november|dezember|tag|tage)\b/i.test(normalized);
+      return /\b(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}-\d{2}-\d{2}|\d+\s*(?:tag|tage|day|days))\b/.test(normalized)
+        || /\b(januar|februar|maerz|märz|april|mai|juni|juli|august|september|oktober|november|dezember|january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(normalized);
     case 'budget':
       return isLikelyBudgetValue(normalized);
     case 'supportLevel':
@@ -1407,15 +1409,17 @@ function sanitizeExtractedValue(value) {
     .replace(/^(title|titel|eventname|event name|event title|veranstaltung|eventortadresse|eventort|ortadresse|ort|veranstaltungsort|event-?ort|teilnehmerzahl|teilnehmer|attendees|participants|pax|check-?in-?szenario|support-?level|transport|reisekosten)\s*:\s*/i, '')
     .trim();
   if (!normalized) return '';
-  if (/^(noch offen|offen|open|n\/a|unbekannt|-|—)$/i.test(normalized)) return '';
-  if (/^(noch zu bestaetigen|noch zu bestätigen|noch nicht bestaetigt|noch nicht bestätigt|tbd|to be confirmed)\.?$/i.test(normalized)) return '';
-  if (/^(beispielantworten|zu beginn|nun m[oö]chten wir wissen)/i.test(normalized)) return '';
-  if (/^(zusammenfassung|naechster schritt)\b/i.test(normalized)) return '';
-  if (/^(briefing|support-level|stationsbedarf|single source of truth|automatische angebotsvarianten|regel-engine|risiken & constraints|knowledge cards)$/i.test(normalized)) return '';
-  if (/^(phase [a-g]|strukturierte datenerfassung)\b/i.test(normalized)) return '';
-  if (/^(du bist ein|customername|eventdates|entrypoints|softwareNeeds|rentalNeeds|travelScope|serviceModules|costDrivers|missingItems|nextStep)\b/i.test(normalized)) return '';
-  if (/->/.test(normalized)) return '';
-  return normalized;
+  const cleaned = normalized.replace(/[;,]+$/g, '').trim();
+  if (!cleaned) return '';
+  if (/^(noch offen|offen|open|n\/a|unbekannt|-|—)$/i.test(cleaned)) return '';
+  if (/^(noch zu bestaetigen|noch zu bestätigen|noch nicht bestaetigt|noch nicht bestätigt|tbd|to be confirmed)\.?$/i.test(cleaned)) return '';
+  if (/^(beispielantworten|zu beginn|nun m[oö]chten wir wissen)/i.test(cleaned)) return '';
+  if (/^(zusammenfassung|naechster schritt)\b/i.test(cleaned)) return '';
+  if (/^(briefing|support-level|stationsbedarf|single source of truth|automatische angebotsvarianten|regel-engine|risiken & constraints|knowledge cards)$/i.test(cleaned)) return '';
+  if (/^(phase [a-g]|strukturierte datenerfassung)\b/i.test(cleaned)) return '';
+  if (/^(du bist ein|customername|eventdates|entrypoints|softwareNeeds|rentalNeeds|travelScope|serviceModules|costDrivers|missingItems|nextStep)\b/i.test(cleaned)) return '';
+  if (/->/.test(cleaned)) return '';
+  return cleaned;
 }
 
 function firstNonEmpty(...values) {
@@ -1581,7 +1585,7 @@ function isConsultingQuestion(text) {
   return hits >= 3;
 }
 
-async function extractBriefWithOllama(history, userMessage, locale = 'de') {
+async function extractBriefWithOllama(history, userMessage, locale = 'de', workspaceBrief = null) {
   if (isPromptAuthoringMessage(userMessage)) {
     return null;
   }
@@ -1599,6 +1603,8 @@ async function extractBriefWithOllama(history, userMessage, locale = 'de') {
     return null;
   }
 
+  const normalizedWorkspaceBrief = briefOrNullIfEmpty(normalizeModelBrief(workspaceBrief) ?? null);
+
   const extractionPrompt = locale === 'en'
     ? `You are a pure extraction service for event scoping.
 Extract only reliable facts from the following user transcript.
@@ -1612,6 +1618,9 @@ If no explicit event name is present, leave "eventName" empty.
 If no explicit location is present, leave "eventLocation" empty.
 Only keep a budget when it contains concrete numbers, ranges or an explicit "open".
 Only keep the support level if it is Basic, Standard, Extended, Premium, 24/7 or doors-open critical.
+If a current workspace brief is provided, treat it as the baseline context for the current event.
+When the latest user message changes a field, prefer the latest user message over older transcript or workspace values.
+Do not erase reliable existing workspace facts unless the user clearly replaces or resets them.
 If a value is not explicitly stated, return an empty string or an empty array.
 Respond only with valid JSON without markdown, explanations or tags.
 
@@ -1651,6 +1660,9 @@ Wenn kein expliziter Eventname genannt wird, lasse "eventName" leer.
 Wenn kein expliziter Ort genannt wird, lasse "eventLocation" leer.
 Uebernimm als Budget nur konkrete Zahlen, Bereiche oder eindeutig "Noch offen".
 Uebernimm als Support-Level nur Basic, Standard, Extended, Premium, 24/7 oder Doors-open critical.
+Wenn ein aktuelles Workspace-Briefing mitgegeben wird, nutze es als Basiskontext fuer das laufende Event.
+Wenn die letzte Nutzernachricht ein Feld aendert, hat diese letzte Nutzernachricht Vorrang vor aelteren Verlaufseintraegen oder Workspace-Werten.
+Entferne belastbare bestehende Workspace-Fakten nicht, solange der Nutzer sie nicht klar ersetzt oder zuruecksetzt.
 Wenn eine Information nicht explizit genannt wurde, gib einen leeren String oder ein leeres Array zurueck.
 Antworte ausschliesslich mit gueltigem JSON ohne Markdown, ohne Erklaerung, ohne Tags.
 
@@ -1680,7 +1692,16 @@ JSON-Schema:
 }`;
 
   try {
-    const content = await generateWithOllama(`${extractionPrompt}\n\nNutzerverlauf:\n${transcript}`, {
+    const promptParts = [extractionPrompt];
+    if (normalizedWorkspaceBrief) {
+      promptParts.push(
+        locale === 'en' ? '\nCurrent workspace brief:' : '\nAktuelles Workspace-Briefing:',
+        JSON.stringify(normalizedWorkspaceBrief, null, 2)
+      );
+    }
+    promptParts.push(locale === 'en' ? '\nUser transcript:' : '\nNutzerverlauf:', transcript);
+
+    const content = await generateWithOllama(promptParts.join('\n'), {
       temperature: 0.1,
       numPredict: 260
     });
@@ -1762,12 +1783,17 @@ function inferEventDates(transcript) {
   return pickLastMatch(transcript, [
     /\beventdatum\s*:?\s*([^\n]+)/i,
     /\beventdaten\s*:?\s*([^\n]+)/i,
+    /\bevent dates?\s*:?\s*([^\n]+)/i,
     /\btarih\s*:?\s*([^\n]+)/i,
+    /\bdates\s*:?\s*([^\n]+)/i,
+    /\bdate\s*:?\s*([^\n]+)/i,
     /\bdatum\s*:?\s*([^\n]+)/i,
     /\bam\s+(\d{1,2}\.\s*(?:und|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4})/i,
     /\bam\s+(\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4}\s*(?:und|bis|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4})/i,
     /\bvon\s+(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d.1,2}\.\d{2,4})/i,
     /\b(\d{1,2}\.\d{1,2}\.\d{2,4}\s*(?:bis|-)\s*\d{1,2}\.\d{1,2}\.\d{2,4})/i,
+    /\b(\d{1,2}\s*(?:-|to|bis)\s*\d{1,2}\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4})\b/i,
+    /\b((?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\s*(?:-|to|bis)\s*\d{1,2},?\s*\d{4})\b/i,
     /\b(\d+\s*(?:tag|tage|gün|gun))\b/i
   ]);
 }
@@ -1776,7 +1802,10 @@ function inferAttendees(transcript) {
   return pickLastMatch(transcript, [
     /\berwartete teilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
     /\bteilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
+    /\battendee count\s*:?\s*([^\n,.;]+)/i,
+    /\bparticipant count\s*:?\s*([^\n,.;]+)/i,
     /\battendees?\s*:?\s*([^\n,.;]+)/i,
+    /\batendees?\s*:?\s*([^\n,.;]+)/i,
     /\bparticipants?\s*:?\s*([^\n,.;]+)/i,
     /\bkatılımcı sayısı\s*:?\s*([^\n,.;]+)/i,
     /\bkatilimci sayisi\s*:?\s*([^\n,.;]+)/i,
@@ -1787,8 +1816,8 @@ function inferAttendees(transcript) {
     /\bkişi\s*:?\s*([^\n,.;]+)/i,
     /\bkisi\s*:?\s*([^\n,.;]+)/i,
     /\brund\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmende|pax|gaeste|gäste|personen|kişi|kisi)\b/i,
-    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen|kişi|kisi|participants?|attendees?|guests?)\b/i,
-    /\bwith\s+(\d[\d.,]*)\s*(?:participants?|attendees?|guests?)\b/i,
+    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen|kişi|kisi|participants?|attendees?|atendees?|guests?)\b/i,
+    /\bwith\s+(\d[\d.,]*)\s*(?:participants?|attendees?|atendees?|guests?)\b/i,
     /\bmit\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmenden|pax|gaesten|gästen|personen|kişi|kisi)\b/i
   ]);
 }
@@ -2124,43 +2153,68 @@ function buildWidgetPlanningReply(locale = 'de') {
       ].join('\n');
 }
 
+function hasWidgetDirectFieldInstructions(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  if (!normalized) return false;
+
+  return [
+    /\b(?:event\s+)?name\b/,
+    /\b(?:customer|client|organizer|kunde|veranstalter)\b/,
+    /\b(?:location|venue|ort|veranstaltungsort)\b/,
+    /\b(?:date|dates|datum|event dates?)\b/,
+    /\b(?:attendees?|atendees?|participants?|teilnehmer|guests?)\b/,
+    /\bbudget\b/,
+    /\b(?:check-?in(?:\s+scenario)?|scenario|szenario)\b/,
+    /\b(?:support(?:-level)?|supportlevel)\b/
+  ].some((pattern) => pattern.test(normalized));
+}
+
+function hasWidgetOperationalSignals(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  if (!normalized) return false;
+
+  return /\b(counter|counters|station|stations|badge|print|printer|printing|scan|scanner|scanning|integration|integrations|salesforce|crm|vip|fast lane|check-?in|lead capture|reporting|software|router|tablet|ipad|support|hotel|travel|transport|logistics|lanyard|consumables?)\b/i.test(normalized);
+}
+
 function extractWidgetFieldOverrides(userMessage) {
   const text = String(userMessage ?? '').trim();
   if (!text) return null;
 
   const overrides = {};
+  const fieldStop = String.raw`(?=\s*(?:,|;|\.|\band\b)\s*(?:(?:set|change|update|move|add)\s+(?:the\s+)?)?(?:customer|client|organizer|kunde|veranstalter|(?:event\s+)?name|location|venue|ort|veranstaltungsort|event dates?|dates?|datum|attendees?|atendees?|participants?|teilnehmer|guests?|budget|check-?in(?:\s+scenario)?|scenario|szenario|support(?:-level)?|supportlevel)\b|$)`;
 
   const eventNameCandidate = [
-    text.match(/\b(?:make|set|change|update)\s+(?:the\s+)?(?:event\s+)?name\s+(?:to|as)?\s*([^\n]+)/i)?.[1],
-    text.match(/\b(?:event\s+)?name\s+(?:will be|is|:|=)\s*([^\n]+)/i)?.[1]
+    text.match(new RegExp(String.raw`\b(?:make|set|change|update)\s+(?:the\s+)?(?:event\s+)?name\s+(?:to|as)?\s*(.+?)${fieldStop}`, 'i'))?.[1],
+    text.match(new RegExp(String.raw`\b(?:event\s+)?name\s+(?:will\s+be|is|:|=|to)\s*(.+?)${fieldStop}`, 'i'))?.[1]
   ].map((value) => normalizeEventNameValue(value)).find(Boolean);
   if (eventNameCandidate) {
     overrides.eventName = eventNameCandidate;
   }
 
   const customerCandidate = [
-    text.match(/\b(?:customer|client|organizer|kunde|veranstalter)\s*(?:will be|is|:|=|to)?\s*([^\n,;]+)/i)?.[1]
+    text.match(new RegExp(String.raw`\b(?:customer|client|organizer|kunde|veranstalter)\s*(?:will\s+be|is|:|=|to)?\s*(.+?)${fieldStop}`, 'i'))?.[1]
   ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
   if (customerCandidate) {
     overrides.customerName = customerCandidate;
   }
 
   const locationCandidate = [
-    text.match(/\b(?:location|venue|ort|veranstaltungsort)\s*(?:will be|is|:|=|to)?\s*([^\n,;]+)/i)?.[1]
+    text.match(new RegExp(String.raw`\b(?:location|venue|ort|veranstaltungsort)\s*(?:will\s+be|is|:|=|to)?\s*(.+?)${fieldStop}`, 'i'))?.[1]
   ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
   if (locationCandidate) {
     overrides.eventLocation = locationCandidate;
   }
 
   const datesCandidate = [
-    text.match(/\b(?:date|dates|datum|event dates?)\s*(?:will be|are|is|:|=|to)?\s*([^\n]+)/i)?.[1]
+    text.match(new RegExp(String.raw`\b(?:event dates?|dates|date|datum)\s*(?:will\s+be|are|is|:|=|to)?\s*(.+?)${fieldStop}`, 'i'))?.[1]
   ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
   if (datesCandidate) {
     overrides.eventDates = datesCandidate;
   }
 
   const attendeesCandidate = [
-    text.match(/\b(?:attendees?|participants?|teilnehmer|guests?)\s*(?:will be|are|is|:|=|to)?\s*(\d[\d.,]*)/i)?.[1],
+    text.match(/\b(?:attendee|participant|guest)\s+count\s*(?:will\s+be|are|is|:|=|to)?\s*(\d[\d.,]*)/i)?.[1],
+    text.match(/\b(?:attendees?|atendees?|participants?|teilnehmer|guests?)\s*(?:will\s+be|are|is|:|=|to)?\s*(\d[\d.,]*)/i)?.[1],
     text.match(/\bthere will be\s+(\d[\d.,]*)\b/i)?.[1]
   ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
   if (attendeesCandidate) {
@@ -2169,7 +2223,7 @@ function extractWidgetFieldOverrides(userMessage) {
 
   const budgetCandidate = [
     text.match(/(\d[\d.,\s]*(?:\s*(?:€|eur|euro|\$|usd|dollars?|tl|try))(?:\s*(?:per person|per attendee|pro person|pro teilnehmer))?)/i)?.[1],
-    text.match(/\bbudget\s*(?:will be|is|:|=|to)?\s*([^\n]+?)(?=\s+\b(?:there will be|attendees?|participants?|guests?)\b|$)/i)?.[1]
+    text.match(new RegExp(String.raw`\bbudget\s*(?:will\s+be|is|:|=|to|going\s+to\s+be|will\s+going\s+to\s+be|will\s+go\s+to\s+be)?\s*(.+?)${fieldStop}`, 'i'))?.[1]
   ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
   if (budgetCandidate) {
     overrides.budget = budgetCandidate;
@@ -2201,17 +2255,15 @@ function buildWidgetAssistantReply(previousBrief, nextBrief, userMessage, locale
 
   const cleanedFallback = String(fallbackText ?? '').trim();
 
+  if (cleanedFallback && !looksLikeJsonOnlyReply(cleanedFallback)) {
+    return cleanedFallback;
+  }
+
   if (!changes.length && isWidgetPlanningIntentMessage(userMessage)) {
-    if (cleanedFallback && !looksLikeJsonOnlyReply(cleanedFallback)) {
-      return cleanedFallback;
-    }
     return buildWidgetPlanningReply(locale);
   }
 
   if (!changes.length) {
-    if (cleanedFallback && !looksLikeJsonOnlyReply(cleanedFallback)) {
-      return cleanedFallback;
-    }
     return locale === 'en'
       ? 'I can apply your event details directly. Tell me what to add or change, for example: "Customer is Elon Musk", "Location is Galata" or "Budget is 3000 USD per person".'
       : 'Ich kann Ihre Eventdaten direkt uebernehmen. Sagen Sie mir einfach, was ich hinzufuegen oder aendern soll, zum Beispiel: "Customer ist Elon Musk", "Ort ist Galata" oder "Budget ist 3000 USD pro Person".';
@@ -2304,6 +2356,16 @@ function parseDayCount(value, transcript = '') {
   const normalizedValue = String(value ?? '').trim();
   if (/^\d+$/.test(normalizedValue)) {
     return Math.max(1, Math.round(cleanNumber(normalizedValue)));
+  }
+
+  const englishRange = normalizedValue.match(/\b(\d{1,2})\s*(?:-|to|bis)\s*(\d{1,2})\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}\b/i)
+    || normalizedValue.match(/\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\s*(?:-|to|bis)\s*(\d{1,2}),?\s*\d{4}\b/i);
+  if (englishRange) {
+    const startDay = cleanNumber(englishRange[1]);
+    const endDay = cleanNumber(englishRange[2]);
+    if (startDay > 0 && endDay >= startDay) {
+      return Math.max(1, Math.round(endDay - startDay + 1));
+    }
   }
 
   if (/\b\d{1,2}\.\s*(und|-)\s*\d{1,2}\.\s*[A-Za-zÄÖÜäöüß]+\s*\d{4}\b/i.test(normalizedValue)) {
@@ -3306,10 +3368,16 @@ async function handleApi(req, res) {
     const widgetFreshStart = widgetMode && isWidgetFreshStartRequest(userMessage);
     const widgetBaseBrief = widgetMode ? (widgetFreshStart ? {} : (workspaceBrief ?? {})) : null;
     const consultingMode = requestedMode === 'consulting' || (!requestedMode && isConsultingQuestion(userMessage));
-    const shouldUseAiExtraction = !consultingMode && (requestedMode === 'prompt' || requestedMode === 'widget' || userMessage.length >= 180);
-    const extractionHistory = widgetMode ? [] : history;
+    const shouldUseAiExtraction = !consultingMode && (
+      requestedMode === 'prompt'
+      || requestedMode === 'widget'
+      || userMessage.length >= 180
+    );
+    const extractionHistory = widgetMode
+      ? (widgetFreshStart ? [] : history.slice(-4))
+      : history;
     const extractedBrief = shouldUseAiExtraction
-      ? normalizeModelBrief(await extractBriefWithOllama(extractionHistory, userMessage, locale))
+      ? normalizeModelBrief(await extractBriefWithOllama(extractionHistory, userMessage, locale, widgetBaseBrief))
       : null;
     if (isPromptAuthoringMessage(userMessage) && !consultingMode) {
       const computed = buildAiExplorerOffer({}, history, '', locale);
@@ -3439,21 +3507,27 @@ Nutze nur dieses Schema und lasse unbekannte Werte leer:
       const previousComputed = widgetMode
         ? buildAiExplorerOffer(widgetBaseBrief ?? {}, [], '', locale)
         : null;
-      const content = await generateWithOllama(prompt.join('\n'));
-      const parsed = extractAiExplorerBrief(content);
-      const widgetOverrides = widgetMode ? normalizeModelBrief(extractWidgetFieldOverrides(userMessage)) : null;
+      const parsed = extractAiExplorerBrief(await generateWithOllama(prompt.join('\n')));
       const mergedBrief = widgetMode
-        ? mergeBriefs(widgetBaseBrief ?? {}, normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {}, widgetOverrides ?? {})
+        ? mergeBriefs(widgetBaseBrief ?? {}, extractedBrief ?? {}, normalizeModelBrief(parsed.brief) ?? {})
         : mergeBriefs(normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {});
-      const computed = buildAiExplorerOffer(mergedBrief, widgetMode ? [] : history, userMessage, locale);
+      const computed = buildAiExplorerOffer(
+        mergedBrief,
+        widgetMode ? recentHistory : history,
+        userMessage,
+        locale
+      );
       const assistantText = widgetMode
         ? buildWidgetAssistantReply(previousComputed?.brief ?? null, computed.brief, userMessage, locale, parsed.text)
         : looksLikeJsonOnlyReply(parsed.text)
           ? buildAssistantReplyFromBrief(computed.brief, locale)
           : parsed.text || buildAssistantReplyFromBrief(computed.brief, locale);
+      const responseModel = widgetMode
+        ? `${OLLAMA_MODEL} (widget-ai)`
+        : OLLAMA_MODEL;
 
       createAiExplorerLog({
-        model: OLLAMA_MODEL,
+        model: responseModel,
         userAgent: String(req.headers['user-agent'] ?? ''),
         status: 'success',
         userMessage,
@@ -3471,7 +3545,7 @@ Nutze nur dieses Schema und lasse unbekannte Werte leer:
         text: assistantText,
         brief: consultingMode ? briefOrNullIfEmpty(computed.brief) : computed.brief,
         offer: consultingMode ? null : computed.offer,
-        model: OLLAMA_MODEL
+        model: responseModel
       });
       return true;
     } catch (error) {
