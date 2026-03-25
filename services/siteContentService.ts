@@ -183,7 +183,7 @@ export interface FrontendTranslationJob {
 }
 
 export async function fetchSiteContent(): Promise<SiteContentResponse> {
-  const response = await fetch('/api/site-content');
+  const response = await fetch('/api/site-content', { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`Failed to load site content: ${response.status}`);
   }
@@ -208,7 +208,7 @@ export async function saveSiteDocument(key: string, value: unknown) {
 }
 
 export async function fetchSiteDocumentRevisions(key: string, limit = 12) {
-  const response = await fetch(`/api/site-content/revisions?key=${encodeURIComponent(key)}&limit=${limit}`);
+  const response = await fetch(`/api/site-content/revisions?key=${encodeURIComponent(key)}&limit=${limit}`, { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error(`Failed to load revisions: ${response.status}`);
@@ -327,7 +327,7 @@ export async function generateAiExplorerPrompt(source: string, intent: 'structur
 }
 
 export async function fetchAiExplorerReports(limit = 100) {
-  const response = await fetch(`/api/ai-explorer/reports?limit=${limit}`);
+  const response = await fetch(`/api/ai-explorer/reports?limit=${limit}`, { cache: 'no-store' });
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -356,7 +356,7 @@ export async function startAdminTranslationJob(target: string, bundle: Record<st
 }
 
 export async function fetchAdminTranslationJob(jobId: string) {
-  const response = await fetch(`/api/admin/translate-jobs/${encodeURIComponent(jobId)}`);
+  const response = await fetch(`/api/admin/translate-jobs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -367,7 +367,7 @@ export async function fetchAdminTranslationJob(jobId: string) {
 }
 
 export async function fetchAdminTranslation(target: string) {
-  const response = await fetch(`/api/admin/translations?target=${encodeURIComponent(target)}`);
+  const response = await fetch(`/api/admin/translations?target=${encodeURIComponent(target)}`, { cache: 'no-store' });
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -396,7 +396,7 @@ export async function startFrontendTranslationJob(target: string, bundle: SiteCo
 }
 
 export async function fetchFrontendTranslationJob(jobId: string) {
-  const response = await fetch(`/api/frontend/translate-jobs/${encodeURIComponent(jobId)}`);
+  const response = await fetch(`/api/frontend/translate-jobs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -407,7 +407,7 @@ export async function fetchFrontendTranslationJob(jobId: string) {
 }
 
 export async function fetchFrontendTranslation(target: string) {
-  const response = await fetch(`/api/frontend/translations?target=${encodeURIComponent(target)}`);
+  const response = await fetch(`/api/frontend/translations?target=${encodeURIComponent(target)}`, { cache: 'no-store' });
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {

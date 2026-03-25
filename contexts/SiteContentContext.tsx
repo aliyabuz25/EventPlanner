@@ -309,20 +309,7 @@ const getValueAtKey = (value: unknown, key: string): unknown => {
 };
 
 const getInitialContent = (): SiteContent => {
-  if (typeof window === 'undefined') {
-    return normalizeSiteContent(siteContentSeed) as SiteContent;
-  }
-
-  try {
-    const cached = window.localStorage.getItem(SITE_CONTENT_CACHE_KEY);
-    if (!cached) {
-      return normalizeSiteContent(siteContentSeed) as SiteContent;
-    }
-
-    return normalizeSiteContent(JSON.parse(cached)) as SiteContent;
-  } catch {
-    return normalizeSiteContent(siteContentSeed) as SiteContent;
-  }
+  return normalizeSiteContent(siteContentSeed) as SiteContent;
 };
 
 const getInitialFrontendLocale = (): FrontendLocale => {
@@ -335,43 +322,11 @@ const getInitialFrontendLocale = (): FrontendLocale => {
 };
 
 const getInitialTranslationCache = (): Record<string, SiteContent> => {
-  if (typeof window === 'undefined') {
-    return {};
-  }
-
-  try {
-    const cached = window.localStorage.getItem(FRONTEND_TRANSLATION_CACHE_KEY);
-    if (!cached) {
-      return {};
-    }
-
-    const parsed = JSON.parse(cached) as Record<string, SiteContent>;
-    return Object.fromEntries(
-      Object.entries(parsed).map(([key, value]) => [
-        key,
-        applyFrontendLocaleOverrides(key, normalizeSiteContent(sanitizeTranslatedCopyValue(value)) as SiteContent)
-      ])
-    );
-  } catch {
-    return {};
-  }
+  return {};
 };
 
 const getInitialTranslationJob = (): FrontendTranslationJob | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const cached = window.localStorage.getItem(FRONTEND_TRANSLATION_JOB_STORAGE_KEY);
-    if (!cached) {
-      return null;
-    }
-
-    return JSON.parse(cached) as FrontendTranslationJob;
-  } catch {
-    return null;
-  }
+  return null;
 };
 
 const fetchStaticFrontendTranslation = async (target: string): Promise<SiteContent | null> => {
@@ -443,18 +398,6 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    try {
-      window.localStorage.setItem(SITE_CONTENT_CACHE_KEY, JSON.stringify(sourceContent));
-    } catch {
-      // Ignore cache write failures and continue using in-memory content.
-    }
-  }, [sourceContent]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
     window.localStorage.setItem(FRONTEND_LOCALE_STORAGE_KEY, locale);
   }, [locale]);
 
@@ -463,25 +406,10 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    try {
-      window.localStorage.setItem(FRONTEND_TRANSLATION_CACHE_KEY, JSON.stringify(translationCache));
-    } catch {
-      // Ignore cache write failures.
-    }
-  }, [translationCache]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    if (translationJob) {
-      window.localStorage.setItem(FRONTEND_TRANSLATION_JOB_STORAGE_KEY, JSON.stringify(translationJob));
-      return;
-    }
-
+    window.localStorage.removeItem(SITE_CONTENT_CACHE_KEY);
+    window.localStorage.removeItem(FRONTEND_TRANSLATION_CACHE_KEY);
     window.localStorage.removeItem(FRONTEND_TRANSLATION_JOB_STORAGE_KEY);
-  }, [translationJob]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

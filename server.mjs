@@ -55,8 +55,24 @@ const mimeTypes = {
 };
 
 function sendJson(res, statusCode, payload) {
-  res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(statusCode, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
+    'Surrogate-Control': 'no-store'
+  });
   res.end(JSON.stringify(payload));
+}
+
+function writeNoStore(res, statusCode, headers = {}) {
+  res.writeHead(statusCode, {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
+    'Surrogate-Control': 'no-store',
+    ...headers
+  });
 }
 
 function readJsonFile(filePath, fallbackValue) {
@@ -91,7 +107,7 @@ function readBody(req) {
 }
 
 function notFound(res) {
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  writeNoStore(res, 404, { 'Content-Type': 'text/plain; charset=utf-8' });
   res.end('Not found');
 }
 
@@ -3047,12 +3063,12 @@ async function createAppServer() {
 
         if (faviconPath && fs.existsSync(faviconPath)) {
           const ext = path.extname(faviconPath);
-          res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'image/x-icon' });
+          writeNoStore(res, 200, { 'Content-Type': mimeTypes[ext] ?? 'image/x-icon' });
           res.end(fs.readFileSync(faviconPath));
           return;
         }
 
-        res.writeHead(204);
+        writeNoStore(res, 204);
         res.end();
         return;
       }
@@ -3076,7 +3092,7 @@ async function createAppServer() {
         }
 
         const ext = path.extname(filePath);
-        res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'application/octet-stream' });
+        writeNoStore(res, 200, { 'Content-Type': mimeTypes[ext] ?? 'application/octet-stream' });
         res.end(fs.readFileSync(filePath));
         return;
       }
@@ -3096,7 +3112,7 @@ async function createAppServer() {
 
       if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
         const ext = path.extname(filePath);
-        res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'application/octet-stream' });
+        writeNoStore(res, 200, { 'Content-Type': mimeTypes[ext] ?? 'application/octet-stream' });
         res.end(fs.readFileSync(filePath));
         return;
       }
@@ -3124,7 +3140,7 @@ async function createAppServer() {
           }</head>`
         );
 
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      writeNoStore(res, 200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(injectedHtml);
     } catch (error) {
       if (!isProduction && vite) {
