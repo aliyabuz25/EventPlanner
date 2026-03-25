@@ -5,10 +5,15 @@ import { useSiteContent } from '../contexts/SiteContentContext';
 import { submitContactForm } from '../services/siteContentService';
 
 const Contact: React.FC = () => {
-  const { content } = useSiteContent();
+  const { content, locale } = useSiteContent();
   const company = content.global.company;
   const section = content.pages.home.sections.contact;
   const smtpEnabled = content.global.smtp.enabled;
+  const isEnglish = locale === 'en';
+  const smtpNotice = isEnglish
+    ? 'SMTP is not configured yet. Configure it in Core > Global Settings.'
+    : 'SMTP ist noch nicht konfiguriert. Bitte in Core > Global Settings einrichten.';
+  const sendingLabel = isEnglish ? 'Sending...' : 'Wird gesendet...';
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -115,11 +120,11 @@ const Contact: React.FC = () => {
               ) : null}
               {!smtpEnabled ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
-                  SMTP is not configured yet. Configure it in Core &gt; Global Settings.
+                  {smtpNotice}
                 </div>
               ) : null}
               <button type="submit" disabled={isSubmitting || !smtpEnabled} className="w-full sm:w-auto px-10 py-4 bg-sap-blue hover:bg-[#007db8] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all rounded-xl shadow-lg flex items-center justify-center space-x-3 group">
-                <span>{isSubmitting ? 'Sending...' : section.form.submitText}</span>
+                <span>{isSubmitting ? sendingLabel : section.form.submitText}</span>
                 <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
             </form>

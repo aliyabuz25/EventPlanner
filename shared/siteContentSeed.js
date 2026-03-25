@@ -149,12 +149,15 @@ export const siteContentSeed = {
             title: '3ILINE Core Terminal',
             typewriterText: 'Architect a global ERP Migration for Fortune 500 client with automated ROI reporting...',
             statusLabels: {
-              idle: 'Idle',
-              reasoning: 'Reasoning',
-              success: 'Success',
-              completed: 'Completed',
-              analyzing: 'Analyzing',
-              ready: 'Ready'
+              idle: 'IDLE',
+              reasoning: 'REASONING',
+              success: 'SUCCESS',
+              completed: 'COMPLETED',
+              analyzing: 'ANALYZING',
+              ready: 'READY',
+              done: 'DONE',
+              busy: 'BUSY',
+              wait: 'WAIT'
             },
             neuralEngine: {
               label: 'Neural Engine',
@@ -171,6 +174,11 @@ export const siteContentSeed = {
             },
             reasoningLogs: ['IDENTIFY_STAKE', 'SYSTEM_NODES', 'PHASE_COSTS', 'SOW_MODULES'],
             assetsTitle: 'Assets',
+            assets: [
+              { name: 'Plan.v2', type: 'PDF' },
+              { name: 'Matrix', type: 'XLSX' },
+              { name: 'Cards', type: 'JSON' }
+            ],
             efficiency: 'Efficiency',
             genAiSystem: 'GenAI System',
             plannerCta: 'AI Event Planner'

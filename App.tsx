@@ -90,7 +90,7 @@ const pathToView = (pathname: string, content: ReturnType<typeof useSiteContent>
 };
 
 const App: React.FC = () => {
-  const { content, localeStatus, clearLocaleStatus } = useSiteContent();
+  const { content, locale, localeStatus, clearLocaleStatus } = useSiteContent();
   const initialView = pathToView(window.location.pathname, content);
   const [loading, setLoading] = useState(initialView !== 'content-admin');
   const [fadingOut, setFadingOut] = useState(false);
@@ -258,6 +258,8 @@ const App: React.FC = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
+  const localizationLabel = locale === 'en' ? 'Localization' : 'Lokalisierung';
+
   const renderContent = () => {
     if (currentView === 'survey') {
       return <SurveyPage onNavigate={(view) => setCurrentView(view)} />;
@@ -344,7 +346,7 @@ const App: React.FC = () => {
           className="fixed bottom-4 right-4 z-[260] w-[min(92vw,380px)] text-start rounded-4 border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#050505]/95 shadow-2xl backdrop-blur-xl p-4"
         >
           <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-            <div className="small fw-bold text-uppercase text-secondary">Localization</div>
+            <div className="small fw-bold text-uppercase text-secondary">{localizationLabel}</div>
             <div className={`small fw-semibold ${localeStatus.tone === 'error' ? 'text-danger' : localeStatus.tone === 'success' ? 'text-success' : 'text-primary'}`}>
               {Math.max(0, Math.min(100, localeStatus.progress))}%
             </div>

@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import Avatar from 'react-nice-avatar';
 import { useSiteContent } from '../contexts/SiteContentContext';
 import {
   AiExplorerBrief,
@@ -28,9 +30,6 @@ import {
   X,
   CheckCircle,
   Circle,
-  Maximize2,
-  Minimize2,
-  ArrowUpRight,
   Download,
   Printer,
   ChevronDown
@@ -72,6 +71,60 @@ type StructuredSection = {
   description: string;
   fields: Array<{ key: keyof StructuredDraft; label: string; placeholder: string; rows?: number }>;
 };
+
+const FSCHAT_AVATAR_CONFIG = {
+  sex: 'woman' as const,
+  faceColor: '#f7d7c4',
+  earSize: 'small' as const,
+  hairColor: '#f1c75b',
+  hairStyle: 'womanLong' as const,
+  hatStyle: 'none' as const,
+  eyeStyle: 'smile' as const,
+  glassesStyle: 'none' as const,
+  noseStyle: 'short' as const,
+  mouthStyle: 'smile' as const,
+  shirtStyle: 'polo' as const,
+  shirtColor: '#008fd3',
+  bgColor: '#ebf8ff',
+  isGradient: true
+};
+
+const fsChatAvatarMotionStyles = `
+  @keyframes fschat-avatar-float {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-2px) scale(1.02);
+    }
+  }
+
+  @keyframes fschat-avatar-glow {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+`;
+
+const FSChatAvatar: React.FC<{ className?: string }> = ({ className = 'h-full w-full' }) => (
+  <div
+    className={`relative overflow-hidden rounded-full ${className}`}
+    style={{ animation: 'fschat-avatar-float 3.2s ease-in-out infinite' }}
+  >
+    <div
+      className="absolute inset-[8%] rounded-full bg-white/30 blur-[6px]"
+      style={{ animation: 'fschat-avatar-glow 4s ease-in-out infinite' }}
+    />
+    <Avatar
+      className="relative z-[1] h-full w-full scale-[1.02]"
+      shape="circle"
+      {...FSCHAT_AVATAR_CONFIG}
+    />
+  </div>
+);
 
 const renderInlineMarkdown = (line: string) => {
   const segments = line.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
@@ -117,9 +170,21 @@ const RenderMessageText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const createInitialMessage = (companyName: string) => `Guten Tag. Ich bin Ihr ${companyName} Assistant (Pre-Sales KI-Agent).
+const createInitialMessage = (companyName: string, isEnglish: boolean) => isEnglish
+  ? `Hello. I am your ${companyName} Assistant (pre-sales AI agent).
 
-Ich führe mit Ihnen ein strukturiertes Angebots-Interview durch, um Ihr Event-Setup (Software, PM, Miettechnik, Verbrauchsmaterial, Support & Logistik) zu erfassen. Unterstützte Sprachen: Deutsch, Englisch, Türkisch.
+I will guide you through a structured offer interview to capture your event setup, including software, project management, rental hardware, consumables, support and logistics. Supported languages: German, English, Turkish.
+
+I can then generate:
+- A modular event briefing JSON
+- A detailed commercial overview with calculation logic
+- Automatic offer variants (Standard / Plus / Premium)
+- Assumptions and constraints
+
+Let's start with **Phase A (event basics)**: what is the event name, where will it take place, what are the dates, what attendance do you expect, what are the setup / teardown times, how does your check-in scenario look, and is there already a budget or budget range?`
+  : `Guten Tag. Ich bin Ihr ${companyName} Assistant (Pre-Sales KI-Agent).
+
+Ich fuehre mit Ihnen ein strukturiertes Angebots-Interview durch, um Ihr Event-Setup (Software, PM, Miettechnik, Verbrauchsmaterial, Support & Logistik) zu erfassen. Unterstuetzte Sprachen: Deutsch, Englisch, Tuerkisch.
 
 Zusammengefasst generiere ich daraus:
 - Ein modulares Event-Briefing JSON
@@ -127,19 +192,41 @@ Zusammengefasst generiere ich daraus:
 - Automatische Angebotsvarianten (Standard / Plus / Premium)
 - Annahmen & Constraints
 
-Starten wir mit **Phase A (Event-Basisdaten)**: Wie heißt das Event, wo findet es statt, Datum, erwartete Teilnehmerzahl, Aufbau/Abbau-Zeiten, wie sieht Ihr Check-in-Szenario aus und gibt es bereits ein Budget oder einen Budgetrahmen?`;
+Starten wir mit **Phase A (Event-Basisdaten)**: Wie heisst das Event, wo findet es statt, Datum, erwartete Teilnehmerzahl, Aufbau/Abbau-Zeiten, wie sieht Ihr Check-in-Szenario aus und gibt es bereits ein Budget oder einen Budgetrahmen?`;
 
-const consultingLeadMessage = 'Beschreiben Sie Ihr Ziel fuer den KI-Agenten oder Ihre Frage zu Architektur, Produktkatalog, Preislogik, Angebotsvarianten, Interview-Flow, Knowledge Cards, Budgetlogik oder CRM-Uebergabe. Der Workspace antwortet dann als fachlicher Pre-Sales- und Solution-Consulting-Assistent.';
+const createWidgetInitialMessage = (companyName: string, isEnglish: boolean) => isEnglish
+  ? `Hello. I am your ${companyName} FastLane Chat workspace copilot.
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('de-DE', {
+Tell me directly what should change and I will apply it to the live brief, scope and pricing logic immediately.
+
+Examples:
+- Set the event name to Istanbul Corporate Summit 2026
+- Change the attendee count to 1,200 and add 14 counters
+- Move the venue to Istanbul Congress Center and set the dates to 14-16 October 2026
+- Add VIP fast lane, badge printing and Salesforce integration`
+  : `Hallo. Ich bin Ihr ${companyName} FastLane-Chat-Workspace-Copilot.
+
+Sagen Sie mir direkt, was geaendert werden soll, und ich uebernehme es sofort in Live-Briefing, Scope und Preislogik.
+
+Beispiele:
+- Setze den Eventnamen auf Istanbul Corporate Summit 2026
+- Aendere die Teilnehmerzahl auf 1.200 und fuege 14 Counter hinzu
+- Setze das Venue auf Istanbul Congress Center und das Datum auf 14.-16. Oktober 2026
+- Fuege VIP-Fast-Lane, Badge-Druck und Salesforce-Integration hinzu`;
+
+const widgetLeadMessage = (isEnglish: boolean) => isEnglish
+  ? 'Open the FastLane Chat widget in the bottom-right corner and tell it what to change. The workspace will apply your updates directly to the brief, modules and pricing.'
+  : 'Oeffnen Sie den FastLane-Chat-Widget-Chat rechts unten und sagen Sie direkt, was geaendert werden soll. Der Workspace uebernimmt die Aenderungen sofort in Briefing, Modulen und Preislogik.';
+
+const formatCurrency = (value: number, locale: 'de' | 'en' = 'de') =>
+  new Intl.NumberFormat(locale === 'en' ? 'en-GB' : 'de-DE', {
     style: 'currency',
     currency: 'EUR',
     maximumFractionDigits: 0
   }).format(value);
 
-const formatPriceValue = (value?: number | null, fallback = 'Preis offen') =>
-  typeof value === 'number' ? formatCurrency(value) : fallback;
+const formatPriceValue = (value?: number | null, fallback = 'Preis offen', locale: 'de' | 'en' = 'de') =>
+  typeof value === 'number' ? formatCurrency(value, locale) : fallback;
 
 const escapeHtml = (value: string) =>
   String(value ?? '')
@@ -263,7 +350,7 @@ const structuredSections: StructuredSection[] = [
   }
 ];
 
-const structuredDraftDemo: StructuredDraft = {
+const structuredDraftDemoDe: StructuredDraft = {
   customerName: 'Laura Demir',
   eventName: 'Annual Growth Summit 2026',
   eventLocation: 'Filderhalle in Leinfelden-Echterdingen',
@@ -280,24 +367,47 @@ const structuredDraftDemo: StructuredDraft = {
   budget: '25.000 bis 30.000 EUR'
 };
 
-const buildLocalStructuredPrompt = (draft: StructuredDraft) => {
+const structuredDraftDemoEn: StructuredDraft = {
+  customerName: 'Laura Demir',
+  eventName: 'Annual Growth Summit 2026',
+  eventLocation: 'Filderhalle in Leinfelden-Echterdingen, Germany',
+  eventDates: '17-18 September 2026, setup on 16 September from 14:00, teardown on 18 September from 18:30',
+  attendees: '1,200',
+  checkInScenario: 'Print-on-demand across 3 entrances with 12 counters, walk-ins and a fast lane for VIPs',
+  softwareNeeds: 'Participant import, badge printing, check-in, session scanning, lead capture, reporting',
+  integrations: 'Salesforce, bilingual setup in German and English',
+  projectManagement: 'Kickoff, weekly status calls, test run two weeks before the event, final rehearsal on the day before',
+  rentalNeeds: '12 iPads, 4 badge printers, 14 scanners, 2 LTE routers',
+  consumables: 'Paper badges, lanyards, holders, printer rolls and a 10% reserve',
+  supportLevel: 'Extended support with 3 technicians and 1 supervisor onsite',
+  logistics: 'Freight forwarding for hardware, 2 hotel nights for the team, delivery on the day before',
+  budget: 'EUR 25,000 to 30,000'
+};
+
+const buildLocalStructuredPrompt = (draft: StructuredDraft, isEnglish: boolean) => {
   const intros = [
-    `Wir planen ${draft.eventName || 'ein Event'}${draft.eventLocation ? ` in ${draft.eventLocation}` : ''}.`,
-    `${draft.customerName ? `${draft.customerName} betreut ` : 'Wir betreuen '}das Event ${draft.eventName || 'aktuell'}${draft.eventLocation ? ` am Standort ${draft.eventLocation}` : ''}.`,
-    `Fuer ${draft.eventName || 'das geplante Event'}${draft.eventLocation ? ` in ${draft.eventLocation}` : ''} benoetigen wir ein strukturiertes Angebot.`
+    isEnglish
+      ? `We are planning ${draft.eventName || 'an event'}${draft.eventLocation ? ` in ${draft.eventLocation}` : ''}.`
+      : `Wir planen ${draft.eventName || 'ein Event'}${draft.eventLocation ? ` in ${draft.eventLocation}` : ''}.`,
+    isEnglish
+      ? `${draft.customerName ? `${draft.customerName} is coordinating ` : 'We are coordinating '}the event ${draft.eventName || 'currently'}${draft.eventLocation ? ` at ${draft.eventLocation}` : ''}.`
+      : `${draft.customerName ? `${draft.customerName} betreut ` : 'Wir betreuen '}das Event ${draft.eventName || 'aktuell'}${draft.eventLocation ? ` am Standort ${draft.eventLocation}` : ''}.`,
+    isEnglish
+      ? `We need a structured proposal for ${draft.eventName || 'the planned event'}${draft.eventLocation ? ` in ${draft.eventLocation}` : ''}.`
+      : `Fuer ${draft.eventName || 'das geplante Event'}${draft.eventLocation ? ` in ${draft.eventLocation}` : ''} benoetigen wir ein strukturiertes Angebot.`
   ];
 
-  const timing = draft.eventDates ? `Die relevanten Termine und Zeiten sind wie folgt geplant: ${draft.eventDates}.` : '';
-  const attendees = draft.attendees ? `Wir erwarten ${draft.attendees} Teilnehmende.` : '';
-  const scenario = draft.checkInScenario ? `Fuer den Check-in ist folgendes Szenario vorgesehen: ${draft.checkInScenario}.` : '';
-  const software = draft.softwareNeeds ? `Auf der Software-Seite werden ${draft.softwareNeeds} benoetigt.` : '';
-  const integrations = draft.integrations ? `Zu beruecksichtigen sind zudem folgende Integrationen bzw. Systemanbindungen: ${draft.integrations}.` : '';
-  const pm = draft.projectManagement ? `Im Projektmanagement und in der Vorbereitung ist folgender Umfang vorgesehen: ${draft.projectManagement}.` : '';
-  const rental = draft.rentalNeeds ? `An Miettechnik wird aktuell benoetigt: ${draft.rentalNeeds}.` : '';
-  const consumables = draft.consumables ? `Beim Verbrauchsmaterial planen wir mit ${draft.consumables}.` : '';
-  const support = draft.supportLevel ? `Vor Ort wird ${draft.supportLevel} eingeplant.` : '';
-  const logistics = draft.logistics ? `Fuer Transport, Reise und Logistik gilt derzeit: ${draft.logistics}.` : '';
-  const budget = draft.budget ? `Der Budgetrahmen liegt bei ${draft.budget}.` : '';
+  const timing = draft.eventDates ? (isEnglish ? `The relevant dates and timings are planned as follows: ${draft.eventDates}.` : `Die relevanten Termine und Zeiten sind wie folgt geplant: ${draft.eventDates}.`) : '';
+  const attendees = draft.attendees ? (isEnglish ? `We expect ${draft.attendees} attendees.` : `Wir erwarten ${draft.attendees} Teilnehmende.`) : '';
+  const scenario = draft.checkInScenario ? (isEnglish ? `The planned check-in scenario is as follows: ${draft.checkInScenario}.` : `Fuer den Check-in ist folgendes Szenario vorgesehen: ${draft.checkInScenario}.`) : '';
+  const software = draft.softwareNeeds ? (isEnglish ? `On the software side we need ${draft.softwareNeeds}.` : `Auf der Software-Seite werden ${draft.softwareNeeds} benoetigt.`) : '';
+  const integrations = draft.integrations ? (isEnglish ? `Please also consider the following integrations or system connections: ${draft.integrations}.` : `Zu beruecksichtigen sind zudem folgende Integrationen bzw. Systemanbindungen: ${draft.integrations}.`) : '';
+  const pm = draft.projectManagement ? (isEnglish ? `For project management and preparation, the expected scope is: ${draft.projectManagement}.` : `Im Projektmanagement und in der Vorbereitung ist folgender Umfang vorgesehen: ${draft.projectManagement}.`) : '';
+  const rental = draft.rentalNeeds ? (isEnglish ? `The current rental hardware requirement is: ${draft.rentalNeeds}.` : `An Miettechnik wird aktuell benoetigt: ${draft.rentalNeeds}.`) : '';
+  const consumables = draft.consumables ? (isEnglish ? `For consumables we are planning with ${draft.consumables}.` : `Beim Verbrauchsmaterial planen wir mit ${draft.consumables}.`) : '';
+  const support = draft.supportLevel ? (isEnglish ? `On site we expect ${draft.supportLevel}.` : `Vor Ort wird ${draft.supportLevel} eingeplant.`) : '';
+  const logistics = draft.logistics ? (isEnglish ? `For transport, travel and logistics the current assumption is: ${draft.logistics}.` : `Fuer Transport, Reise und Logistik gilt derzeit: ${draft.logistics}.`) : '';
+  const budget = draft.budget ? (isEnglish ? `The budget range is ${draft.budget}.` : `Der Budgetrahmen liegt bei ${draft.budget}.`) : '';
 
   const parts = [
     intros[new Date().getSeconds() % intros.length],
@@ -321,14 +431,18 @@ const buildLocalStructuredPrompt = (draft: StructuredDraft) => {
   return [parts.slice(0, 4).join(' '), parts.slice(4).join(' ')].filter(Boolean).join('\n\n');
 };
 
-const buildLocalEasyExpansionPrompt = (seed: string) => {
+const buildLocalEasyExpansionPrompt = (seed: string, isEnglish: boolean) => {
   const cleanSeed = String(seed ?? '').trim();
   if (!cleanSeed) return '';
 
   return [
     cleanSeed,
-    'Zusaetzlich sollen Software, Projektmanagement, Miettechnik, Verbrauchsmaterial, Support vor Ort sowie Transport- und Reisebedarf in die Planung aufgenommen und im Angebot mitgedacht werden.',
-    'Bitte beruecksichtigen Sie dabei auch operative Anforderungen wie Check-in-Prozess, Badge-Druck, Scanning, Geraetebedarf, Materialreserve, Onsite-Support und Logistikfenster.'
+    isEnglish
+      ? 'Software, project management, rental hardware, consumables, onsite support and transport or travel requirements should also be included in the planning and commercial scope.'
+      : 'Zusaetzlich sollen Software, Projektmanagement, Miettechnik, Verbrauchsmaterial, Support vor Ort sowie Transport- und Reisebedarf in die Planung aufgenommen und im Angebot mitgedacht werden.',
+    isEnglish
+      ? 'Please also consider operational requirements such as the check-in process, badge printing, scanning, device planning, material reserve, onsite support and logistics windows.'
+      : 'Bitte beruecksichtigen Sie dabei auch operative Anforderungen wie Check-in-Prozess, Badge-Druck, Scanning, Geraetebedarf, Materialreserve, Onsite-Support und Logistikfenster.'
   ].join(' ');
 };
 
@@ -387,7 +501,7 @@ const inferEasyPromptBudget = (seed: string) => {
   return match?.[1]?.replace(/\s+/g, ' ').trim() || '';
 };
 
-const buildDeterministicEasyPrompt = (seed: string) => {
+const buildDeterministicEasyPrompt = (seed: string, isEnglish: boolean) => {
   const cleanSeed = String(seed ?? '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -402,28 +516,28 @@ const buildDeterministicEasyPrompt = (seed: string) => {
 
   const operationalParagraph = [
     /badge|check-in|walk-?in|einlass/i.test(cleanSeed)
-      ? 'Fuer den Einlass sind ein schneller Check-in, Badge-Druck, Walk-ins und eine saubere Besuchersteuerung wichtig.'
-      : 'Der Check-in und die Besuchersteuerung sollen operativ sauber geplant werden.',
+      ? (isEnglish ? 'Fast check-in, badge printing, walk-ins and controlled visitor flow are important for entry operations.' : 'Fuer den Einlass sind ein schneller Check-in, Badge-Druck, Walk-ins und eine saubere Besuchersteuerung wichtig.')
+      : (isEnglish ? 'The check-in process and visitor flow should be planned in a robust operational way.' : 'Der Check-in und die Besuchersteuerung sollen operativ sauber geplant werden.'),
     /software|scanning|lead-capture|integration|reporting/i.test(cleanSeed)
-      ? 'Softwareseitig sollen Teilnehmermanagement, Check-in, Badge-Druck, Scanning und bei Bedarf Lead-Capture oder Integrationen beruecksichtigt werden.'
-      : 'Softwareseitig sollen Teilnehmermanagement, Check-in, Badge-Druck, Reporting und moegliche Integrationen mitgedacht werden.',
-    'Projektmanagement, Vorbereitung, Abstimmungen, Testlauf und operative Detailplanung sollen im Angebot enthalten sein.',
+      ? (isEnglish ? 'On the software side, participant management, check-in, badge printing, scanning and, if needed, lead capture or integrations should be included.' : 'Softwareseitig sollen Teilnehmermanagement, Check-in, Badge-Druck, Scanning und bei Bedarf Lead-Capture oder Integrationen beruecksichtigt werden.')
+      : (isEnglish ? 'Participant management, check-in, badge printing, reporting and possible integrations should be considered on the software side.' : 'Softwareseitig sollen Teilnehmermanagement, Check-in, Badge-Druck, Reporting und moegliche Integrationen mitgedacht werden.'),
+    isEnglish ? 'Project management, preparation, coordination, test runs and detailed operations planning should be included in the proposal.' : 'Projektmanagement, Vorbereitung, Abstimmungen, Testlauf und operative Detailplanung sollen im Angebot enthalten sein.',
     /ipad|tablet|drucker|scanner|router|lte|miettechnik|hardware/i.test(cleanSeed)
-      ? 'Fuer die Miettechnik sollen Tablets, Badge-Drucker, Scanner und gegebenenfalls Netzwerk-Backup eingeplant werden.'
-      : 'Der voraussichtliche Bedarf an Tablets, Badge-Druckern, Scannern und Backup-Konnektivitaet soll geprueft werden.',
-    'Auch Verbrauchsmaterialien wie Badges, Lanyards, Halter, Druckmaterialien und Materialreserven sollen beruecksichtigt werden.',
+      ? (isEnglish ? 'For rental hardware, tablets, badge printers, scanners and, if required, network backup should be planned.' : 'Fuer die Miettechnik sollen Tablets, Badge-Drucker, Scanner und gegebenenfalls Netzwerk-Backup eingeplant werden.')
+      : (isEnglish ? 'The expected need for tablets, badge printers, scanners and backup connectivity should be assessed.' : 'Der voraussichtliche Bedarf an Tablets, Badge-Druckern, Scannern und Backup-Konnektivitaet soll geprueft werden.'),
+    isEnglish ? 'Consumables such as badges, lanyards, holders, print materials and reserve stock should also be included.' : 'Auch Verbrauchsmaterialien wie Badges, Lanyards, Halter, Druckmaterialien und Materialreserven sollen beruecksichtigt werden.',
     /support|onsite|vor ort|techniker|supervisor|extended/i.test(cleanSeed)
-      ? 'Ein passendes Support-Level mit technischer Vor-Ort-Betreuung soll mitkalkuliert werden.'
-      : 'Das geeignete Support-Level fuer Peak-Zeiten und Eventbetrieb soll mitdefiniert werden.',
+      ? (isEnglish ? 'A suitable support level with onsite technical coverage should be included in the commercial scope.' : 'Ein passendes Support-Level mit technischer Vor-Ort-Betreuung soll mitkalkuliert werden.')
+      : (isEnglish ? 'The right support level for peak times and live operations should be defined.' : 'Das geeignete Support-Level fuer Peak-Zeiten und Eventbetrieb soll mitdefiniert werden.'),
     /hotel|reise|transport|spedition|logistik/i.test(cleanSeed)
-      ? 'Zusaetzlich sollen Reise-, Hotel-, Transport- und Logistikbedarfe im Angebot abgebildet werden.'
-      : 'Relevante Reise-, Transport-, Hotel- und Logistikanforderungen sollen mitgeprueft werden.'
+      ? (isEnglish ? 'Travel, hotel, transport and logistics requirements should also be reflected in the proposal.' : 'Zusaetzlich sollen Reise-, Hotel-, Transport- und Logistikbedarfe im Angebot abgebildet werden.')
+      : (isEnglish ? 'Relevant travel, transport, hotel and logistics requirements should also be assessed.' : 'Relevante Reise-, Transport-, Hotel- und Logistikanforderungen sollen mitgeprueft werden.')
   ].join(' ');
 
   return [
-    eventName ? `Eventname: ${eventName}.` : '',
-    eventLocation ? `Ort / Venue: ${eventLocation}.` : '',
-    attendeeHint ? `Teilnehmerzahl: Ca. ${attendeeHint}.` : '',
+    eventName ? `${isEnglish ? 'Event name' : 'Eventname'}: ${eventName}.` : '',
+    eventLocation ? `${isEnglish ? 'Location / venue' : 'Ort / Venue'}: ${eventLocation}.` : '',
+    attendeeHint ? `${isEnglish ? 'Attendance' : 'Teilnehmerzahl'}: ${isEnglish ? 'Approx.' : 'Ca.'} ${attendeeHint}.` : '',
     budgetHint ? `Budget: ${budgetHint}.` : '',
     normalizedSeed,
     operationalParagraph
@@ -451,7 +565,7 @@ const isAcceptableExpandedPrompt = (seed: string, prompt: string) => {
   return requiredSignals.every(Boolean);
 };
 
-const deriveLocationDetails = (brief?: AiExplorerBrief | null) => {
+const deriveLocationDetails = (brief?: AiExplorerBrief | null, isEnglish = false) => {
   const rawLocation = String(brief?.eventLocation ?? '').trim();
   const rawDates = String(brief?.eventDates ?? '').trim();
   const location = rawLocation.replace(/\s+/g, ' ').trim();
@@ -497,27 +611,34 @@ const deriveLocationDetails = (brief?: AiExplorerBrief | null) => {
 
   if (!country) {
     if (/\bistanbul\b/i.test(location)) {
-      country = 'Türkei';
+      country = isEnglish ? 'Turkey' : 'Tuerkei';
     } else if (/\b(leinfelden|echterdingen|stuttgart|berlin|m[uü]nchen|hamburg)\b/i.test(location)) {
-      country = 'Deutschland';
+      country = isEnglish ? 'Germany' : 'Deutschland';
     }
   }
 
   const details = [
     venue ? { label: 'Venue', value: venue } : null,
-    city ? { label: 'Stadt', value: city } : null,
-    region ? { label: 'Region', value: region } : null,
-    country ? { label: 'Land', value: country } : null,
-    rawDates ? { label: 'Datum', value: rawDates } : null
+    city ? { label: isEnglish ? 'City' : 'Stadt', value: city } : null,
+    region ? { label: isEnglish ? 'Region' : 'Region', value: region } : null,
+    country ? { label: isEnglish ? 'Country' : 'Land', value: country } : null,
+    rawDates ? { label: isEnglish ? 'Date' : 'Datum', value: rawDates } : null
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   return details;
 };
 
 const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly = false }) => {
-  const { content } = useSiteContent();
+  const { content, locale } = useSiteContent();
   const t = content.pages.survey.sections.advisor;
   const companyName = content.global.company.name;
+  const isEnglish = locale === 'en';
+  const openLabel = isEnglish ? 'Open' : 'Noch offen';
+  const priceOpenLabel = isEnglish ? 'Price open' : 'Preis offen';
+  const structuredDraftDemo = isEnglish ? structuredDraftDemoEn : structuredDraftDemoDe;
+  const fallbackPhases = isEnglish
+    ? ['Event Basics', 'Software', 'Project Management', 'Rental Hardware', 'Consumables', 'Support', 'Transport']
+    : ['Basisdaten', 'Software', 'Projektmanagement', 'Miettechnik', 'Verbrauchsmaterial', 'Support', 'Transport'];
 
   const starterPromptsByPhase = t.starterPrompts;
 
@@ -535,7 +656,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     {
       key: 'basis',
       title: t.ui.liveBrief.sections.location,
-      description: 'Eckdaten zur Location und zum Kunden.',
+      description: isEnglish ? 'Core details about the location and customer.' : 'Eckdaten zur Location und zum Kunden.',
       fields: [
         { key: 'customerName', label: t.ui.structuredInput.fields.customerName.label, placeholder: t.ui.structuredInput.fields.customerName.placeholder },
         { key: 'eventName', label: t.ui.structuredInput.fields.eventName.label, placeholder: t.ui.structuredInput.fields.eventName.placeholder },
@@ -547,7 +668,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     {
       key: 'checkin',
       title: t.ui.liveBrief.sections.modules,
-      description: 'Check-in Szenarien und technische Anforderungen.',
+      description: isEnglish ? 'Check-in scenarios and technical requirements.' : 'Check-in Szenarien und technische Anforderungen.',
       fields: [
         { key: 'checkInScenario', label: t.ui.structuredInput.fields.checkInScenario.label, placeholder: t.ui.structuredInput.fields.checkInScenario.placeholder },
         { key: 'softwareNeeds', label: t.ui.structuredInput.fields.softwareNeeds.label, placeholder: t.ui.structuredInput.fields.softwareNeeds.placeholder },
@@ -557,7 +678,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     {
       key: 'operations',
       title: t.ui.liveBrief.sections.drivers,
-      description: 'Projektmanagement und operative Durchfuehrung.',
+      description: isEnglish ? 'Project management and operational delivery.' : 'Projektmanagement und operative Durchfuehrung.',
       fields: [
         { key: 'projectManagement', label: t.ui.structuredInput.fields.projectManagement.label, placeholder: t.ui.structuredInput.fields.projectManagement.placeholder },
         { key: 'rentalNeeds', label: t.ui.structuredInput.fields.rentalNeeds.label, placeholder: t.ui.structuredInput.fields.rentalNeeds.placeholder },
@@ -567,18 +688,19 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     {
       key: 'logistics',
       title: t.ui.liveBrief.sections.location,
-      description: 'Service-Level und Budgetvorgaben.',
+      description: isEnglish ? 'Service level and budget parameters.' : 'Service-Level und Budgetvorgaben.',
       fields: [
         { key: 'supportLevel', label: t.ui.structuredInput.fields.supportLevel.label, placeholder: t.ui.structuredInput.fields.supportLevel.placeholder },
         { key: 'logistics', label: t.ui.structuredInput.fields.logistics.label, placeholder: t.ui.structuredInput.fields.logistics.placeholder },
         { key: 'budget', label: t.ui.structuredInput.fields.budget.label, placeholder: t.ui.structuredInput.fields.budget.placeholder }
       ]
     }
-  ] as Array<StructuredSection>), [t]);
+  ] as Array<StructuredSection>), [isEnglish, t]);
 
-  const workspaceExportLabel = `${companyName} Workspace Export`;
-  const initialMessage = useMemo(() => createInitialMessage(companyName), [companyName]);
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'model', text: createInitialMessage(companyName) }]);
+  const workspaceExportLabel = `${companyName} ${isEnglish ? 'Workspace Export' : 'Workspace Export'}`;
+  const initialMessage = useMemo(() => createInitialMessage(companyName, isEnglish), [companyName, isEnglish]);
+  const widgetInitialMessage = useMemo(() => createWidgetInitialMessage(companyName, isEnglish), [companyName, isEnglish]);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'model', text: createInitialMessage(companyName, isEnglish) }]);
   const [brief, setBrief] = useState<AiExplorerBrief | null>(null);
   const [offer, setOffer] = useState<AiExplorerOffer | null>(null);
   const [manualBrief, setManualBrief] = useState<ManualBriefFields>({
@@ -600,8 +722,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     supportLevel: false
   });
   const [input, setInput] = useState('');
-  const [inputMode, setInputMode] = useState<AiExplorerInputMode>('easy');
-  const [isModeStepComplete, setIsModeStepComplete] = useState(false);
+  const [inputMode, setInputMode] = useState<AiExplorerInputMode>('widget');
+  const [isModeStepComplete, setIsModeStepComplete] = useState(true);
   const [structuredDraft, setStructuredDraft] = useState<StructuredDraft>({
     customerName: '',
     eventName: '',
@@ -644,12 +766,21 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const [isPromptGenerating, setIsPromptGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [assistantMaximized, setAssistantMaximized] = useState(false);
   const [structuredActionNotice, setStructuredActionNotice] = useState<string | null>(null);
   const [pendingPromptReview, setPendingPromptReview] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const workspaceComposerRef = useRef<HTMLTextAreaElement>(null);
+  const assistantComposerRef = useRef<HTMLTextAreaElement>(null);
   const structuredInputRef = useRef<HTMLDivElement>(null);
+  const previousLocaleRef = useRef(locale);
+
+  useEffect(() => {
+    setMessages((current) => (
+      current.length === 1 && current[0]?.role === 'model'
+        ? [{ role: 'model', text: inputMode === 'widget' ? widgetInitialMessage : initialMessage }]
+        : current
+    ));
+  }, [initialMessage, inputMode, widgetInitialMessage]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -664,12 +795,53 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   }, [structuredActionNotice]);
 
   useEffect(() => {
-    if (!assistantOnly) return;
-    document.body.style.overflow = assistantOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [assistantOnly, assistantOpen]);
+    if (!assistantOpen) return;
+    const frame = window.requestAnimationFrame(() => {
+      assistantComposerRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [assistantOpen, inputMode]);
+
+  useEffect(() => {
+    if (previousLocaleRef.current === locale) {
+      return;
+    }
+
+    previousLocaleRef.current = locale;
+
+    if (brief) {
+      setManualBrief((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        for (const field of manualBriefFieldConfig) {
+          const key = field.key;
+          if (String(current[key] ?? '').trim()) {
+            continue;
+          }
+
+          const incoming = String(brief?.[key] ?? '').trim();
+          if (!incoming) {
+            continue;
+          }
+
+          next[key] = incoming;
+          changed = true;
+        }
+
+        return changed ? next : current;
+      });
+    }
+
+    setMessages([{ role: 'model', text: inputMode === 'widget' ? widgetInitialMessage : initialMessage }]);
+    setBrief(null);
+    setOffer(null);
+    setInput('');
+    setError(null);
+    setPendingPromptReview(null);
+    setStructuredActionNotice(null);
+    setAssistantOpen(false);
+  }, [brief, initialMessage, inputMode, locale, manualBriefFieldConfig, widgetInitialMessage]);
 
   useEffect(() => {
     if (!brief) return;
@@ -704,35 +876,31 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
   const summaryItems = useMemo(
     () => [
-      { label: 'KUNDE (PO)', value: mergedBrief?.customerName || 'Noch offen', icon: ClipboardList },
-      { label: 'EVENTNAME', value: mergedBrief?.eventName || 'Noch offen', icon: CalendarDays },
-      { label: 'ORT (VENUES)', value: mergedBrief?.eventLocation || 'Noch offen', icon: MapPin },
-      { label: 'TEILNEHMER', value: mergedBrief?.attendees || 'Noch offen', icon: Users },
-      { label: 'BUDGET', value: mergedBrief?.budget || 'Noch offen', icon: ReceiptText },
-      { label: 'SZENARIO', value: mergedBrief?.checkInScenario || 'Noch offen', icon: WandSparkles },
-      { label: 'SUPPORT-LEVEL', value: mergedBrief?.supportLevel || 'Noch offen', icon: ShieldCheck }
+      { label: isEnglish ? 'CUSTOMER (PO)' : 'KUNDE (PO)', value: mergedBrief?.customerName || openLabel, icon: ClipboardList },
+      { label: isEnglish ? 'EVENT NAME' : 'EVENTNAME', value: mergedBrief?.eventName || openLabel, icon: CalendarDays },
+      { label: isEnglish ? 'LOCATION' : 'ORT (VENUES)', value: mergedBrief?.eventLocation || openLabel, icon: MapPin },
+      { label: isEnglish ? 'ATTENDEES' : 'TEILNEHMER', value: mergedBrief?.attendees || openLabel, icon: Users },
+      { label: 'BUDGET', value: mergedBrief?.budget || openLabel, icon: ReceiptText },
+      { label: isEnglish ? 'SCENARIO' : 'SZENARIO', value: mergedBrief?.checkInScenario || openLabel, icon: WandSparkles },
+      { label: 'SUPPORT-LEVEL', value: mergedBrief?.supportLevel || openLabel, icon: ShieldCheck }
     ],
-    [mergedBrief]
+    [isEnglish, mergedBrief, openLabel]
   );
-  const locationDetails = useMemo(() => deriveLocationDetails(mergedBrief), [mergedBrief]);
+  const locationDetails = useMemo(() => deriveLocationDetails(mergedBrief, isEnglish), [isEnglish, mergedBrief]);
 
-  const phases = mergedBrief?.phaseOrder ?? ['Basisdaten', 'Software', 'Projektmanagement', 'Miettechnik', 'Verbrauchsmaterial', 'Support', 'Transport'];
+  const phases = mergedBrief?.phaseOrder ?? fallbackPhases;
   const currentPhaseIndex = Math.max(0, phases.findIndex((phase) => phase === mergedBrief?.currentPhase));
-  const activePhase = mergedBrief?.currentPhase || 'Basisdaten';
-  const activeStarterPrompts = starterPromptsByPhase[activePhase] || starterPromptsByPhase.Basisdaten;
+  const activePhase = mergedBrief?.currentPhase || phases[0];
+  const activeStarterPrompts = starterPromptsByPhase[activePhase] || starterPromptsByPhase.default || Object.values(starterPromptsByPhase)[0];
   const knowledgeCards: AiExplorerKnowledgeCard[] = offer?.knowledgeCards ?? [];
-  const leadQuestionText = inputMode === 'consulting'
-    ? consultingLeadMessage
+  const widgetChatLabel = 'FastLane Chat';
+  const isWidgetMode = inputMode === 'widget';
+  const leadQuestionText = isWidgetMode
+    ? widgetLeadMessage(isEnglish)
     : (mergedBrief?.currentQuestion || initialMessage);
   const recentMessages = messages.slice(-4);
   const isStepTwoLocked = !isModeStepComplete;
-  const currentModeLabel = !isModeStepComplete
-    ? 'Nicht gewaehlt'
-    : inputMode === 'easy'
-      ? 'Easy Mode'
-      : inputMode === 'prompt'
-        ? 'Prompt Mode'
-        : 'Consulting';
+  const currentModeLabel = isEnglish ? 'Easy Chat' : 'Easy Chat';
 
   useEffect(() => {
     if (!mergedBrief && !offer) return;
@@ -746,7 +914,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
       checkInScenario: String(mergedBrief?.checkInScenario ?? '').trim(),
       softwareNeeds: Array.isArray(mergedBrief?.softwareNeeds) ? mergedBrief?.softwareNeeds.join(', ') : '',
       integrations: Array.isArray(mergedBrief?.integrations) ? mergedBrief?.integrations.join(', ') : '',
-      projectManagement: offer?.modules.find((module) => module.key === 'project-management')?.summary || '',
+      projectManagement: offer?.modules.find((module) => module.key === 'pm')?.summary || '',
       rentalNeeds: Array.isArray(mergedBrief?.rentalNeeds) ? mergedBrief?.rentalNeeds.join(', ') : '',
       consumables: offer?.modules.find((module) => module.key === 'consumables')?.summary || '',
       supportLevel: String(mergedBrief?.supportLevel ?? '').trim(),
@@ -779,20 +947,20 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
   const buildStructuredPrompt = () => {
     const sections = [
-      structuredDraft.customerName ? `Ansprechpartner auf Kundenseite: ${structuredDraft.customerName}.` : '',
-      structuredDraft.eventName ? `Eventname: ${structuredDraft.eventName}.` : '',
-      structuredDraft.eventLocation ? `Ort / Venue: ${structuredDraft.eventLocation}.` : '',
-      structuredDraft.eventDates ? `Datum / Zeiten: ${structuredDraft.eventDates}.` : '',
-      structuredDraft.attendees ? `Teilnehmerzahl: ${structuredDraft.attendees}.` : '',
-      structuredDraft.checkInScenario ? `Check-in-Szenario: ${structuredDraft.checkInScenario}.` : '',
-      structuredDraft.softwareNeeds ? `Software-Bedarf: ${structuredDraft.softwareNeeds}.` : '',
-      structuredDraft.integrations ? `Integrationen: ${structuredDraft.integrations}.` : '',
-      structuredDraft.projectManagement ? `Projektmanagement / Vorbereitung: ${structuredDraft.projectManagement}.` : '',
-      structuredDraft.rentalNeeds ? `Miettechnik: ${structuredDraft.rentalNeeds}.` : '',
-      structuredDraft.consumables ? `Verbrauchsmaterial: ${structuredDraft.consumables}.` : '',
-      structuredDraft.supportLevel ? `Support vor Ort: ${structuredDraft.supportLevel}.` : '',
-      structuredDraft.logistics ? `Transport / Reise / Hotel: ${structuredDraft.logistics}.` : '',
-      structuredDraft.budget ? `Budgetrahmen: ${structuredDraft.budget}.` : ''
+      structuredDraft.customerName ? `${isEnglish ? 'Customer-side contact' : 'Ansprechpartner auf Kundenseite'}: ${structuredDraft.customerName}.` : '',
+      structuredDraft.eventName ? `${isEnglish ? 'Event name' : 'Eventname'}: ${structuredDraft.eventName}.` : '',
+      structuredDraft.eventLocation ? `${isEnglish ? 'Location / venue' : 'Ort / Venue'}: ${structuredDraft.eventLocation}.` : '',
+      structuredDraft.eventDates ? `${isEnglish ? 'Dates / timings' : 'Datum / Zeiten'}: ${structuredDraft.eventDates}.` : '',
+      structuredDraft.attendees ? `${isEnglish ? 'Attendance' : 'Teilnehmerzahl'}: ${structuredDraft.attendees}.` : '',
+      structuredDraft.checkInScenario ? `${isEnglish ? 'Check-in scenario' : 'Check-in-Szenario'}: ${structuredDraft.checkInScenario}.` : '',
+      structuredDraft.softwareNeeds ? `${isEnglish ? 'Software scope' : 'Software-Bedarf'}: ${structuredDraft.softwareNeeds}.` : '',
+      structuredDraft.integrations ? `${isEnglish ? 'Integrations' : 'Integrationen'}: ${structuredDraft.integrations}.` : '',
+      structuredDraft.projectManagement ? `${isEnglish ? 'Project management / preparation' : 'Projektmanagement / Vorbereitung'}: ${structuredDraft.projectManagement}.` : '',
+      structuredDraft.rentalNeeds ? `${isEnglish ? 'Rental hardware' : 'Miettechnik'}: ${structuredDraft.rentalNeeds}.` : '',
+      structuredDraft.consumables ? `${isEnglish ? 'Consumables' : 'Verbrauchsmaterial'}: ${structuredDraft.consumables}.` : '',
+      structuredDraft.supportLevel ? `${isEnglish ? 'Onsite support' : 'Support vor Ort'}: ${structuredDraft.supportLevel}.` : '',
+      structuredDraft.logistics ? `${isEnglish ? 'Transport / travel / hotel' : 'Transport / Reise / Hotel'}: ${structuredDraft.logistics}.` : '',
+      structuredDraft.budget ? `${isEnglish ? 'Budget range' : 'Budgetrahmen'}: ${structuredDraft.budget}.` : ''
     ].filter(Boolean);
 
     return sections.join(' ');
@@ -810,7 +978,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const applyStructuredDemo = () => {
     setStructuredDraft(structuredDraftDemo);
     openAllStructuredSections();
-    setStructuredActionNotice('Beispieldaten wurden eingefuellt.');
+    setStructuredActionNotice(isEnglish ? 'Example data was inserted.' : 'Beispieldaten wurden eingefuellt.');
     structuredInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
@@ -819,20 +987,20 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     if (prompt) return prompt;
 
     const fallbackSections = [
-      structuredDraftDemo.customerName ? `Ansprechpartner auf Kundenseite: ${structuredDraftDemo.customerName}.` : '',
-      structuredDraftDemo.eventName ? `Eventname: ${structuredDraftDemo.eventName}.` : '',
-      structuredDraftDemo.eventLocation ? `Ort / Venue: ${structuredDraftDemo.eventLocation}.` : '',
-      structuredDraftDemo.eventDates ? `Datum / Zeiten: ${structuredDraftDemo.eventDates}.` : '',
-      structuredDraftDemo.attendees ? `Teilnehmerzahl: ${structuredDraftDemo.attendees}.` : '',
-      structuredDraftDemo.checkInScenario ? `Check-in-Szenario: ${structuredDraftDemo.checkInScenario}.` : '',
-      structuredDraftDemo.softwareNeeds ? `Software-Bedarf: ${structuredDraftDemo.softwareNeeds}.` : '',
-      structuredDraftDemo.integrations ? `Integrationen: ${structuredDraftDemo.integrations}.` : '',
-      structuredDraftDemo.projectManagement ? `Projektmanagement / Vorbereitung: ${structuredDraftDemo.projectManagement}.` : '',
-      structuredDraftDemo.rentalNeeds ? `Miettechnik: ${structuredDraftDemo.rentalNeeds}.` : '',
-      structuredDraftDemo.consumables ? `Verbrauchsmaterial: ${structuredDraftDemo.consumables}.` : '',
-      structuredDraftDemo.supportLevel ? `Support vor Ort: ${structuredDraftDemo.supportLevel}.` : '',
-      structuredDraftDemo.logistics ? `Transport / Reise / Hotel: ${structuredDraftDemo.logistics}.` : '',
-      structuredDraftDemo.budget ? `Budgetrahmen: ${structuredDraftDemo.budget}.` : ''
+      structuredDraftDemo.customerName ? `${isEnglish ? 'Customer-side contact' : 'Ansprechpartner auf Kundenseite'}: ${structuredDraftDemo.customerName}.` : '',
+      structuredDraftDemo.eventName ? `${isEnglish ? 'Event name' : 'Eventname'}: ${structuredDraftDemo.eventName}.` : '',
+      structuredDraftDemo.eventLocation ? `${isEnglish ? 'Location / venue' : 'Ort / Venue'}: ${structuredDraftDemo.eventLocation}.` : '',
+      structuredDraftDemo.eventDates ? `${isEnglish ? 'Dates / timings' : 'Datum / Zeiten'}: ${structuredDraftDemo.eventDates}.` : '',
+      structuredDraftDemo.attendees ? `${isEnglish ? 'Attendance' : 'Teilnehmerzahl'}: ${structuredDraftDemo.attendees}.` : '',
+      structuredDraftDemo.checkInScenario ? `${isEnglish ? 'Check-in scenario' : 'Check-in-Szenario'}: ${structuredDraftDemo.checkInScenario}.` : '',
+      structuredDraftDemo.softwareNeeds ? `${isEnglish ? 'Software scope' : 'Software-Bedarf'}: ${structuredDraftDemo.softwareNeeds}.` : '',
+      structuredDraftDemo.integrations ? `${isEnglish ? 'Integrations' : 'Integrationen'}: ${structuredDraftDemo.integrations}.` : '',
+      structuredDraftDemo.projectManagement ? `${isEnglish ? 'Project management / preparation' : 'Projektmanagement / Vorbereitung'}: ${structuredDraftDemo.projectManagement}.` : '',
+      structuredDraftDemo.rentalNeeds ? `${isEnglish ? 'Rental hardware' : 'Miettechnik'}: ${structuredDraftDemo.rentalNeeds}.` : '',
+      structuredDraftDemo.consumables ? `${isEnglish ? 'Consumables' : 'Verbrauchsmaterial'}: ${structuredDraftDemo.consumables}.` : '',
+      structuredDraftDemo.supportLevel ? `${isEnglish ? 'Onsite support' : 'Support vor Ort'}: ${structuredDraftDemo.supportLevel}.` : '',
+      structuredDraftDemo.logistics ? `${isEnglish ? 'Transport / travel / hotel' : 'Transport / Reise / Hotel'}: ${structuredDraftDemo.logistics}.` : '',
+      structuredDraftDemo.budget ? `${isEnglish ? 'Budget range' : 'Budgetrahmen'}: ${structuredDraftDemo.budget}.` : ''
     ].filter(Boolean);
 
     return fallbackSections.join(' ');
@@ -845,19 +1013,19 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     setIsPromptGenerating(true);
 
     try {
-      const result = await generateAiExplorerPrompt(source);
+      const result = await generateAiExplorerPrompt(source, 'structured-brief', isEnglish ? 'en' : 'de');
       return String(result.text ?? '').trim();
     } catch (generationError) {
       const fallbackDraft = buildStructuredPrompt() ? structuredDraft : structuredDraftDemo;
-      const fallbackPrompt = buildLocalStructuredPrompt(fallbackDraft);
-      const message = generationError instanceof Error ? generationError.message : 'AI-Prompt konnte nicht erzeugt werden.';
+      const fallbackPrompt = buildLocalStructuredPrompt(fallbackDraft, isEnglish);
+      const message = generationError instanceof Error ? generationError.message : (isEnglish ? 'AI prompt could not be created.' : 'AI-Prompt konnte nicht erzeugt werden.');
 
       if (/404/.test(message)) {
-        setStructuredActionNotice('AI-Prompt-Service noch nicht verfuegbar. Lokaler Prompt wurde erzeugt.');
+        setStructuredActionNotice(isEnglish ? 'AI prompt service is not available yet. A local prompt was created.' : 'AI-Prompt-Service noch nicht verfuegbar. Lokaler Prompt wurde erzeugt.');
         return fallbackPrompt;
       }
 
-      setStructuredActionNotice('AI-Prompt konnte nicht erzeugt werden. Lokaler Prompt wurde als Fallback erstellt.');
+      setStructuredActionNotice(isEnglish ? 'AI prompt could not be created. A local fallback prompt was generated.' : 'AI-Prompt konnte nicht erzeugt werden. Lokaler Prompt wurde als Fallback erstellt.');
       return fallbackPrompt;
     } finally {
       setIsPromptGenerating(false);
@@ -871,18 +1039,18 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     setIsPromptGenerating(true);
 
     try {
-      const deterministicPrompt = buildDeterministicEasyPrompt(seed);
-      const aiResult = await generateAiExplorerPrompt(seed, 'phase-completion').catch(() => null);
+      const deterministicPrompt = buildDeterministicEasyPrompt(seed, isEnglish);
+      const aiResult = await generateAiExplorerPrompt(seed, 'phase-completion', isEnglish ? 'en' : 'de').catch(() => null);
       const aiPrompt = String(aiResult?.text ?? '').trim();
       const nextPrompt = isAcceptableExpandedPrompt(seed, aiPrompt)
         ? aiPrompt
         : deterministicPrompt;
       if (!nextPrompt) return;
-      openPromptReview(nextPrompt, 'Eingabe wurde zu einem volleren Briefing erweitert.');
+      openPromptReview(nextPrompt, isEnglish ? 'The input was expanded into a fuller briefing.' : 'Eingabe wurde zu einem volleren Briefing erweitert.');
     } catch (generationError) {
-      const fallbackPrompt = buildDeterministicEasyPrompt(seed) || buildLocalEasyExpansionPrompt(seed);
+      const fallbackPrompt = buildDeterministicEasyPrompt(seed, isEnglish) || buildLocalEasyExpansionPrompt(seed, isEnglish);
       if (!fallbackPrompt) return;
-      openPromptReview(fallbackPrompt, 'Lokales Briefing wurde stabil erzeugt.');
+      openPromptReview(fallbackPrompt, isEnglish ? 'A local briefing was generated successfully.' : 'Lokales Briefing wurde stabil erzeugt.');
     } finally {
       setIsPromptGenerating(false);
     }
@@ -922,20 +1090,20 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     if (!modules.length && !variants.length && !assumptions.length && !openQuestions.length) return;
 
     const overviewRows = [
-      excelXmlRow(['Feld', 'Wert']),
-      excelXmlRow(['Kunde', mergedBrief?.customerName || 'Noch offen']),
-      excelXmlRow(['Eventname', mergedBrief?.eventName || 'Noch offen']),
-      excelXmlRow(['Ort', mergedBrief?.eventLocation || 'Noch offen']),
-      excelXmlRow(['Teilnehmer', mergedBrief?.attendees || 'Noch offen']),
-      excelXmlRow(['Budget', mergedBrief?.budget || 'Noch offen']),
-      excelXmlRow(['Szenario', mergedBrief?.checkInScenario || 'Noch offen']),
-      excelXmlRow(['Support-Level', mergedBrief?.supportLevel || 'Noch offen']),
-      excelXmlRow(['Gesamtsumme', offer?.subtotalFormatted || 'Preis offen']),
-      excelXmlRow(['Budget-Status', offer?.budgetStatus || 'Noch offen'])
+      excelXmlRow([isEnglish ? 'Field' : 'Feld', isEnglish ? 'Value' : 'Wert']),
+      excelXmlRow([isEnglish ? 'Customer' : 'Kunde', mergedBrief?.customerName || openLabel]),
+      excelXmlRow([isEnglish ? 'Event name' : 'Eventname', mergedBrief?.eventName || openLabel]),
+      excelXmlRow([isEnglish ? 'Location' : 'Ort', mergedBrief?.eventLocation || openLabel]),
+      excelXmlRow([isEnglish ? 'Attendees' : 'Teilnehmer', mergedBrief?.attendees || openLabel]),
+      excelXmlRow(['Budget', mergedBrief?.budget || openLabel]),
+      excelXmlRow([isEnglish ? 'Scenario' : 'Szenario', mergedBrief?.checkInScenario || openLabel]),
+      excelXmlRow(['Support-Level', mergedBrief?.supportLevel || openLabel]),
+      excelXmlRow([isEnglish ? 'Total' : 'Gesamtsumme', offer?.subtotalFormatted || priceOpenLabel]),
+      excelXmlRow([isEnglish ? 'Budget status' : 'Budget-Status', offer?.budgetStatus || openLabel])
     ].join('');
 
     const moduleRows = [
-      excelXmlRow(['Bereich', 'Position', 'Menge', 'Einheit', 'Satz', 'Total']),
+      excelXmlRow([isEnglish ? 'Area' : 'Bereich', isEnglish ? 'Line item' : 'Position', isEnglish ? 'Quantity' : 'Menge', isEnglish ? 'Unit' : 'Einheit', isEnglish ? 'Rate' : 'Satz', 'Total']),
       ...modules.flatMap((module) =>
         module.positions.map((position) =>
           excelXmlRow(
@@ -954,16 +1122,16 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     ].join('');
 
     const variantRows = [
-      excelXmlRow(['Variante', 'Beschreibung', 'Total']),
+      excelXmlRow([isEnglish ? 'Variant' : 'Variante', isEnglish ? 'Description' : 'Beschreibung', 'Total']),
       ...variants.map((variant) =>
-        excelXmlRow([variant.name, variant.description, variant.total ?? (variant.totalFormatted || 'Offen')], ['String', 'String', typeof variant.total === 'number' ? 'Number' : 'String'])
+        excelXmlRow([variant.name, variant.description, variant.total ?? (variant.totalFormatted || openLabel)], ['String', 'String', typeof variant.total === 'number' ? 'Number' : 'String'])
       )
     ].join('');
 
     const notesRows = [
-      excelXmlRow(['Typ', 'Eintrag']),
-      ...assumptions.map((item) => excelXmlRow(['Assumption', item])),
-      ...openQuestions.map((item) => excelXmlRow(['Open Question', item]))
+      excelXmlRow([isEnglish ? 'Type' : 'Typ', isEnglish ? 'Entry' : 'Eintrag']),
+      ...assumptions.map((item) => excelXmlRow([isEnglish ? 'Assumption' : 'Annahme', item])),
+      ...openQuestions.map((item) => excelXmlRow([isEnglish ? 'Open question' : 'Offene Frage', item]))
     ].join('');
 
     const workbook = `<?xml version="1.0"?>
@@ -979,29 +1147,29 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
       <Interior ss:Color="#F8F4EB" ss:Pattern="Solid"/>
     </Style>
   </Styles>
-  <Worksheet ss:Name="Overview">
+  <Worksheet ss:Name="${isEnglish ? 'Overview' : 'Uebersicht'}">
     <Table>
       ${overviewRows}
     </Table>
   </Worksheet>
-  <Worksheet ss:Name="Modules">
+  <Worksheet ss:Name="${isEnglish ? 'Modules' : 'Module'}">
     <Table>
       ${moduleRows}
     </Table>
   </Worksheet>
-  <Worksheet ss:Name="Variants">
+  <Worksheet ss:Name="${isEnglish ? 'Variants' : 'Varianten'}">
     <Table>
       ${variantRows}
     </Table>
   </Worksheet>
-  <Worksheet ss:Name="Notes">
+  <Worksheet ss:Name="${isEnglish ? 'Notes' : 'Notizen'}">
     <Table>
       ${notesRows}
     </Table>
   </Worksheet>
 </Workbook>`;
 
-    downloadFile(`${normalizedExportName}-angebot.xls`, workbook, 'application/vnd.ms-excel;charset=utf-8');
+    downloadFile(`${normalizedExportName}-${isEnglish ? 'offer' : 'angebot'}.xls`, workbook, 'application/vnd.ms-excel;charset=utf-8');
   };
 
   const handleExportPdf = () => {
@@ -1012,7 +1180,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
         <div class="panel">
           <div class="panel-title-row">
             <div class="panel-title">${escapeHtml(variant.name)}</div>
-            <div class="panel-total">${escapeHtml(variant.totalFormatted || 'Offen')}</div>
+            <div class="panel-total">${escapeHtml(variant.totalFormatted || openLabel)}</div>
           </div>
           <div class="muted">${escapeHtml(variant.description)}</div>
         </div>
@@ -1039,10 +1207,10 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           <table style="width:100%;border-collapse:collapse;font-size:12px;">
             <thead>
               <tr>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">Position</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">Menge</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">Einheit</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">Satz</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">${isEnglish ? 'Line item' : 'Position'}</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">${isEnglish ? 'Quantity' : 'Menge'}</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">${isEnglish ? 'Unit' : 'Einheit'}</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">${isEnglish ? 'Rate' : 'Satz'}</th>
                 <th style="text-align:left;padding:8px;border-bottom:1px solid #d8dee9;">Total</th>
               </tr>
             </thead>
@@ -1052,8 +1220,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                   <td style="padding:8px;border-bottom:1px solid #eef2f7;">${escapeHtml(position.label)}</td>
                   <td style="padding:8px;border-bottom:1px solid #eef2f7;">${position.quantity}</td>
                   <td style="padding:8px;border-bottom:1px solid #eef2f7;">${escapeHtml(position.unit)}</td>
-                  <td style="padding:8px;border-bottom:1px solid #eef2f7;">${escapeHtml(formatPriceValue(position.rate, '-'))}</td>
-                  <td style="padding:8px;border-bottom:1px solid #eef2f7;">${escapeHtml(formatPriceValue(position.total, '-'))}</td>
+                  <td style="padding:8px;border-bottom:1px solid #eef2f7;">${escapeHtml(formatPriceValue(position.rate, '-', locale))}</td>
+                  <td style="padding:8px;border-bottom:1px solid #eef2f7;">${escapeHtml(formatPriceValue(position.total, '-', locale))}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1106,36 +1274,36 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               <div class="header-copy">
                 <div class="header-kicker">${escapeHtml(workspaceExportLabel)}</div>
                 <h1>${escapeHtml(mergedBrief?.eventName || workspaceExportLabel)}</h1>
-                <div class="muted">Event-Brief, Angebotslogik, Varianten und operative Leitplanken.</div>
+                <div class="muted">${escapeHtml(isEnglish ? 'Event brief, offer logic, variants and operational guardrails.' : 'Event-Brief, Angebotslogik, Varianten und operative Leitplanken.')}</div>
               </div>
               <div class="total-box">
-                  <div class="total-label">Gesamtsumme</div>
-                  <div class="total-value">${escapeHtml(offer?.subtotalFormatted || 'Preis offen')}</div>
+                  <div class="total-label">${escapeHtml(isEnglish ? 'Total' : 'Gesamtsumme')}</div>
+                  <div class="total-value">${escapeHtml(offer?.subtotalFormatted || priceOpenLabel)}</div>
                 </div>
               </div>
             </div>
             <div class="meta">
-              <div><div class="label">Kunde</div><div class="value">${escapeHtml(mergedBrief?.customerName || 'Noch offen')}</div></div>
-              <div><div class="label">Ort</div><div class="value">${escapeHtml(mergedBrief?.eventLocation || 'Noch offen')}</div></div>
-              <div><div class="label">Teilnehmer</div><div class="value">${escapeHtml(mergedBrief?.attendees || 'Noch offen')}</div></div>
-              <div><div class="label">Budget</div><div class="value">${escapeHtml(mergedBrief?.budget || 'Noch offen')}</div></div>
-              <div><div class="label">Szenario</div><div class="value">${escapeHtml(mergedBrief?.checkInScenario || 'Noch offen')}</div></div>
-              <div><div class="label">Support</div><div class="value">${escapeHtml(mergedBrief?.supportLevel || 'Noch offen')}</div></div>
+              <div><div class="label">${escapeHtml(isEnglish ? 'Customer' : 'Kunde')}</div><div class="value">${escapeHtml(mergedBrief?.customerName || openLabel)}</div></div>
+              <div><div class="label">${escapeHtml(isEnglish ? 'Location' : 'Ort')}</div><div class="value">${escapeHtml(mergedBrief?.eventLocation || openLabel)}</div></div>
+              <div><div class="label">${escapeHtml(isEnglish ? 'Attendees' : 'Teilnehmer')}</div><div class="value">${escapeHtml(mergedBrief?.attendees || openLabel)}</div></div>
+              <div><div class="label">Budget</div><div class="value">${escapeHtml(mergedBrief?.budget || openLabel)}</div></div>
+              <div><div class="label">${escapeHtml(isEnglish ? 'Scenario' : 'Szenario')}</div><div class="value">${escapeHtml(mergedBrief?.checkInScenario || openLabel)}</div></div>
+              <div><div class="label">Support</div><div class="value">${escapeHtml(mergedBrief?.supportLevel || openLabel)}</div></div>
             </div>
             ${(offer?.variants?.length ?? 0) > 0 ? `
               <section style="margin:24px 0;">
-                <h2>Angebotsvarianten</h2>
+                <h2>${escapeHtml(isEnglish ? 'Offer Variants' : 'Angebotsvarianten')}</h2>
                 <div class="panel-grid">
                   ${variantHtml}
                 </div>
               </section>
             ` : ''}
             <section style="margin:24px 0;">
-              <h2>Module & Positionen</h2>
-              ${modulesHtml || '<div class="muted">Noch keine Module mit Preisen verfuegbar.</div>'}
+              <h2>${escapeHtml(isEnglish ? 'Modules & Line Items' : 'Module & Positionen')}</h2>
+              ${modulesHtml || `<div class="muted">${escapeHtml(isEnglish ? 'No priced modules are available yet.' : 'Noch keine Module mit Preisen verfuegbar.')}</div>`}
             </section>
-            ${listHtml('Annahmen', offer?.assumptions ?? [])}
-            ${listHtml('Offene Punkte', offer?.openQuestions ?? [])}
+            ${listHtml(isEnglish ? 'Assumptions' : 'Annahmen', offer?.assumptions ?? [])}
+            ${listHtml(isEnglish ? 'Open Questions' : 'Offene Punkte', offer?.openQuestions ?? [])}
           </div>
         </body>
       </html>
@@ -1170,8 +1338,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
       supportLevel: false
     });
     setInput('');
-    setInputMode('easy');
-    setIsModeStepComplete(false);
+    setInputMode('widget');
+    setIsModeStepComplete(true);
     setStructuredDraft({
       customerName: '',
       eventName: '',
@@ -1245,6 +1413,25 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
   const handleSelectInputMode = (mode: AiExplorerInputMode) => {
     setInputMode(mode);
     setIsModeStepComplete(true);
+    if (mode === 'widget') {
+      setAssistantOpen(true);
+      setMessages((current) => (
+        current.length === 1 && current[0]?.role === 'model'
+          ? [{ role: 'model', text: widgetInitialMessage }]
+          : current
+      ));
+    }
+  };
+
+  const openAssistantWidget = () => {
+    setInputMode('widget');
+    setIsModeStepComplete(true);
+    setMessages((current) => (
+      current.length === 1 && current[0]?.role === 'model'
+        ? [{ role: 'model', text: widgetInitialMessage }]
+        : current
+    ));
+    setAssistantOpen(true);
   };
 
   const openPromptReview = (prompt: string, notice?: string) => {
@@ -1280,13 +1467,13 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     setIsTyping(true);
 
     try {
-      const response = await getAiExplorerResponse(messages, nextText, effectiveMode);
-      setMessages((prev) => [...prev, { role: 'model', text: response.text || 'Ich konnte noch keine belastbare Rueckmeldung erzeugen.' }]);
+      const response = await getAiExplorerResponse(messages, nextText, effectiveMode, isEnglish ? 'en' : 'de', brief);
+      setMessages((prev) => [...prev, { role: 'model', text: response.text || (isEnglish ? 'I could not generate a reliable response yet.' : 'Ich konnte noch keine belastbare Rueckmeldung erzeugen.') }]);
       setBrief(response.brief ?? null);
       setOffer(response.offer ?? null);
       setAssistantOpen(true);
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'AI Explorer konnte nicht antworten.';
+      const message = requestError instanceof Error ? requestError.message : (isEnglish ? 'AI explorer could not respond.' : 'AI Explorer konnte nicht antworten.');
       setMessages((prev) => [...prev, { role: 'model', text: message }]);
       setError(message);
       setAssistantOpen(true);
@@ -1297,291 +1484,97 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
   const assistantOverlay = (
     <>
+      <style>{fsChatAvatarMotionStyles}</style>
       <button
         type="button"
-        onClick={() => setAssistantOpen(true)}
-        className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 sm:bottom-5 sm:right-5 z-[100000] w-14 h-14 rounded-full bg-sap-blue text-white shadow-[0_18px_45px_-15px_rgba(0,143,211,0.7)] hover:bg-sap-blue/90 transition-all flex items-center justify-center ${assistantOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
-        aria-label="Open assistant"
+        onClick={openAssistantWidget}
+        className={`fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:right-5 sm:bottom-5 z-[100000] flex h-16 w-16 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 shadow-[0_20px_48px_-18px_rgba(15,23,42,0.45)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_56px_-18px_rgba(15,23,42,0.5)] dark:border-white/10 dark:bg-[#0f1622]/95 ${assistantOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100 pointer-events-auto'}`}
+        aria-label={isEnglish ? 'Open FastLane Chat' : 'FastLane Chat oeffnen'}
       >
-        <Bot className="w-6 h-6" />
+        <FSChatAvatar className="h-12 w-12" />
       </button>
 
       <div
-        className={`fixed z-[100000] flex items-end gap-5 transition-all duration-300 ${assistantMaximized ? 'inset-0 sm:inset-4 items-stretch justify-end' : 'inset-x-0 bottom-0 px-0 sm:bottom-5 sm:right-5 sm:left-auto sm:px-0'
-          } ${assistantOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-6 opacity-0 pointer-events-none'
-          }`}
+        className={`fixed left-4 right-4 bottom-4 sm:left-auto sm:right-5 sm:bottom-5 z-[100000] transition-all duration-200 ${assistantOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none'}`}
       >
-        {/* Bound Widget: Live Brief (Left Sidecar) */}
-        <div className={`${assistantMaximized ? 'hidden xl:flex flex-1 max-w-[440px] h-full' : 'hidden lg:flex w-[min(380px,calc(100vw-480px))] h-[min(78vh,860px)]'} rounded-[2rem] border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1622]/95 backdrop-blur-xl shadow-2xl overflow-hidden flex-col origin-bottom-right`}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-white/[0.03] shrink-0">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-sap-blue flex items-center gap-2">
-              <ClipboardList className="w-4 h-4" />
-              LIVE BRIEF
-            </div>
-            <div className="text-[10px] font-bold text-slate-400 bg-slate-200/50 dark:bg-white/10 px-2 py-0.5 rounded-full">
-              Auto-Sync
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white dark:bg-[#0e1621] scrollbar-hide">
-            <div>
-              <h4 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">Event-Brief & Konzept</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                Single Source of Truth: Die Parameter aus dem Kundendialog werden fortlaufend strukturiert und veredelt.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {summaryItems.map((item) => (
-                <div key={item.label} className="rounded-[1.25rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3 shadow-sm">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-1">{item.label}</div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white break-words">{item.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white">Widget Data</div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Diese Werte koennen manuell angepasst werden und ueberschreiben die AI-Vorschau.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setManualBrief({
-                      customerName: '',
-                      eventName: '',
-                      eventLocation: '',
-                      attendees: '',
-                      budget: '',
-                      checkInScenario: '',
-                      supportLevel: ''
-                    });
-                    setManualBriefTouched({
-                      customerName: false,
-                      eventName: false,
-                      eventLocation: false,
-                      attendees: false,
-                      budget: false,
-                      checkInScenario: false,
-                      supportLevel: false
-                    });
-                  }}
-                  className="text-[11px] font-semibold text-sap-blue hover:text-sap-blue/80 transition-colors"
-                >
-                  Reset
-                </button>
-              </div>
-              <div className="space-y-3">
-                {manualBriefFieldConfig.map((field) => (
-                  <label key={field.key} className="block">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-1.5">{field.label}</div>
-                    <input
-                      type="text"
-                      value={manualBrief[field.key] || ''}
-                      onChange={(event) => handleManualBriefChange(field.key, event.target.value)}
-                      placeholder={field.placeholder}
-                      className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0f1622] px-3.5 py-3 text-sm text-slate-800 dark:text-white shadow-sm focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <div className="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4 shadow-sm mb-4">
-                <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">Strukturierte Datenerfassung</div>
-                <div className="space-y-2.5 mt-3">
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase A — Event-Basisdaten</span><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase B — Software-Konfiguration</span>{currentPhaseIndex >= 1 ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-slate-300 dark:text-slate-700" />}</div>
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase C — Projektmanagement</span>{currentPhaseIndex >= 2 ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-slate-300 dark:text-slate-700" />}</div>
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase D — Miettechnik</span>{currentPhaseIndex >= 3 ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-slate-300 dark:text-slate-700" />}</div>
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase E — Verbrauchsmaterial</span>{currentPhaseIndex >= 4 ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-slate-300 dark:text-slate-700" />}</div>
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase F — Support vor Ort</span>{currentPhaseIndex >= 5 ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-slate-300 dark:text-slate-700" />}</div>
-                  <div className="flex items-center justify-between text-[13px]"><span className="text-slate-600 dark:text-slate-300 font-medium">Phase G — Transport & Reise</span>{currentPhaseIndex >= 6 ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-slate-300 dark:text-slate-700" />}</div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {showPricingOverview ? <div className="rounded-[1.5rem] border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-500/5 p-4 shadow-sm"><div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Automatische Angebotsvarianten</div><p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1 leading-relaxed">Agent erzeugt: Standard (solide) / Plus (Redundanz) / Premium (High-availability) Kalkulation.</p></div> : <LockedPanel title="Angebotsvarianten" description="Wird anhand der Rechenmodelle nach der Erfassung generiert (z.B. Standard / Plus / Premium)." />}
-
-                {showModuleDetails ? <div className="rounded-[1.5rem] border border-sap-blue/20 bg-sap-blue/5 p-4 shadow-sm"><div className="text-sm font-semibold text-sap-blue dark:text-blue-400">Regel-Engine & Rechenmodelle</div><p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Plausibilitätschecks durchgeführt. Stations-, PM- und Verbrauchskalkulation angewendet (z.B. Teilnehmer × 10% Reserve).</p></div> : <LockedPanel title="Regel-Engine" description="Die Hintergrundkalkulation (Stationsbedarf, Verbrauchsmaterialien) berechnet die Detailpositionen automatisch." />}
-
-                {showAssumptions ? <div className="rounded-[1.5rem] border border-orange-200 dark:border-orange-500/20 bg-orange-50/50 dark:bg-orange-500/5 p-4 shadow-sm"><div className="text-sm font-semibold text-orange-700 dark:text-orange-400">Risiken & Constraints</div><p className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1 leading-relaxed">Vorlaufzeiten, Abhängigkeiten, Constraints (z.B. Internet vor Ort) und offene Punkte dokumentiert.</p></div> : <LockedPanel title="Risiken & Constraints" description="Zusammenfassung von Constraints, offenen Punkten und Annahmen (Assumptions) zum Angebot." />}
-
-                {showKnowledgeCards ? <div className="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4 shadow-sm"><div className="text-sm font-semibold text-slate-900 dark:text-white">Knowledge Cards</div><p className="text-xs text-slate-500 mt-1 leading-relaxed">Modul-Spezifische Empfehlungen und Zusatzinfos (z.B. 'ab 1.500 pax: Backup-Drucker vorausgesetzt').</p></div> : <LockedPanel title="Knowledge Cards" description="Berater-Dienstleistungen: Typische Fehlerquellen und Empfehlungen für den Kunden je Leistungsbereich." />}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Existing Chat Widget Container */}
-        <div className={`${assistantMaximized ? 'w-full max-w-[min(1040px,100%)] h-full' : 'w-full sm:w-[min(440px,calc(100vw-1.5rem))] h-[100dvh] max-h-[100dvh] sm:h-[min(78vh,860px)] sm:max-h-[min(78vh,860px)]'} rounded-none sm:rounded-[2rem] border-x-0 border-b-0 sm:border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0f1622]/95 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col overscroll-contain`}>
-          <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-white/[0.03] gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center">
-                <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="pointer-events-auto flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_32px_90px_-24px_rgba(15,23,42,0.4)] dark:border-white/10 dark:bg-[#0f1622] sm:w-[380px]">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/95 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+                <FSChatAvatar className="h-10 w-10" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-sap-blue">KI-Agent</div>
-                <div className="text-base font-semibold text-slate-900 dark:text-white truncate">{companyName} Assistant</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.18em] text-sap-blue">{widgetChatLabel}</div>
+                <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">{isEnglish ? 'Live workspace sync' : 'Live-Workspace-Sync'}</div>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {assistantOnly ? (
-                <a
-                  href="/studio"
-                  className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
-                  aria-label="Open studio"
-                >
-                  <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </a>
-              ) : null}
-              <button
-                onClick={() => setAssistantMaximized((current) => !current)}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
-                aria-label={assistantMaximized ? 'Minimize assistant' : 'Maximize assistant'}
-              >
-                {assistantMaximized ? <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-              </button>
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleReset}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
-                aria-label="Reset session"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition-all hover:border-sap-blue/30 hover:text-sap-blue dark:border-white/10"
+                aria-label={isEnglish ? 'Reset session' : 'Sitzung zuruecksetzen'}
               >
-                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <RotateCcw className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => {
-                  setAssistantOpen(false);
-                  setAssistantMaximized(false);
-                }}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 hover:text-sap-blue hover:border-sap-blue/30 transition-all"
-                aria-label="Close assistant"
+                onClick={() => setAssistantOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition-all hover:border-sap-blue/30 hover:text-sap-blue dark:border-white/10"
+                aria-label={isEnglish ? 'Close FastLane Chat' : 'FastLane Chat schliessen'}
               >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-4 space-y-4 bg-white dark:bg-[#0f1622] scrollbar-hide overscroll-contain">
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-white px-4 py-4 dark:bg-[#0f1622] max-h-[min(52vh,420px)] scrollbar-hide">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex items-end gap-2 max-w-[96%] sm:max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-sap-gold text-white' : 'bg-sap-blue text-white'}`}>
-                    {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  </div>
-                  <div className={`min-w-0 break-words overflow-hidden p-3.5 sm:p-4 rounded-[1.5rem] sm:rounded-[1.75rem] text-[13.5px] leading-relaxed shadow-sm transition-all ${msg.role === 'user'
-                    ? 'bg-sap-blue text-white rounded-br-none font-medium'
-                    : 'bg-slate-50 dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-white/5 rounded-bl-none'
-                    }`}>
-                    <RenderMessageText text={msg.text} />
-                    {idx === messages.length - 1 && msg.role === 'model' && !isTyping && activeStarterPrompts && messages.length === 1 && !brief && (
-                      <div className="mt-5 flex flex-col gap-2.5">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <Sparkles className="w-3 h-3 text-sap-blue" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Beispielantworten</span>
-                        </div>
-                        {activeStarterPrompts.slice(0, 2).map((prompt) => (
-                          <button
-                            key={prompt}
-                            onClick={() => handleSend(prompt)}
-                            className="text-left px-4 py-3.5 rounded-2xl border border-sap-blue/15 bg-white dark:bg-[#0e1621] shadow-sm hover:border-sap-blue hover:shadow-md hover:-translate-y-0.5 text-[12px] leading-[1.6] text-slate-600 dark:text-slate-300 transition-all font-medium group"
-                          >
-                            <div className="group-hover:text-sap-blue transition-colors">{prompt}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className={`max-w-[88%] rounded-[1.25rem] px-3.5 py-3 text-[13px] leading-relaxed shadow-sm ${msg.role === 'user'
+                  ? 'rounded-br-md bg-sap-blue font-medium text-white'
+                  : 'rounded-bl-md border border-slate-100 bg-slate-50 text-slate-700 dark:border-white/5 dark:bg-white/[0.04] dark:text-slate-200'
+                  }`}>
+                  <RenderMessageText text={msg.text} />
                 </div>
               </div>
             ))}
 
             {isTyping ? (
               <div className="flex justify-start">
-                <div className="flex items-end gap-2">
-                  <div className="w-7 h-7 rounded-full bg-sap-blue text-white flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="bg-slate-50 dark:bg-white/[0.04] border border-slate-100 dark:border-white/5 px-4 py-3 rounded-[1.5rem] rounded-bl-none shadow-sm flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-sap-blue rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-sap-blue rounded-full animate-bounce delay-100"></div>
-                    <div className="w-1.5 h-1.5 bg-sap-blue rounded-full animate-bounce delay-200"></div>
+                <div className="rounded-[1.25rem] rounded-bl-md border border-slate-100 bg-slate-50 px-4 py-3 shadow-sm dark:border-white/5 dark:bg-white/[0.04]">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-sap-blue" />
+                    <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-sap-blue [animation-delay:120ms]" />
+                    <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-sap-blue [animation-delay:240ms]" />
                   </div>
                 </div>
               </div>
             ) : null}
-
           </div>
 
-          <div className="border-t border-slate-200 dark:border-white/10 bg-slate-50/95 dark:bg-[#131b28]/95 px-4 sm:px-5 pt-3.5 sm:pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="inline-flex rounded-full border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 p-1 shadow-sm">
-                {([
-                  { key: 'easy', label: 'Easy Mode' },
-                  { key: 'prompt', label: 'Prompt Mode' },
-                  { key: 'consulting', label: 'Consulting' }
-                ] as const).map((mode) => (
-                  <button
-                    key={mode.key}
-                    type="button"
-                    onClick={() => handleSelectInputMode(mode.key)}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${inputMode === mode.key && isModeStepComplete
-                      ? 'bg-sap-blue text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                      }`}
-                  >
-                    {mode.label}
-                  </button>
-                ))}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {isStepTwoLocked
-                  ? 'Zuerst Modus waehlen'
-                  : inputMode === 'easy'
-                    ? 'Schritt fuer Schritt antworten'
-                    : inputMode === 'prompt'
-                      ? 'Freien Event-Text direkt senden'
-                      : 'Architektur, Pricing-Logik und Agent-Konzept beraten lassen'}
-              </div>
+          <div className="border-t border-slate-200 bg-slate-50/95 px-4 py-3 dark:border-white/10 dark:bg-[#131b28]">
+            <div className="mb-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              {isEnglish ? 'Tell FastLane Chat what should change.' : 'Sagen Sie FastLane Chat direkt, was geaendert werden soll.'}
             </div>
-
-            {inputMode !== 'easy' ? (
-              <div className="mb-3 rounded-[1.25rem] border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] px-4 py-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                {inputMode === 'prompt'
-                  ? 'Schreiben Sie das Event wie in einer normalen E-Mail oder einem Briefing auf Deutsch. Der Agent uebernimmt die Angaben automatisch.'
-                  : 'Stellen Sie Fragen zu Agent-Architektur, Fragebaum, Produktkatalog, Preislogik, Angebotsvarianten, MVP-Stufen oder operativer Systemlogik.'}
-              </div>
-            ) : null}
-
             <div className="relative">
               <textarea
+                ref={assistantComposerRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    handleSend();
+                    handleSend(undefined, 'widget');
                   }
                 }}
-                disabled={isStepTwoLocked}
-                placeholder={isStepTwoLocked
-                  ? 'Waehlen Sie zuerst den Modus in Step 1.'
-                  : inputMode === 'easy'
-                    ? (mergedBrief?.currentQuestion || 'Geben Sie die Antwort fuer den aktuellen Schritt ein...')
-                    : inputMode === 'prompt'
-                      ? 'z.B. Wir planen ein zweitaegiges Event in Berlin mit 800 Teilnehmern, Print-on-Demand, 8 Counter und Budgetrahmen von 25.000 EUR.'
-                      : 'z.B. Wie wuerdest du fuer Teilnehmermanagement einen KI-Agenten mit Event-Brief, Pricing Engine, Varianten, Knowledge Cards und CRM-Uebergabe aufsetzen?'}
-                className={`w-full bg-white dark:bg-[#0e1621] border border-slate-200 dark:border-white/10 rounded-3xl py-3.5 sm:py-4 pl-4 sm:pl-6 pr-16 focus:outline-none focus:border-sap-blue focus:ring-4 focus:ring-sap-blue/10 transition-all text-sm text-slate-800 dark:text-white resize-none shadow-sm scrollbar-hide disabled:cursor-not-allowed disabled:opacity-60 ${inputMode === 'easy' ? 'h-[72px] sm:h-20' : 'h-[120px] sm:h-32'}`}
+                placeholder={isEnglish ? 'Type a change for the event brief, scope or pricing...' : 'Schreiben Sie eine Aenderung fuer Briefing, Scope oder Preislogik...'}
+                className="h-20 w-full resize-none rounded-[1.2rem] border border-slate-200 bg-white py-3 pl-4 pr-14 text-sm text-slate-800 shadow-sm transition-all focus:border-sap-blue focus:outline-none focus:ring-4 focus:ring-sap-blue/10 dark:border-white/10 dark:bg-[#0e1621] dark:text-white"
               />
               <button
-                onClick={() => handleSend()}
-                disabled={isStepTwoLocked || !input.trim() || isTyping}
-                className="absolute right-2.5 top-2.5 p-3.5 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-[1.25rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
+                onClick={() => handleSend(undefined, 'widget')}
+                disabled={!input.trim() || isTyping}
+                className="absolute bottom-2.5 right-2.5 rounded-[1rem] bg-sap-blue p-3 text-white shadow-lg transition-all hover:bg-sap-blue/90 hover:shadow-sap-blue/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -1590,8 +1583,52 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
     </>
   );
 
+  const promptReviewModal = pendingPromptReview ? (
+    <div className="fixed inset-0 z-[200000] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 p-4">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white dark:bg-dark-elevated shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10 animate-in zoom-in-95 duration-500 text-left">
+        <div className="px-8 py-8 border-b border-slate-100 dark:border-white/5">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-2xl bg-sap-blue flex items-center justify-center text-white shadow-lg shadow-sap-blue/20">
+              <Bot className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-sap-blue mb-1">AI Recommendation</div>
+              <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{isEnglish ? 'Review & Optimize' : 'Pruefen & Optimieren'}</div>
+            </div>
+          </div>
+          <p className="text-slate-500 dark:text-dark-text-secondary text-sm leading-relaxed mb-6">
+            {isEnglish ? 'The prompt was optimized for the workspace. Please review the text.' : 'Der Prompt wurde fuer den Workspace optimiert. Bitte pruefen Sie den Text.'}
+          </p>
+          <div className="mt-4 rounded-2xl bg-slate-50 dark:bg-dark-base border border-slate-200 dark:border-white/5 p-6 text-[15px] font-medium leading-relaxed text-slate-800 dark:text-dark-text-primary max-h-[40vh] overflow-y-auto no-scrollbar shadow-inner">
+            {pendingPromptReview}
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-3 px-8 py-6 bg-slate-50/50 dark:bg-white/[0.02]">
+          <button
+            type="button"
+            onClick={() => setPendingPromptReview(null)}
+            className="px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-dark-text-secondary hover:text-slate-800 dark:hover:text-white transition-colors"
+          >
+            {isEnglish ? 'Skip' : 'Ueberspringen'}
+          </button>
+          <button
+            type="button"
+            onClick={handleApproveReviewedPrompt}
+            className="px-8 py-3 rounded-full bg-sap-blue text-white text-[11px] font-black uppercase tracking-widest hover:bg-sap-blue/90 shadow-xl shadow-sap-blue/20 transition-all active:scale-95"
+          >
+            {isEnglish ? 'Start Analysis' : 'Analysieren Starten'}
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const assistantOverlayPortal = typeof document !== 'undefined'
+    ? createPortal(assistantOverlay, document.body)
+    : null;
+
   if (assistantOnly) {
-    return assistantOverlay;
+    return assistantOverlayPortal;
   }
 
   return (
@@ -1613,7 +1650,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
             <div className="text-base font-bold text-slate-900 dark:text-dark-text-primary tracking-tight break-words leading-tight">{currentModeLabel}</div>
           </div>
           <div className="px-5 py-4 min-h-[72px] flex flex-col justify-center bg-slate-50 dark:bg-dark-surface/40 rounded-2xl border border-slate-300 dark:border-white/15">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-dark-text-secondary mb-1 leading-tight break-words">Status</div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-dark-text-secondary mb-1 leading-tight break-words">{t.ui.sidebar.status}</div>
             <div className="text-base font-bold text-slate-900 dark:text-dark-text-primary tracking-tight leading-tight break-words">
               {isTyping ? t.ui.sidebar.analyzing : isStepTwoLocked ? t.ui.sidebar.step1Open : t.ui.sidebar.ready}
             </div>
@@ -1651,10 +1688,10 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
           <div className="px-4 sm:px-6 md:px-8 pt-5 sm:pt-6 pb-4">
             <StudioSection
               eyebrow="Workspace"
-              title="Aktuelle Eingabe"
-              description={inputMode === 'consulting'
-                ? 'Nutzen Sie den Workspace fuer Systemarchitektur, Preislogik und Agent-Konzeption.'
-                : 'Antworten Sie direkt auf die aktuelle Phase oder senden Sie einen kompletten Briefing-Text.'}
+              title={isEnglish ? 'Current Input' : 'Aktuelle Eingabe'}
+              description={isWidgetMode
+                ? (isEnglish ? 'Use the bottom-right FastLane Chat widget for direct live changes to the brief, modules and pricing.' : 'Nutzen Sie den FastLane-Chat-Widget-Chat rechts unten fuer direkte Live-Aenderungen an Briefing, Modulen und Preislogik.')
+                : (isEnglish ? 'Answer the current phase directly or send a complete event brief.' : 'Antworten Sie direkt auf die aktuelle Phase oder senden Sie einen kompletten Briefing-Text.')}
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-sap-blue/10 text-sap-blue flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -1663,108 +1700,94 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 <div className="text-[15px] font-bold text-slate-800 dark:text-dark-text-primary leading-relaxed">{leadQuestionText}</div>
               </div>
 
-              <div className="mt-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                <div className="flex flex-col gap-5">
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs font-black uppercase tracking-[0.3em] text-sap-blue">01 / MODE</div>
+              {isWidgetMode ? (
+                <div className="mt-12 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="max-w-xl">
+                      <div className="text-xs font-black uppercase tracking-[0.3em] text-sap-blue">Easy Chat</div>
+                      <div className="mt-2 text-sm font-bold leading-relaxed text-slate-700 dark:text-dark-text-primary">
+                        {isEnglish
+                          ? 'Open the live chat and tell FastLane Chat what should change. Brief, modules and pricing update directly from the conversation.'
+                          : 'Oeffnen Sie den Live-Chat und sagen Sie FastLane Chat direkt, was geaendert werden soll. Briefing, Module und Preise werden direkt aus dem Chat aktualisiert.'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={openAssistantWidget}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-sap-blue px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-sap-blue/90"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/15">
+                        <FSChatAvatar className="h-5 w-5" />
+                      </span>
+                      {isEnglish ? 'Open Easy Chat' : 'Easy Chat oeffnen'}
+                    </button>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
-                    {([
-                      { key: 'easy', label: 'EASY' },
-                      { key: 'prompt', label: 'PROMPT' },
-                      { key: 'consulting', label: 'CONSULTING' }
-                    ] as const).map((mode) => (
+                  <div className="mt-4 text-xs font-bold leading-relaxed text-slate-500 dark:text-dark-text-secondary">
+                    {isEnglish
+                      ? 'Use the chat for direct event changes like name, venue, attendees, counters, integrations and budget.'
+                      : 'Nutzen Sie den Chat fuer direkte Event-Aenderungen wie Name, Venue, Teilnehmer, Counter, Integrationen und Budget.'}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-12 relative group">
+                    <textarea
+                      ref={workspaceComposerRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (inputMode !== 'easy' && !isWidgetMode && e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      disabled={isStepTwoLocked || isWidgetMode}
+                      placeholder={isStepTwoLocked
+                        ? t.ui.lockedMessages.inputs
+                        : inputMode === 'easy'
+                          ? (mergedBrief?.currentQuestion || t.fields.customerName.placeholder)
+                          : t.fields.eventName.placeholder}
+                      className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 py-6 text-lg text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-white/10 focus:outline-none focus:border-sap-blue transition-all resize-none scrollbar-hide min-h-[120px] disabled:opacity-30 antialiased font-medium break-words leading-tight"
+                    />
+                    {inputMode === 'easy' ? (
                       <button
-                        key={mode.key}
                         type="button"
-                        onClick={() => handleSelectInputMode(mode.key)}
-                        className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all border ${inputMode === mode.key && isModeStepComplete
-                          ? 'bg-sap-blue border-sap-blue text-white shadow-lg'
-                          : 'bg-transparent border-slate-300 dark:border-white/15 text-slate-600 dark:text-dark-text-secondary hover:border-slate-500 dark:hover:border-white/30'
-                          }`}
+                        onClick={expandEasyInputWithAi}
+                        disabled={isStepTwoLocked || !input.trim() || isTyping || isPromptGenerating}
+                        className="absolute right-[3.9rem] bottom-2.5 p-3 bg-white text-sap-blue hover:bg-[#fff8ef] rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_8px_24px_-16px_rgba(15,23,42,0.35)]"
+                        aria-label={isEnglish ? 'Expand input' : 'Eingabe erweitern'}
                       >
-                        {mode.label}
+                        <Sparkles className="w-4 h-4" />
                       </button>
-                    ))}
+                    ) : null}
+                    {inputMode !== 'easy' && !isWidgetMode ? (
+                      <button
+                        onClick={() => handleSend()}
+                        disabled={isStepTwoLocked || !input.trim() || isTyping}
+                        className="absolute right-2.5 bottom-2.5 p-3 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    ) : null}
                   </div>
-                </div>
 
-                <div className="flex flex-col gap-5">
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-dark-text-secondary">02 / STATUS</div>
-                  </div>
-                  <div className="text-sm font-black text-slate-900 dark:text-dark-text-primary uppercase tracking-wider">
+                  <div className="mt-4 text-xs font-bold leading-relaxed text-slate-500 dark:text-dark-text-secondary break-words">
                     {isStepTwoLocked
-                      ? 'Warten auf Modus-Wahl'
+                      ? t.ui.lockedMessages.inputs
                       : inputMode === 'easy'
-                        ? 'Gefuehrter Dialog Aktive'
-                        : inputMode === 'prompt'
-                          ? 'Freie Eingabe Bereit'
-                          : 'Consulting Modus Bereit'}
+                        ? (isEnglish ? 'Easy mode creates an optimized workspace prompt.' : 'Easy Mode erzeugt einen optimierten Workspace-Prompt.')
+                        : (isEnglish ? 'Prompt mode for complete event briefings.' : 'Prompt Mode fuer komplette Event-Briefings.')}
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-12 relative group">
-                <textarea
-                  ref={workspaceComposerRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (inputMode !== 'easy' && e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  disabled={isStepTwoLocked}
-                  placeholder={isStepTwoLocked
-                    ? t.ui.lockedMessages.inputs
-                    : inputMode === 'easy'
-                      ? (mergedBrief?.currentQuestion || t.fields.customerName.placeholder)
-                      : inputMode === 'prompt'
-                        ? t.fields.eventName.placeholder
-                        : t.consultingLead}
-                  className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 py-6 text-lg text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-white/10 focus:outline-none focus:border-sap-blue transition-all resize-none scrollbar-hide min-h-[120px] disabled:opacity-30 antialiased font-medium break-words leading-tight"
-                />
-                {inputMode === 'easy' ? (
-                  <button
-                    type="button"
-                    onClick={expandEasyInputWithAi}
-                    disabled={isStepTwoLocked || !input.trim() || isTyping || isPromptGenerating}
-                    className="absolute right-[3.9rem] bottom-2.5 p-3 bg-white text-sap-blue hover:bg-[#fff8ef] rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_8px_24px_-16px_rgba(15,23,42,0.35)]"
-                    aria-label="Eingabe erweitern"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                  </button>
-                ) : null}
-                {inputMode !== 'easy' ? (
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={isStepTwoLocked || !input.trim() || isTyping}
-                    className="absolute right-2.5 bottom-2.5 p-3 bg-sap-blue hover:bg-sap-blue/90 text-white rounded-[1rem] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-sap-blue/25"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="mt-4 text-xs font-bold leading-relaxed text-slate-500 dark:text-dark-text-secondary break-words">
-                {isStepTwoLocked
-                  ? t.ui.lockedMessages.inputs
-                  : inputMode === 'easy'
-                    ? 'Easy Mode erzeugt einen optimierten Workspace-Prompt.'
-                    : inputMode === 'prompt'
-                      ? 'Prompt Mode fuer komplette Event-Briefings.'
-                      : 'Consulting Mode fuer fachliches Solution-Design.'}
-              </div>
+                </>
+              )}
             </StudioSection>
           </div>
           <div className="flex-1 min-h-0 p-4 sm:p-6 md:p-8 overflow-y-auto">
             <div className="grid gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
               <StudioSection
-              eyebrow={t.ui.workspace.activity.eyebrow}
-              title={t.ui.workspace.activity.title}
-              description={t.ui.workspace.activity.description}
+              eyebrow={t.ui.activity.eyebrow}
+              title={t.ui.activity.title}
+              description={t.ui.activity.description}
             >
                 <div className="space-y-4">
                   {recentMessages.map((msg, idx) => (
@@ -1778,7 +1801,9 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                       <div className={`mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] ${msg.role === 'user' ? 'text-white/70' : 'text-sap-blue/70 dark:text-sap-blue/90'
                         }`}>
                         {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
-                        {msg.role === 'user' ? t.ui.workspace.activity.roles.user : `${companyName} ${t.ui.workspace.activity.roles.assistant}`}
+                        {msg.role === 'user'
+                          ? (isEnglish ? 'User' : 'Nutzer')
+                          : `${companyName} ${isEnglish ? 'Assistant' : 'Assistent'}`}
                       </div>
                       <div className="whitespace-pre-wrap break-words font-medium antialiased">{msg.text}</div>
                     </div>
@@ -1786,7 +1811,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
                   {isTyping ? (
                     <div className="rounded-2xl bg-white/85 dark:bg-white/[0.04] px-5 py-4 text-base text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 italic">
-                      Die Anfrage wird verarbeitet. Brief, Kostenlogik und naechste Antwort werden gerade aktualisiert.
+                      {t.ui.activity.processingNotice}
                     </div>
                   ) : null}
                 </div>
@@ -1926,24 +1951,24 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                   ) : null}
                   <div className="grid gap-3 lg:grid-cols-3">
                     <div className="rounded-[1.25rem] bg-white/75 dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_-24px_rgba(32,41,57,0.28)] border border-slate-300 dark:border-white/15">
-                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Live Sync</div>
-                      <div className="text-base font-semibold text-slate-900 dark:text-white">{mergedBrief?.eventName || 'Noch kein Event synchronisiert'}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">{t.ui.structuredInput.syncLabel}</div>
+                      <div className="text-base font-semibold text-slate-900 dark:text-white">{mergedBrief?.eventName || (isEnglish ? 'No synced event yet' : 'Noch kein Event synchronisiert')}</div>
                       <div className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 font-medium">
-                        Ergebnisse aus Brief, Modulen und Kostenlogik fuellen diese Felder automatisch vor. Eigene Aenderungen bleiben erhalten.
+                        {isEnglish ? 'Results from the brief, modules and pricing logic prefill these fields automatically. Your manual edits stay intact.' : 'Ergebnisse aus Brief, Modulen und Kostenlogik fuellen diese Felder automatisch vor. Eigene Aenderungen bleiben erhalten.'}
                       </div>
                     </div>
                     <div className="rounded-[1.25rem] bg-white/75 dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_-24px_rgba(32,41,57,0.28)] border border-slate-300 dark:border-white/15">
-                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Preis Snapshot</div>
-                      <div className="text-base font-semibold text-slate-900 dark:text-white">{offer?.subtotalFormatted || 'Preis offen'}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">{t.ui.structuredInput.priceLabel}</div>
+                      <div className="text-base font-semibold text-slate-900 dark:text-white">{offer?.subtotalFormatted || priceOpenLabel}</div>
                       <div className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 font-medium">
-                        {offer?.budgetStatus || `${offer?.modules?.length ?? 0} Module und ${offer?.variants?.length ?? 0} Varianten verfuegbar`}
+                        {offer?.budgetStatus || (isEnglish ? `${offer?.modules?.length ?? 0} modules and ${offer?.variants?.length ?? 0} variants available` : `${offer?.modules?.length ?? 0} Module und ${offer?.variants?.length ?? 0} Varianten verfuegbar`)}
                       </div>
                     </div>
                     <div className="rounded-[1.25rem] bg-white/75 dark:bg-white/[0.04] p-5 shadow-[0_10px_24px_-24px_rgba(32,41,57,0.28)] border border-slate-300 dark:border-white/15">
-                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">Feinschliff</div>
-                      <div className="text-base font-semibold text-slate-900 dark:text-white">Direkt editierbar</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">{t.ui.structuredInput.editLabel}</div>
+                      <div className="text-base font-semibold text-slate-900 dark:text-white">{isEnglish ? 'Directly editable' : 'Direkt editierbar'}</div>
                       <div className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 font-medium">
-                        Aendern Sie hier einzelne Event-, Scope- und Budgetdetails und senden Sie die aktualisierte Fassung direkt wieder in den Workspace.
+                        {isEnglish ? 'Adjust individual event, scope and budget details here and send the updated version straight back into the workspace.' : 'Aendern Sie hier einzelne Event-, Scope- und Budgetdetails und senden Sie die aktualisierte Fassung direkt wieder in den Workspace.'}
                       </div>
                     </div>
                   </div>
@@ -2004,53 +2029,16 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
         <aside className="bg-slate-50/50 dark:bg-dark-surface p-4 sm:p-6 md:p-8 min-h-0 overflow-y-auto border-l border-slate-200 dark:border-white/10">
           <div className="mb-8 px-1 py-1">
             <div className="text-xs font-black uppercase tracking-[0.3em] text-sap-blue/70 dark:text-sap-blue/90 mb-4">{t.ui.sidebar.status}</div>
-            <div className="mt-1 text-3xl font-black text-slate-900 dark:text-dark-text-primary tracking-tight uppercase leading-tight">
-              {inputMode === 'consulting' ? t.ui.sidebar.mode : t.ui.console.costOverview.title}
-            </div>
+            <div className="mt-1 text-3xl font-black text-slate-900 dark:text-dark-text-primary tracking-tight uppercase leading-tight">{t.ui.console.pricingTitle}</div>
             <div className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-dark-text-secondary font-bold">
-              {inputMode === 'consulting'
-                ? 'Architektur, Deliverables und fachliche Leitplanken'
-                : 'Zusammenfassung der Positionen, Kosten und Varianten.'}
+              {isEnglish ? 'Summary of positions, costs and variants.' : 'Zusammenfassung der Positionen, Kosten und Varianten.'}
             </div>
           </div>
-          {inputMode === 'consulting' ? (
+          {showPricingOverview ? (
             <div className="space-y-6">
               <ConsoleSection
-                title="CONCULTING FOKUS"
-                description="Architektur-, Produkt- und Angebotsfragen."
-              >
-                <div className="rounded-3xl bg-white dark:bg-dark-base p-6 border border-slate-200 dark:border-white/5 shadow-sm">
-                  <p className="text-[14px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
-                    Dieser Workspace kann Architektur, Event-Brief-Struktur, Preisregeln, Angebotsmodule, Variantenlogik, MVP-Stufen und operative Modellierung ausarbeiten.
-                  </p>
-                </div>
-              </ConsoleSection>
-              <ConsoleSection
-                title="DELIVERABLES"
-                description="Ergebnisbausteine des Consulting-Prozesses."
-              >
-                <div className="space-y-3">
-                  {[
-                    'Event-Brief Struktur & Pflichtfelder',
-                    'Interview-Flow je Angebotsbereich',
-                    'Preis- & Rechenlogik fuer Module',
-                    'Standard / Plus / Premium Varianten',
-                    'Knowledge Cards & Empfehlungen',
-                    'CRM- & PM-Schnittstellen'
-                  ].map((item) => (
-                    <div key={item} className="flex items-center gap-3 text-[13px] font-bold text-slate-600 dark:text-slate-300">
-                      <div className="w-1.5 h-1.5 rounded-full bg-sap-blue opacity-40 shrink-0" />
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </ConsoleSection>
-            </div>
-          ) : showPricingOverview ? (
-            <div className="space-y-6">
-              <ConsoleSection
-                title="KALKULATION"
-                description="Gesamtsumme und Budgetbezug."
+                title={isEnglish ? 'CALCULATION' : 'KALKULATION'}
+                description={isEnglish ? 'Total estimate and budget relation.' : 'Gesamtsumme und Budgetbezug.'}
                 actions={
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={handleExportPdf} className={subtleToolbarButtonClass}>
@@ -2065,19 +2053,19 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                 }
               >
                 <div className="px-6 py-10 rounded-[2.5rem] bg-white dark:bg-dark-base border border-slate-300 dark:border-white/15 shadow-xl shadow-slate-200/40 dark:shadow-black/20 flex flex-col items-center justify-center text-center">
-                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-dark-text-secondary mb-4">Gesamtsumme (Est.)</div>
+                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-dark-text-secondary mb-4">{isEnglish ? 'Estimated Total' : 'Gesamtsumme (Est.)'}</div>
                   <div className="text-5xl font-black text-sap-blue dark:text-dark-text-primary tracking-tighter">
-                    {offer?.hasPricing ? offer?.subtotalFormatted || formatPriceValue(offer?.subtotal) : 'OFFEN'}
+                    {offer?.hasPricing ? offer?.subtotalFormatted || formatPriceValue(offer?.subtotal, priceOpenLabel, locale) : (isEnglish ? 'OPEN' : 'OFFEN')}
                   </div>
                   {(offer?.budget || offer?.budgetStatus) ? (
                     <div className="mt-5 space-y-2">
                       {offer?.budget ? (
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[11px] font-black text-slate-500 dark:text-dark-text-secondary uppercase tracking-wider">
-                          Budget: {offer.budget}
+                          {isEnglish ? 'Budget' : 'Budget'}: {offer.budget}
                         </div>
                       ) : null}
                       {offer?.budgetStatus ? (
-                        <div className={`text-[12px] font-black uppercase tracking-[0.05em] px-4 py-1.5 rounded-xl border ${offer.budgetStatus.startsWith('Im Budget') ? 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 'text-amber-600 bg-amber-50 border-amber-100 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20'}`}>
+                        <div className={`text-[12px] font-black uppercase tracking-[0.05em] px-4 py-1.5 rounded-xl border ${offer.budgetStatus.startsWith(isEnglish ? 'Within budget' : 'Im Budget') ? 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 'text-amber-600 bg-amber-50 border-amber-100 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20'}`}>
                           {offer.budgetStatus}
                         </div>
                       ) : null}
@@ -2088,8 +2076,8 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
               {offer?.modules?.length ? (
                 <ConsoleSection
-                  title="Module & Positionen"
-                  description="Alle empfohlenen Module mit den aktuell abgeleiteten Positionen."
+                  title={isEnglish ? 'Modules & Line Items' : 'Module & Positionen'}
+                  description={isEnglish ? 'All recommended modules with the currently derived line items.' : 'Alle empfohlenen Module mit den aktuell abgeleiteten Positionen.'}
                 >
                   <div className="space-y-4">
                     {offer.modules.map((module) => (
@@ -2100,7 +2088,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{module.summary}</div>
                           </div>
                           <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                            {formatPriceValue(module.subtotal, 'Offen')}
+                            {formatPriceValue(module.subtotal, isEnglish ? 'Open' : 'Offen', locale)}
                           </div>
                         </div>
                         <div className="mt-3 space-y-2">
@@ -2109,7 +2097,7 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
                               <div>{position.label}</div>
                               <div className="text-right">
                                 <div>{position.quantity} {position.unit}</div>
-                                <div>{formatPriceValue(position.total, 'Offen')}</div>
+                                <div>{formatPriceValue(position.total, isEnglish ? 'Open' : 'Offen', locale)}</div>
                               </div>
                             </div>
                           ))}
@@ -2122,15 +2110,15 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
 
               {offer?.variants?.length ? (
                 <ConsoleSection
-                  title="Angebotsvarianten"
-                  description="Alternative Angebotspakete auf Basis der aktuellen Scope- und Risikoannahmen."
+                  title={isEnglish ? 'Offer Variants' : 'Angebotsvarianten'}
+                  description={isEnglish ? 'Alternative offer packages based on the current scope and risk assumptions.' : 'Alternative Angebotspakete auf Basis der aktuellen Scope- und Risikoannahmen.'}
                 >
                   <div className="space-y-3">
                     {offer.variants.map((variant) => (
                       <div key={variant.name} className="rounded-[1.25rem] bg-white/80 dark:bg-white/[0.04] p-4">
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-sm font-semibold text-slate-900 dark:text-white">{variant.name}</div>
-                          <div className="text-sm font-semibold text-sap-blue">{variant.totalFormatted || 'Offen'}</div>
+                          <div className="text-sm font-semibold text-sap-blue">{variant.totalFormatted || (isEnglish ? 'Open' : 'Offen')}</div>
                         </div>
                         <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{variant.description}</div>
                       </div>
@@ -2142,13 +2130,13 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               {knowledgeCards.length ? (
                 <ConsoleSection
                   title="Knowledge Cards"
-                  description="Fachliche Empfehlungen, Risiken und typische Zusatzoptionen pro Modul."
+                  description={isEnglish ? 'Recommendations, risks and typical add-ons per module.' : 'Fachliche Empfehlungen, Risiken und typische Zusatzoptionen pro Modul.'}
                 >
                   <div className="space-y-4">
                     {knowledgeCards.map((card) => (
                       <div key={card.title} className="rounded-[1.25rem] bg-white/80 dark:bg-white/[0.04] p-4">
                         <div className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</div>
-                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">Empfehlung: {card.recommendation}</div>
+                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">{isEnglish ? 'Recommendation' : 'Empfehlung'}: {card.recommendation}</div>
                       </div>
                     ))}
                   </div>
@@ -2156,52 +2144,14 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               ) : null}
             </div>
           ) : (
-            <LockedPanel title={t.ui.console.costOverview.title} description={t.ui.lockedMessages.console} />
+            <LockedPanel title={t.ui.console.lockedTitle} description={t.ui.console.lockedDescription || t.ui.lockedMessages.console} />
           )}
         </aside>
       </div>
 
-      {!embedded ? assistantOverlay : null}
+      {assistantOverlayPortal}
       {/* Individual isPromptGenerating toast removed from here, integrated below */}
-      {pendingPromptReview ? (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 p-4">
-          <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white dark:bg-dark-elevated shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10 animate-in zoom-in-95 duration-500 text-left">
-            <div className="px-8 py-8 border-b border-slate-100 dark:border-white/5">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-2xl bg-sap-blue flex items-center justify-center text-white shadow-lg shadow-sap-blue/20">
-                  <Bot className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.3em] text-sap-blue mb-1">AI Recommendation</div>
-                  <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Review & Optimize</div>
-                </div>
-              </div>
-              <p className="text-slate-500 dark:text-dark-text-secondary text-sm leading-relaxed mb-6">
-                Der Prompt wurde fuer den Workspace optimiert. Bitte pruefen Sie den Text.
-              </p>
-              <div className="mt-4 rounded-2xl bg-slate-50 dark:bg-dark-base border border-slate-200 dark:border-white/5 p-6 text-[15px] font-medium leading-relaxed text-slate-800 dark:text-dark-text-primary max-h-[40vh] overflow-y-auto no-scrollbar shadow-inner">
-                {pendingPromptReview}
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-8 py-6 bg-slate-50/50 dark:bg-white/[0.02]">
-              <button
-                type="button"
-                onClick={() => setPendingPromptReview(null)}
-                className="px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-dark-text-secondary hover:text-slate-800 dark:hover:text-white transition-colors"
-              >
-                Ueberspringen
-              </button>
-              <button
-                type="button"
-                onClick={handleApproveReviewedPrompt}
-                className="px-8 py-3 rounded-full bg-sap-blue text-white text-[11px] font-black uppercase tracking-widest hover:bg-sap-blue/90 shadow-xl shadow-sap-blue/20 transition-all active:scale-95"
-              >
-                Analysieren Starten
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {typeof document !== 'undefined' && promptReviewModal ? createPortal(promptReviewModal, document.body) : null}
 
       {/* Fixed Toast / Status Container - Top Right for Tracking */}
       <div className="fixed top-24 right-8 z-[200000] flex flex-col items-end gap-3 pointer-events-none">
@@ -2211,29 +2161,14 @@ const ErpAdvisor: React.FC<ErpAdvisorProps> = ({ embedded = false, assistantOnly
               <Sparkles className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-0.5">AI Engine Phase</div>
-              <div className="text-[14px] font-black text-slate-900 dark:text-white leading-tight">Fixing Prompt...</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-0.5">{isEnglish ? 'AI Engine Phase' : 'KI Engine Phase'}</div>
+              <div className="text-[14px] font-black text-slate-900 dark:text-white leading-tight">{isEnglish ? 'Fixing Prompt...' : 'Prompt wird optimiert...'}</div>
               <div className="mt-3 h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                 <div className="h-full bg-amber-500 animate-progress-indefinite"></div>
               </div>
             </div>
           </div>
         )}
-        {isTyping && (
-          <div className="pointer-events-auto flex items-center gap-4 bg-white dark:bg-dark-elevated border border-slate-200 dark:border-white/10 px-6 py-4 rounded-2xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] toast-animate-in border-l-4 border-l-sap-blue min-w-[320px]">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sap-blue/10 text-sap-blue shrink-0">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sap-blue mb-0.5">{companyName} Engine</div>
-              <div className="text-[14px] font-black text-slate-900 dark:text-white leading-tight">{t.ui.sidebar.analyzing}</div>
-              <div className="mt-3 h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-sap-blue animate-progress-indefinite"></div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {structuredActionNotice && (
           <div className="pointer-events-auto bg-sap-blue text-white px-6 py-4 rounded-2xl shadow-2xl shadow-sap-blue/20 border border-white/10 toast-animate-in max-w-sm">
             <div className="flex items-start gap-4">

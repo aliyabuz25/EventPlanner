@@ -87,6 +87,10 @@ function readJsonFile(filePath, fallbackValue) {
   }
 }
 
+function normalizeAiLocale(value) {
+  return String(value ?? '').trim().toLowerCase() === 'en' ? 'en' : 'de';
+}
+
 function loadStaticFrontendTranslation(target) {
   return null;
 }
@@ -779,7 +783,7 @@ function validateFrontendTranslation(target) {
       continue;
     }
 
-    if (target !== 'en' && normalizedTarget === normalizedSource) {
+    if (target !== 'de' && normalizedTarget === normalizedSource) {
       identicalCount += 1;
     }
   }
@@ -874,7 +878,7 @@ async function ensureNightlyFrontendTranslationValidation() {
       continue;
     }
 
-    if ((validation.stale || validation.missingCount > 0) && ![...frontendTranslationJobs.values()].some((job) => job.target === target && (job.status === 'pending' || job.status === 'running'))) {
+    if ((validation.stale || validation.missingCount > 0 || validation.identicalCount > 0) && ![...frontendTranslationJobs.values()].some((job) => job.target === target && (job.status === 'pending' || job.status === 'running'))) {
       const job = createFrontendTranslationJob(target);
       frontendTranslationJobs.set(job.id, job);
       void runFrontendTranslationJob(job, getSiteContent());
@@ -920,8 +924,8 @@ function isLikelyEventName(value) {
   if (!normalized) return false;
   if (normalized.length < 4 || normalized.length > 80) return false;
   if (/^(noch zu bestaetigen|noch zu bestätigen|noch nicht bestaetigt|noch nicht bestätigt|tbd|to be confirmed)$/i.test(normalized)) return false;
-  if (/^(hotel|briefing|eventdatum|management|daten|support|app|venue|ort)$/i.test(normalized)) return false;
-  if (/\b(wir planen|es handelt sich|der eintritt|check-in|badge|scanner|drucker|teilnehmern|support vor ort|gib folgende felder)\b/i.test(normalized)) return false;
+  if (/^(hotel|briefing|eventdatum|management|daten|support|app|venue|ort|participants?|attendees?|event management|onsite support|logistics|consumables|software|hardware)$/i.test(normalized)) return false;
+  if (/\b(wir planen|es handelt sich|der eintritt|check-in|badge|scanner|drucker|teilnehmern|participants?|attendees?|support vor ort|onsite support|event management|session scanning|live reporting|logistics|consumables|hardware|software|open questions|assumptions|cost drivers|gib folgende felder)\b/i.test(normalized)) return false;
   if (/\b(waere|wäre|interessant|offen|critical|support-level|single source|phase|assistent|assistant|scoping)\b/i.test(normalized)) return false;
   return /[a-zA-ZÄÖÜäöüß]/.test(normalized);
 }
@@ -931,6 +935,7 @@ function normalizeEventNameValue(value) {
   const quotedMatch = raw.match(/[„"]([^"\n“”]{3,80})[“”"]/);
   const normalized = (quotedMatch ? quotedMatch[1] : raw)
     .replace(/^[„"']+|[“”"']+$/g, '')
+    .replace(/^(?:event planning briefing|event briefing|event brief|briefing|title|titel)\s*:\s*/i, '')
     .replace(/\.\s*das event findet.*$/i, '')
     .replace(/\.\s*es handelt sich.*$/i, '')
     .replace(/\.\s*der eintritt.*$/i, '')
@@ -949,8 +954,8 @@ function normalizeEventNameValue(value) {
 function isLikelyLocation(value) {
   const normalized = sanitizeExtractedValue(value);
   if (!normalized) return false;
-  if (/^(eventdatum|management|daten|briefing|support-level|hotel)$/i.test(normalized)) return false;
-  if (/\b(phase|print-on-demand|walk-ins|app waere|daten|angebot|enthalten|eingeplant|beruecksichtigt|berücksichtigt|scope|support|materialreserven|mittelpunkt|besuchererlebnis|einlass|ausgestellte|fahrzeuge)\b/i.test(normalized)) return false;
+  if (/^(eventdatum|management|daten|briefing|support-level|hotel|participants?|attendees?|event management|onsite support|logistics|consumables|software|hardware)$/i.test(normalized)) return false;
+  if (/\b(phase|print-on-demand|walk-ins|app waere|daten|angebot|enthalten|eingeplant|beruecksichtigt|berücksichtigt|scope|support|onsite support|event management|session scanning|live reporting|materialreserven|mittelpunkt|besuchererlebnis|einlass|ausgestellte|fahrzeuge|emergency contact|training materials|customer service team)\b/i.test(normalized)) return false;
   return /\b(stra[sß]e|str\.|platz|halle|center|zentrum|venue|avm|istanbul|galata|stuttgart|berlin|m[uü]nchen|hannover|leinfelden|echterdingen|umraniye|palladium)\b/i.test(normalized) || /\d/.test(normalized);
 }
 
@@ -958,7 +963,7 @@ function isLikelyAttendeesValue(value) {
   const normalized = sanitizeExtractedValue(value);
   if (!normalized) return false;
   if (cleanNumber(normalized) > 0) return true;
-  return /(\d[\d.,]*)\s*(teilnehmer|teilnehmende|pax|gaeste|gäste|personen)/i.test(normalized);
+  return /(\d[\d.,]*)\s*(teilnehmer|teilnehmende|pax|gaeste|gäste|personen|participants?|attendees?|guests?)/i.test(normalized);
 }
 
 function isLikelyBudgetValue(value) {
@@ -1039,8 +1044,21 @@ async function generateWithOllama(prompt, options = {}) {
   return String(result?.response ?? '').trim();
 }
 
-async function generateStudioPromptFromStructuredSource(source) {
-  const prompt = `Du bist ein deutschsprachiger Event-Scoping-Assistent.
+async function generateStudioPromptFromStructuredSource(source, locale = 'de') {
+  const prompt = locale === 'en'
+    ? `You are an English-speaking event scoping assistant.
+Turn the following structured event and commercial data into a natural, professional English briefing text for an AI agent.
+The result should sound like a real message from a customer or project lead.
+No JSON. No dash bullets. No meta comments. No mention of prompts, schemas or fields.
+Use the available details intelligently and combine them into 1 to 3 compact paragraphs.
+Vary the wording slightly each time so the text does not sound identical.
+If some details are missing, simply omit them instead of using placeholders.
+
+Source:
+${source}
+
+Answer:`
+    : `Du bist ein deutschsprachiger Event-Scoping-Assistent.
 Formuliere aus den folgenden strukturierten Event- und Angebotsdaten einen natuerlichen, professionellen deutschen Briefing-Text fuer einen KI-Agenten.
 Der Text soll wie eine echte Nachricht eines Kunden oder Projektverantwortlichen klingen.
 Kein JSON. Keine Aufzaehlung mit Bindestrichen. Kein Meta-Kommentar. Kein Hinweis auf Prompt, Schema oder Felder.
@@ -1059,8 +1077,28 @@ Antwort:`;
   });
 }
 
-async function generateStudioPromptFromEasySeed(source) {
-  const prompt = `Du bist ein deutschsprachiger Event-Scoping-Assistent.
+async function generateStudioPromptFromEasySeed(source, locale = 'de') {
+  const prompt = locale === 'en'
+    ? `You are an English-speaking event scoping assistant.
+From a short or incomplete user input, create a much more complete English briefing text.
+Goal: a natural, professional text that prepares as many commercial event-scoping phases as possible.
+
+Rules:
+- Write like a real customer or project lead.
+- No JSON.
+- No dash lists.
+- No meta comments.
+- Do not mention "phase", "prompt", "schema" or "format".
+- Keep all existing facts exactly as they are.
+- Expand the text so that event basics, check-in, software, project management, hardware, consumables, support and logistics are all considered.
+- If details are missing, add neutral operational follow-up needs instead of inventing hard facts.
+- Answer in 1 to 3 compact paragraphs.
+
+User input:
+${source}
+
+Answer:`
+    : `Du bist ein deutschsprachiger Event-Scoping-Assistent.
 Aus einer kurzen oder unvollstaendigen Nutzerangabe sollst du einen deutlich vollstaendigeren deutschen Briefing-Text formulieren.
 Ziel: ein natuerlicher, professioneller Text, der moeglichst viele Angebotsphasen fuer Event-Scoping vorbereitet.
 
@@ -1167,7 +1205,29 @@ function mergeBriefs(...briefs) {
 
 function cleanNumber(value) {
   if (value == null) return 0;
-  const normalized = String(value).replace(/[^\d.,]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
+  const raw = String(value).replace(/[^\d.,]/g, '').trim();
+  if (!raw) return 0;
+
+  let normalized = raw;
+  const hasComma = normalized.includes(',');
+  const hasDot = normalized.includes('.');
+
+  if (hasComma && hasDot) {
+    if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.');
+    } else {
+      normalized = normalized.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    normalized = /,\d{1,2}$/.test(normalized)
+      ? normalized.replace(',', '.')
+      : normalized.replace(/,/g, '');
+  } else if (hasDot) {
+    normalized = /\.\d{1,2}$/.test(normalized)
+      ? normalized
+      : normalized.replace(/\./g, '');
+  }
+
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -1178,6 +1238,9 @@ const STRUCTURED_FIELD_ALIASES = {
   'kunde (po)': 'customerName',
   eventname: 'eventName',
   'event name': 'eventName',
+  title: 'eventName',
+  titel: 'eventName',
+  'event title': 'eventName',
   eventtitel: 'eventName',
   veranstaltungstitel: 'eventName',
   arbeitstitel: 'eventName',
@@ -1341,7 +1404,7 @@ function sanitizeExtractedValue(value) {
   const normalized = String(value ?? '')
     .replace(/^\s*[-*•]+\s*/, '')
     .replace(/\*\*/g, '')
-    .replace(/^(eventname|event name|veranstaltung|eventortadresse|eventort|ortadresse|ort|veranstaltungsort|event-?ort|teilnehmerzahl|teilnehmer|pax|check-?in-?szenario|support-?level|transport|reisekosten)\s*:\s*/i, '')
+    .replace(/^(title|titel|eventname|event name|event title|veranstaltung|eventortadresse|eventort|ortadresse|ort|veranstaltungsort|event-?ort|teilnehmerzahl|teilnehmer|attendees|participants|pax|check-?in-?szenario|support-?level|transport|reisekosten)\s*:\s*/i, '')
     .trim();
   if (!normalized) return '';
   if (/^(noch offen|offen|open|n\/a|unbekannt|-|—)$/i.test(normalized)) return '';
@@ -1363,6 +1426,14 @@ function firstNonEmpty(...values) {
     }
   }
   return '';
+}
+
+function getPreferredFieldValue(rawBrief, key, ...fallbacks) {
+  if (rawBrief && typeof rawBrief === 'object' && Object.prototype.hasOwnProperty.call(rawBrief, key)) {
+    return sanitizeExtractedValue(rawBrief[key]);
+  }
+
+  return firstNonEmpty(...fallbacks);
 }
 
 function extractLabeledValue(transcript, labels) {
@@ -1410,10 +1481,7 @@ function normalizeTranscriptForExtraction(transcript) {
       if (/^(BEISPIELANTWORTEN|Zu Beginn haben wir|Nun m[oö]chten wir wissen|Danke der Informationen|Zusammenfassung|Naechster Schritt)/i.test(trimmed)) {
         return false;
       }
-      if (/^\*\*.*\*\*:/.test(trimmed)) {
-        return false;
-      }
-      if (/^\-\s+\*\*.*\*\*:/.test(trimmed)) {
+      if (/^\-?\s*\*\*(customername|eventname|eventlocation|eventdates|attendees|budget|checkinscenario|venues|entrypoints|onsitedays|softwareneeds|rentalneeds|supportlevel|travelscope|integrations|badgetype|servicemodules|costdrivers|assumptions|missingitems|nextstep)\*\*\s*:?\s*$/i.test(trimmed)) {
         return false;
       }
       if (/^\d+\.\s/.test(trimmed)) {
@@ -1457,7 +1525,22 @@ function isPromptAuthoringMessage(text) {
     '"eventdates":',
     '"checkinscenario":',
     '"softwareneeds":',
-    '"rentalneeds":'
+    '"rentalneeds":',
+    'you are the fastlane assistant',
+    'you are an event scoping assistant',
+    'important working rules',
+    'structure to capture',
+    'your task in chat',
+    'response style',
+    'when enough information is available',
+    'start now with phase a',
+    'phase a - event basics',
+    'phase b - software configuration',
+    'phase c - project management',
+    'phase d - rental hardware',
+    'phase e - consumables',
+    'phase f - onsite support',
+    'phase g - transport and travel'
   ];
 
   const hits = promptSignals.filter((signal) => normalized.includes(signal)).length;
@@ -1482,15 +1565,23 @@ function isConsultingQuestion(text) {
     'architektur',
     'interview-flow',
     'fragebaum',
+    'question tree',
     'mvp',
-    'deliverables'
+    'deliverables',
+    'service provider',
+    'attendee management services',
+    'ai agent',
+    'offer agent',
+    'cost overview',
+    'product catalog',
+    'architecture'
   ];
 
   const hits = signals.filter((signal) => normalized.includes(signal)).length;
   return hits >= 3;
 }
 
-async function extractBriefWithOllama(history, userMessage) {
+async function extractBriefWithOllama(history, userMessage, locale = 'de') {
   if (isPromptAuthoringMessage(userMessage)) {
     return null;
   }
@@ -1508,11 +1599,56 @@ async function extractBriefWithOllama(history, userMessage) {
     return null;
   }
 
-  const extractionPrompt = `Du bist ein reiner Extraktionsdienst fuer Event-Scoping.
+  const extractionPrompt = locale === 'en'
+    ? `You are a pure extraction service for event scoping.
+Extract only reliable facts from the following user transcript.
+Ignore sample answers, prompts, UI text, assistant questions and assumptions.
+Ignore placeholders such as "open", "to be confirmed" or generic roles such as "assistant".
+If the text contains a real event title in quotation marks or after labels such as "event name", "event title" or "working title", keep only that title and not the full sentence.
+Treat labels such as "Title" or "Titel" as the event title when they clearly describe the event.
+Budget information can also appear under labels such as "Target Budget Range".
+Never invent an event name, location or date from generic section headers such as "Participants", "Event Management", "Support", "Logistics", "Open Questions", "Assumptions" or "Cost Drivers".
+If no explicit event name is present, leave "eventName" empty.
+If no explicit location is present, leave "eventLocation" empty.
+Only keep a budget when it contains concrete numbers, ranges or an explicit "open".
+Only keep the support level if it is Basic, Standard, Extended, Premium, 24/7 or doors-open critical.
+If a value is not explicitly stated, return an empty string or an empty array.
+Respond only with valid JSON without markdown, explanations or tags.
+
+JSON schema:
+{
+  "customerName": "",
+  "eventName": "",
+  "eventLocation": "",
+  "eventDates": "",
+  "attendees": "",
+  "budget": "",
+  "checkInScenario": "",
+  "venues": "",
+  "entryPoints": "",
+  "onsiteDays": "",
+  "softwareNeeds": [],
+  "rentalNeeds": [],
+  "supportLevel": "",
+  "travelScope": "",
+  "integrations": [],
+  "badgeType": "",
+  "serviceModules": [],
+  "costDrivers": [],
+  "assumptions": [],
+  "missingItems": [],
+  "nextStep": ""
+}`
+    : `Du bist ein reiner Extraktionsdienst fuer Event-Scoping.
 Extrahiere nur belastbare Fakten aus dem folgenden Nutzerverlauf.
 Ignoriere Beispielantworten, Prompts, UI-Texte, Fragen des Assistenten und Annahmen.
 Ignoriere Platzhalter wie "Noch offen", "Noch zu bestaetigen" oder generische Rollen wie "Assistent".
 Wenn im Text ein echter Eventtitel in Anfuehrungszeichen oder nach "Eventname", "Eventtitel" oder "Arbeitstitel" genannt wird, uebernimm nur diesen Titel und nicht den restlichen Satz.
+Behandle Bezeichner wie "Title" oder "Titel" als Eventtitel, wenn sie klar die Veranstaltung benennen.
+Budgetinformationen koennen auch unter Bezeichnungen wie "Target Budget Range" stehen.
+Erfinde niemals Eventname, Ort oder Datum aus generischen Abschnittsueberschriften wie "Participants", "Event Management", "Support", "Logistics", "Open Questions", "Assumptions" oder "Cost Drivers".
+Wenn kein expliziter Eventname genannt wird, lasse "eventName" leer.
+Wenn kein expliziter Ort genannt wird, lasse "eventLocation" leer.
 Uebernimm als Budget nur konkrete Zahlen, Bereiche oder eindeutig "Noch offen".
 Uebernimm als Support-Level nur Basic, Standard, Extended, Premium, 24/7 oder Doors-open critical.
 Wenn eine Information nicht explizit genannt wurde, gib einen leeren String oder ein leeres Array zurueck.
@@ -1588,25 +1724,15 @@ function inferEventName(transcript) {
     /\barbeitstitel\s+(?:des\s+events\s+)?lautet\s+[„"]?([^"\n“”]+)[“”"]?/i,
     /\bunter\s+dem\s+arbeitstitel\s+[„"]?([^"\n“”]+)[“”"]?/i,
     /\beventtitel\s*[:=-]\s*([^\n,.;]+)/i,
-    /\bevent\s*:\s*wir planen das event\s+[„"]([^"\n“”]+)[“”"]/i,
-    /\bwir planen das event\s+[„"]([^"\n“”]+)[“”"]/i,
-    /\bdas event\s+[„"]([^"\n“”]+)[“”"]/i,
     /\bevent adı\s*:?\s*([^\n,.;]+)/i,
     /\bevent adi\s*:?\s*([^\n,.;]+)/i,
     /\betkinlik adı\s*:?\s*([^\n,.;]+)/i,
     /\betkinlik adi\s*:?\s*([^\n,.;]+)/i,
-    /\betkinlik\s*[:=-]\s*([^\n,.;]+)/i,
     /\bevent name\s*[:=-]\s*([^\n,.;]+)/i,
     /\beventname\s*[:=-]\s*([^\n,.;]+)/i,
     /\bveranstaltung\s*[:=-]\s*([^\n,.;]+)/i,
-    /\bevent\s*[:=-]\s*([A-ZÄÖÜ0-9][^\n,.;]{2,80})/i,
-    /\bwir planen\s+(?:den|das)\s+(.+?)\s+als\b/i,
-    /\bwir planen\s+(?:den|das)\s+(.+?)\s+in der\b/i,
-    /\bwir planen\s+(?:den|das)\s+(.+?)\s+im\b/i,
-    /\bwir planen\s+(?:den|das)\s+(.+?)\s+am\b/i,
     /\b(?:das|unser|mein)\s+event\s+(?:heisst|heißt|ist)\s+([^\n,.;]+)/i,
-    /\bname der veranstaltung\s*:?\s*([^\n,.;]+)/i,
-    /\b(?:event adı|event adi|etkinlik adı|etkinlik adi)\s+([^\n,.;]+)/i
+    /\bname der veranstaltung\s*:?\s*([^\n,.;]+)/i
   ]);
 }
 
@@ -1650,6 +1776,8 @@ function inferAttendees(transcript) {
   return pickLastMatch(transcript, [
     /\berwartete teilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
     /\bteilnehmerzahl\s*:?\s*([^\n,.;]+)/i,
+    /\battendees?\s*:?\s*([^\n,.;]+)/i,
+    /\bparticipants?\s*:?\s*([^\n,.;]+)/i,
     /\bkatılımcı sayısı\s*:?\s*([^\n,.;]+)/i,
     /\bkatilimci sayisi\s*:?\s*([^\n,.;]+)/i,
     /\bteilnehmer\s*:?\s*([^\n,.;]+)/i,
@@ -1659,7 +1787,8 @@ function inferAttendees(transcript) {
     /\bkişi\s*:?\s*([^\n,.;]+)/i,
     /\bkisi\s*:?\s*([^\n,.;]+)/i,
     /\brund\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmende|pax|gaeste|gäste|personen|kişi|kisi)\b/i,
-    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen|kişi|kisi)\b/i,
+    /\b(\d[\d.,]*)\s*(?:teilnehmer|pax|gaeste|gäste|personen|kişi|kisi|participants?|attendees?|guests?)\b/i,
+    /\bwith\s+(\d[\d.,]*)\s*(?:participants?|attendees?|guests?)\b/i,
     /\bmit\s+(\d[\d.,]*)\s*(?:teilnehmer|teilnehmenden|pax|gaesten|gästen|personen|kişi|kisi)\b/i
   ]);
 }
@@ -1725,7 +1854,7 @@ function inferTravelScope(transcript) {
 
 function inferBudget(transcript) {
   const direct = pickLastMatch(transcript, [
-    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen|bütçe|butce)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro|tl|try))\b/i,
+    /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen|bütçe|butce)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro|\$|usd|dollars?|tl|try))\b/i,
     /\b(?:budget|rahmenbudget|maximalbudget|budgetrahmen|bütçe|butce)\s*[:=-]?\s*(?:ca\.\s*)?(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?)\b/i
   ]);
 
@@ -1733,7 +1862,7 @@ function inferBudget(transcript) {
     return direct.replace(/\s+/g, ' ').trim();
   }
 
-  const freeText = transcript.match(/\bwir haben\s+ein\s+budget\s+von\s+(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro|tl|try)?)\b/i);
+  const freeText = transcript.match(/\b(?:wir haben\s+ein\s+budget\s+von|budget will be|budget is)\s+(\d[\d.,\s]*(?:\s*(?:-|bis)\s*\d[\d.,\s]*)?\s*(?:€|eur|euro|\$|usd|dollars?|tl|try)?)\b/i);
   return freeText?.[1]?.replace(/\s+/g, ' ').trim() || '';
 }
 
@@ -1743,7 +1872,7 @@ function parseBudgetValue(value) {
 
   const compact = normalized
     .replace(/ca\.\s*/g, '')
-    .replace(/\s*(eur|euro|€)\s*/g, '')
+    .replace(/\s*(eur|euro|€|usd|us-dollar|dollars?|\$)\s*/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -1769,59 +1898,87 @@ function parseBudgetValue(value) {
 function inferBriefFromTranscript(transcript, rawBrief = {}) {
   const normalizedTranscript = normalizeTranscriptForExtraction(transcript);
   const structured = parseStructuredFieldBlocks(normalizedTranscript);
-  const eventName = firstNonEmpty(
+  const hasRawSupportLevel = rawBrief && typeof rawBrief === 'object' && Object.prototype.hasOwnProperty.call(rawBrief, 'supportLevel');
+  const eventName = getPreferredFieldValue(
+    rawBrief,
+    'eventName',
     rawBrief.eventName,
     structured.values.eventName,
-    normalizeEventNameValue(extractLabeledValue(normalizedTranscript, ['Event Name', 'Eventname', 'Veranstaltungstitel', 'Eventtitel', 'Arbeitstitel'])),
+    normalizeEventNameValue(extractLabeledValue(normalizedTranscript, ['Title', 'Titel', 'Event Name', 'Eventname', 'Event Title', 'Veranstaltungstitel', 'Eventtitel', 'Arbeitstitel'])),
     inferEventName(normalizedTranscript)
   );
-  const eventLocation = firstNonEmpty(
+  const eventLocation = getPreferredFieldValue(
+    rawBrief,
+    'eventLocation',
     rawBrief.eventLocation,
     structured.values.eventLocation,
     extractLabeledValue(normalizedTranscript, ['Veranstaltungsort', 'Event-Ort', 'Ort', 'Ort / Venue', 'Ort / Venues', 'Location', 'Venue']),
     inferLocation(normalizedTranscript)
   );
-  const eventDates = firstNonEmpty(
+  const eventDates = getPreferredFieldValue(
+    rawBrief,
+    'eventDates',
     rawBrief.eventDates,
-    extractLabeledValue(normalizedTranscript, ['Eventdatum', 'Eventdaten', 'Datum', 'Event Date']),
+    extractLabeledValue(normalizedTranscript, ['Eventdatum', 'Eventdaten', 'Datum', 'Event Date', 'Dates']),
     inferEventDates(normalizedTranscript)
   );
-  const attendees = firstNonEmpty(
+  const attendees = getPreferredFieldValue(
+    rawBrief,
+    'attendees',
     rawBrief.attendees,
     structured.values.attendees,
-    extractLabeledValue(normalizedTranscript, ['Erwartete Teilnehmerzahl', 'Teilnehmerzahl', 'Teilnehmer', 'Attendees', 'Pax']),
+    extractLabeledValue(normalizedTranscript, ['Erwartete Teilnehmerzahl', 'Teilnehmerzahl', 'Teilnehmer', 'Attendees', 'Participants', 'Pax']),
     inferAttendees(normalizedTranscript)
   );
-  const budget = firstNonEmpty(
+  const budget = getPreferredFieldValue(
+    rawBrief,
+    'budget',
     rawBrief.budget,
     structured.values.budget,
-    extractLabeledValue(normalizedTranscript, ['Budget', 'Rahmenbudget', 'Maximalbudget', 'Budgetrahmen']),
+    extractLabeledValue(normalizedTranscript, ['Budget', 'Target Budget Range', 'Budget Range', 'Rahmenbudget', 'Maximalbudget', 'Budgetrahmen']),
     inferBudget(normalizedTranscript)
   );
-  const supportLevel = firstNonEmpty(
+  const supportLevel = getPreferredFieldValue(
+    rawBrief,
+    'supportLevel',
     rawBrief.supportLevel,
     structured.values.supportLevel,
     extractLabeledValue(normalizedTranscript, ['Support-Level', 'Supportlevel']),
     inferSupportLevel(normalizedTranscript)
   );
-  const badgeType = firstNonEmpty(
+  const badgeType = getPreferredFieldValue(
+    rawBrief,
+    'badgeType',
     rawBrief.badgeType,
     extractLabeledValue(normalizedTranscript, ['Badge-Typ', 'Badge Typ']),
     /pvc/i.test(normalizedTranscript) ? 'PVC-Badge' : /papier|paper/i.test(normalizedTranscript) ? 'Papier-Badge' : /digital/i.test(normalizedTranscript) ? 'Digital / QR' : ''
   );
-  const travelScope = firstNonEmpty(
+  const travelScope = getPreferredFieldValue(
+    rawBrief,
+    'travelScope',
     rawBrief.travelScope,
     extractLabeledValue(normalizedTranscript, ['Transport', 'Reisekosten', 'Travel Scope']),
     inferTravelScope(normalizedTranscript)
   );
-  const checkInScenario = inferCheckInScenario(normalizedTranscript, rawBrief);
-  const entryPoints = firstNonEmpty(
+  const checkInScenario = getPreferredFieldValue(
+    rawBrief,
+    'checkInScenario',
+    rawBrief.checkInScenario,
+    structured.values.checkInScenario,
+    extractMultilineSection(normalizedTranscript, ['Check-in-Szenario', 'Checkin-Szenario', 'Check-in Scenario']),
+    inferCheckInScenario(normalizedTranscript, rawBrief)
+  );
+  const entryPoints = getPreferredFieldValue(
+    rawBrief,
+    'entryPoints',
     rawBrief.entryPoints,
     extractLabeledValue(normalizedTranscript, ['Eingänge', 'Eingaenge']),
     (normalizedTranscript.match(/(\d+)\s*(haupt)?eing[aä]nge/i)?.[1] ?? ''),
     pickLastMatch(normalizedTranscript, [/\b(\d+)\s*(?:eing[aä]nge|eingange|entrances|eingang)\b/i])
   );
-  const onsiteDays = firstNonEmpty(
+  const onsiteDays = getPreferredFieldValue(
+    rawBrief,
+    'onsiteDays',
     rawBrief.onsiteDays,
     extractLabeledValue(normalizedTranscript, ['Eventtage', 'Dauer']),
     (normalizedTranscript.match(/(\d+)\s*(tage|tage\)|tag)/i)?.[1] ?? ''),
@@ -1851,7 +2008,7 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
   ]));
 
   return {
-    customerName: firstNonEmpty(rawBrief.customerName, structured.values.customerName, extractLabeledValue(normalizedTranscript, ['Kunde', 'Customer', 'Ansprechpartner', 'KUNDE \\(PO\\)'])),
+    customerName: getPreferredFieldValue(rawBrief, 'customerName', rawBrief.customerName, structured.values.customerName, extractLabeledValue(normalizedTranscript, ['Kunde', 'Customer', 'Ansprechpartner', 'KUNDE \\(PO\\)'])),
     eventName,
     eventLocation,
     eventDates,
@@ -1863,7 +2020,9 @@ function inferBriefFromTranscript(transcript, rawBrief = {}) {
     onsiteDays,
     softwareNeeds,
     rentalNeeds,
-    supportLevel: normalizeSupportLevelValue(supportLevel || (/24\/7/i.test(normalizedTranscript) ? '24/7' : /extended/i.test(normalizedTranscript) ? 'Extended' : '')),
+    supportLevel: hasRawSupportLevel
+      ? normalizeSupportLevelValue(supportLevel)
+      : normalizeSupportLevelValue(supportLevel || (/24\/7/i.test(normalizedTranscript) ? '24/7' : /extended/i.test(normalizedTranscript) ? 'Extended' : '')),
     travelScope,
     integrations: Array.from(new Set([...(Array.isArray(rawBrief.integrations) ? rawBrief.integrations : []), ...parseIntegrationList(normalizedTranscript)])),
     badgeType,
@@ -1895,7 +2054,7 @@ function isStructuredBriefInput(text) {
 
 function shouldAnswerDirectly(text) {
   const normalized = String(text ?? '').toLowerCase();
-  return /bitte beantworte|antworte direkt|keine rueckfragen|keine rückfragen|liefere konkrete antworten|als waerst du der kunde|als wärst du der kunde|gib zu jedem punkt eine konkrete antwort|formatiere die antwort sauber nach den phasen|vollstaendige antwort|vollständige antwort/.test(normalized);
+  return /bitte beantworte|antworte direkt|keine rueckfragen|keine rückfragen|liefere konkrete antworten|als waerst du der kunde|als wärst du der kunde|gib zu jedem punkt eine konkrete antwort|formatiere die antwort sauber nach den phasen|vollstaendige antwort|vollständige antwort|answer directly|no follow-up questions|no follow up questions|give a direct answer|fully answer|complete answer/.test(normalized);
 }
 
 function buildDeterministicAssistantReply(brief, offer) {
@@ -1922,10 +2081,151 @@ function buildDeterministicAssistantReply(brief, offer) {
   return lines.join('\n');
 }
 
-function buildPromptAuthoringHelpReply() {
+function buildPromptAuthoringHelpReply(locale = 'de') {
+  return locale === 'en'
+    ? [
+        'I still need actual event details instead of an instruction or template.',
+        'Please send the event name, location, date, attendee volume and planned check-in flow in normal text.'
+      ].join('\n')
+    : [
+        'Ich brauche noch echte Eventangaben statt einer Anweisung oder Vorlage.',
+        'Nennen Sie mir bitte jetzt einfach Eventname, Ort, Datum, Teilnehmerzahl und den geplanten Check-in-Ablauf in normalem Text.'
+      ].join('\n');
+}
+
+function isGreetingMessage(text) {
+  return /^(hi|hello|hey|hallo|selam|merhaba)\b[!.?\s]*$/i.test(String(text ?? '').trim());
+}
+
+function isWidgetFreshStartRequest(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  if (!normalized) return false;
+
+  return /\b(start over|reset|from scratch|new event|create (?:a )?new event|create an event|plan an event|i want to create an event|i want to plan an event|let'?s create an event|let'?s plan an event|von vorne|neu anfangen|neues event|event erstellen|event planen)\b/i.test(normalized);
+}
+
+function isWidgetPlanningIntentMessage(text) {
+  const normalized = String(text ?? '').toLowerCase();
+  if (!normalized) return false;
+
+  return isGreetingMessage(text)
+    || /\b(help|would you help|can you help|assist|guide me|support me|create an event|plan an event|new event|event plan|event briefing|event brief|start over|reset|event erstellen|event planen|hilf mir|unterstuetz|unterstütz|briefing erstellen)\b/i.test(normalized);
+}
+
+function buildWidgetPlanningReply(locale = 'de') {
+  return locale === 'en'
+    ? [
+        'Yes. I can help you plan the event step by step.',
+        'Tell me the event name, location, dates, attendee count, check-in setup and budget, and I will apply each detail directly to the event plan and pricing.'
+      ].join('\n')
+    : [
+        'Ja. Ich helfe Ihnen Schritt fuer Schritt bei der Eventplanung.',
+        'Nennen Sie mir einfach Eventname, Ort, Datum, Teilnehmerzahl, Check-in-Setup und Budget. Ich uebernehme jede Angabe direkt in Eventplan und Preislogik.'
+      ].join('\n');
+}
+
+function extractWidgetFieldOverrides(userMessage) {
+  const text = String(userMessage ?? '').trim();
+  if (!text) return null;
+
+  const overrides = {};
+
+  const eventNameCandidate = [
+    text.match(/\b(?:make|set|change|update)\s+(?:the\s+)?(?:event\s+)?name\s+(?:to|as)?\s*([^\n]+)/i)?.[1],
+    text.match(/\b(?:event\s+)?name\s+(?:will be|is|:|=)\s*([^\n]+)/i)?.[1]
+  ].map((value) => normalizeEventNameValue(value)).find(Boolean);
+  if (eventNameCandidate) {
+    overrides.eventName = eventNameCandidate;
+  }
+
+  const customerCandidate = [
+    text.match(/\b(?:customer|client|organizer|kunde|veranstalter)\s*(?:will be|is|:|=|to)?\s*([^\n,;]+)/i)?.[1]
+  ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
+  if (customerCandidate) {
+    overrides.customerName = customerCandidate;
+  }
+
+  const locationCandidate = [
+    text.match(/\b(?:location|venue|ort|veranstaltungsort)\s*(?:will be|is|:|=|to)?\s*([^\n,;]+)/i)?.[1]
+  ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
+  if (locationCandidate) {
+    overrides.eventLocation = locationCandidate;
+  }
+
+  const datesCandidate = [
+    text.match(/\b(?:date|dates|datum|event dates?)\s*(?:will be|are|is|:|=|to)?\s*([^\n]+)/i)?.[1]
+  ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
+  if (datesCandidate) {
+    overrides.eventDates = datesCandidate;
+  }
+
+  const attendeesCandidate = [
+    text.match(/\b(?:attendees?|participants?|teilnehmer|guests?)\s*(?:will be|are|is|:|=|to)?\s*(\d[\d.,]*)/i)?.[1],
+    text.match(/\bthere will be\s+(\d[\d.,]*)\b/i)?.[1]
+  ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
+  if (attendeesCandidate) {
+    overrides.attendees = attendeesCandidate;
+  }
+
+  const budgetCandidate = [
+    text.match(/(\d[\d.,\s]*(?:\s*(?:€|eur|euro|\$|usd|dollars?|tl|try))(?:\s*(?:per person|per attendee|pro person|pro teilnehmer))?)/i)?.[1],
+    text.match(/\bbudget\s*(?:will be|is|:|=|to)?\s*([^\n]+?)(?=\s+\b(?:there will be|attendees?|participants?|guests?)\b|$)/i)?.[1]
+  ].map((value) => sanitizeExtractedValue(value)).find(Boolean);
+  if (budgetCandidate) {
+    overrides.budget = budgetCandidate;
+  }
+
+  return Object.keys(overrides).length ? overrides : null;
+}
+
+function buildWidgetAssistantReply(previousBrief, nextBrief, userMessage, locale = 'de', fallbackText = '') {
+  const fields = [
+    ['customerName', locale === 'en' ? 'Customer' : 'Kunde'],
+    ['eventName', locale === 'en' ? 'Event name' : 'Eventname'],
+    ['eventLocation', locale === 'en' ? 'Location' : 'Ort'],
+    ['eventDates', locale === 'en' ? 'Dates' : 'Datum'],
+    ['attendees', locale === 'en' ? 'Attendees' : 'Teilnehmer'],
+    ['budget', 'Budget'],
+    ['checkInScenario', locale === 'en' ? 'Check-in' : 'Check-in'],
+    ['supportLevel', 'Support']
+  ];
+
+  const changes = fields
+    .map(([key, label]) => {
+      const previousValue = String(previousBrief?.[key] ?? '').trim();
+      const nextValue = String(nextBrief?.[key] ?? '').trim();
+      if (!nextValue || previousValue === nextValue) return '';
+      return `- ${label}: ${nextValue}`;
+    })
+    .filter(Boolean);
+
+  const cleanedFallback = String(fallbackText ?? '').trim();
+
+  if (!changes.length && isWidgetPlanningIntentMessage(userMessage)) {
+    if (cleanedFallback && !looksLikeJsonOnlyReply(cleanedFallback)) {
+      return cleanedFallback;
+    }
+    return buildWidgetPlanningReply(locale);
+  }
+
+  if (!changes.length) {
+    if (cleanedFallback && !looksLikeJsonOnlyReply(cleanedFallback)) {
+      return cleanedFallback;
+    }
+    return locale === 'en'
+      ? 'I can apply your event details directly. Tell me what to add or change, for example: "Customer is Elon Musk", "Location is Galata" or "Budget is 3000 USD per person".'
+      : 'Ich kann Ihre Eventdaten direkt uebernehmen. Sagen Sie mir einfach, was ich hinzufuegen oder aendern soll, zum Beispiel: "Customer ist Elon Musk", "Ort ist Galata" oder "Budget ist 3000 USD pro Person".';
+  }
+
   return [
-    'Ich brauche noch echte Eventangaben statt einer Anweisung oder Vorlage.',
-    'Nennen Sie mir bitte jetzt einfach Eventname, Ort, Datum, Teilnehmerzahl und den geplanten Check-in-Ablauf in normalem Text.'
+    locale === 'en'
+      ? 'Updated in the workspace:'
+      : 'Im Workspace aktualisiert:',
+    ...changes,
+    '',
+    locale === 'en'
+      ? 'The live brief and pricing snapshot were refreshed.'
+      : 'Live-Briefing und Pricing-Snapshot wurden aktualisiert.'
   ].join('\n');
 }
 
@@ -1934,23 +2234,23 @@ function looksLikeJsonOnlyReply(text) {
   return !normalized || normalized.startsWith('{') || normalized.startsWith('{"') || /^\{[\s\S]*\}$/.test(normalized);
 }
 
-function buildAssistantReplyFromBrief(brief) {
+function buildAssistantReplyFromBrief(brief, locale = 'de') {
   const lines = [];
   const facts = [
     brief?.eventName ? `Event: ${brief.eventName}` : '',
-    brief?.eventLocation ? `Ort: ${brief.eventLocation}` : '',
-    brief?.eventDates ? `Datum: ${brief.eventDates}` : '',
-    brief?.attendees ? `Teilnehmer: ${brief.attendees}` : '',
+    brief?.eventLocation ? `${locale === 'en' ? 'Location' : 'Ort'}: ${brief.eventLocation}` : '',
+    brief?.eventDates ? `${locale === 'en' ? 'Date' : 'Datum'}: ${brief.eventDates}` : '',
+    brief?.attendees ? `${locale === 'en' ? 'Attendees' : 'Teilnehmer'}: ${brief.attendees}` : '',
     brief?.budget ? `Budget: ${brief.budget}` : '',
-    brief?.checkInScenario ? `Check-in: ${brief.checkInScenario}` : '',
+    brief?.checkInScenario ? `${locale === 'en' ? 'Check-in' : 'Check-in'}: ${brief.checkInScenario}` : '',
     brief?.supportLevel ? `Support: ${brief.supportLevel}` : ''
   ].filter(Boolean);
 
   if (facts.length) {
-    lines.push('Ich habe die aktuellen Eckdaten uebernommen.');
+    lines.push(locale === 'en' ? 'I captured the current key facts.' : 'Ich habe die aktuellen Eckdaten uebernommen.');
     lines.push(...facts.map((fact) => `- ${fact}`));
   } else {
-    lines.push('Ich habe noch nicht genug belastbare Eventdaten erkannt.');
+    lines.push(locale === 'en' ? 'I have not recognized enough reliable event details yet.' : 'Ich habe noch nicht genug belastbare Eventdaten erkannt.');
   }
 
   if (brief?.currentQuestion) {
@@ -1982,7 +2282,7 @@ function parseAttendees(value, transcript = '') {
   const direct = cleanNumber(value);
   if (direct > 0) return Math.round(direct);
 
-  const match = transcript.match(/(\d[\d.,]*)\s*(teilnehmer|pax|gaeste|gäste|personen)/i);
+  const match = transcript.match(/(\d[\d.,]*)\s*(teilnehmer|pax|gaeste|gäste|personen|participants?|attendees?|guests?)/i);
   if (!match) return 0;
   return Math.round(cleanNumber(match[1]));
 }
@@ -2022,8 +2322,8 @@ function parseDayCount(value, transcript = '') {
   return 1;
 }
 
-function formatEuro(value) {
-  return new Intl.NumberFormat('de-DE', {
+function formatEuro(value, locale = 'de') {
+  return new Intl.NumberFormat(locale === 'en' ? 'en-GB' : 'de-DE', {
     style: 'currency',
     currency: 'EUR',
     maximumFractionDigits: 0
@@ -2047,7 +2347,8 @@ function createPosition(label, quantity, unit, rate, pricingEnabled) {
   };
 }
 
-function buildAiExplorerOffer(rawBrief, history, userMessage) {
+function buildAiExplorerOffer(rawBrief, history, userMessage, locale = 'de') {
+  const isEnglish = locale === 'en';
   const userTranscript = [
     ...history
       .filter((item) => item?.role === 'user')
@@ -2106,14 +2407,79 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   const supportLevel = brief.supportLevel || inferredSupportLevel;
   const softwareNeeds = new Set(brief.softwareNeeds);
   const rentalNeeds = new Set(brief.rentalNeeds);
+  const phaseText = isEnglish
+    ? {
+        basics: 'Event Basics',
+        software: 'Software',
+        project: 'Project Management',
+        rental: 'Rental Hardware',
+        consumables: 'Consumables',
+        support: 'Support',
+        transport: 'Transport',
+        basicsQuestion: 'What is the event name, where will it take place, on which dates, how many attendees are expected, what is the planned check-in scenario, and is there already a budget or budget range?',
+        softwareQuestion: 'Which software capabilities are required: participant import, badge printing, check-in, scanning, lead capture, reporting or integrations?',
+        projectQuestion: 'How complex is the project operationally: how many venues, entry areas, stakeholders and test runs need to be planned?',
+        rentalQuestion: 'Which rental hardware is required specifically: check-in stations, scanners, badge printers, routers or backup devices?',
+        consumablesQuestion: 'Which consumables are needed: badge type, lanyards, holders, labels or printer ribbons?',
+        supportQuestion: 'Which onsite support level is required: Basic, Extended, 24/7 or doors-open critical?',
+        transportQuestion: 'Is there any transport, travel or hotel demand for team, hardware, shipping or logistics buffers?',
+        softwareTools: 'Software Tools',
+        softwareSummary: 'Participant platform, check-in workflow, reporting and optional integrations.',
+        pmTitle: 'Project Management & Preparation',
+        pmSummary: 'Kickoff, data checks, process planning, test runs and stakeholder coordination.',
+        rentalTitle: 'Rental Hardware',
+        rentalSummary: 'Check-in stations, printers, scanners, routers and backup devices.',
+        consumablesTitle: 'Consumables',
+        consumablesSummary: 'Badges, lanyards, labels and printer ribbons including reserve stock.',
+        supportTitle: 'Technical Onsite Support',
+        supportSummary: 'Onsite technicians, supervisor, crew briefing and live troubleshooting during the event.',
+        travelTitle: 'Transport & Travel Costs',
+        travelSummary: 'Shipping, delivery, hotel, per-diem and logistics buffers.',
+        budgetIn: 'Within budget',
+        budgetOver: 'Over budget',
+        progressLabel: 'phases captured',
+        nextStep: 'Next step: confirm open event parameters, choose the preferred offer variant and turn it into an approval-ready offer.'
+      }
+    : {
+        basics: 'Basisdaten',
+        software: 'Software',
+        project: 'Projektmanagement',
+        rental: 'Miettechnik',
+        consumables: 'Verbrauchsmaterial',
+        support: 'Support',
+        transport: 'Transport',
+        basicsQuestion: 'Wie heisst das Event, wo findet es statt, an welchen Tagen, mit wie vielen Teilnehmern, wie sieht das Check-in-Szenario aus, und gibt es bereits ein Budget oder einen Budgetrahmen?',
+        softwareQuestion: 'Welche Software-Funktionen werden benoetigt: Teilnehmerimport, Badge-Druck, Check-in, Scanning, Lead-Capture, Reporting oder Integrationen?',
+        projectQuestion: 'Wie komplex ist das Projekt organisatorisch: wie viele Venues, Eingangsbereiche, Stakeholder und Testlaeufe sind einzuplanen?',
+        rentalQuestion: 'Welche Miettechnik wird konkret benoetigt: Check-in-Stationen, Scanner, Badge-Drucker, Router oder Backup-Geraete?',
+        consumablesQuestion: 'Welche Verbrauchsmaterialien werden benoetigt: Badge-Typ, Lanyards, Halter, Etiketten oder Druckerbaender?',
+        supportQuestion: 'Welches Support-Level wird vor Ort benoetigt: Basic, Extended, 24/7 oder doors-open critical?',
+        transportQuestion: 'Gibt es Transport-, Reise- oder Hotelbedarf fuer Team, Hardware, Versand oder Logistikpuffer?',
+        softwareTools: 'Software-Tools',
+        softwareSummary: 'Teilnehmerplattform, Check-in-Workflow, Reporting und optionale Integrationen.',
+        pmTitle: 'Projektmanagement & Vorbereitung',
+        pmSummary: 'Kickoff, Datenchecks, Ablaufplanung, Testlaeufe und Abstimmung mit Stakeholdern.',
+        rentalTitle: 'Miettechnik',
+        rentalSummary: 'Check-in-Stations, Drucker, Scanner, Router und Redundanzgeraete.',
+        consumablesTitle: 'Verbrauchsmaterial',
+        consumablesSummary: 'Badges, Lanyards, Etiketten und Druckerbaender inklusive Reserve.',
+        supportTitle: 'Technischer Support vor Ort',
+        supportSummary: 'Onsite-Techniker, Supervisor, Briefing und Trouble-Shooting waehrend des Events.',
+        travelTitle: 'Transport & Reisekosten',
+        travelSummary: 'Versand, Anlieferung, Hotel, Per-Diem und logistische Puffer.',
+        budgetIn: 'Im Budgetrahmen',
+        budgetOver: 'Ueber Budget',
+        progressLabel: 'Phasen erfasst',
+        nextStep: 'Naechster Schritt: offene Event-Parameter bestaetigen, Angebotsvariante waehlen und daraus ein freigabefaehiges Angebot erzeugen.'
+      };
 
   if (requiresBadgePrint) softwareNeeds.add('Badge & Print-on-Demand');
   if (requiresScanning) softwareNeeds.add('Check-in & Scanning');
-  if (requiresLeadCapture) softwareNeeds.add('Lead-Capture');
-  if (brief.integrations.length) softwareNeeds.add('Integrationen');
+  if (requiresLeadCapture) softwareNeeds.add('Lead Capture');
+  if (brief.integrations.length) softwareNeeds.add(isEnglish ? 'Integrations' : 'Integrationen');
 
   if (requiresScanning) rentalNeeds.add('Scanner');
-  if (requiresBadgePrint) rentalNeeds.add('Badge-Drucker');
+  if (requiresBadgePrint) rentalNeeds.add(isEnglish ? 'Badge printers' : 'Badge-Drucker');
   if (requiresRouter) rentalNeeds.add('Router / LTE Backup');
 
   const stations = parseCountFromText(
@@ -2137,7 +2503,7 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
 
   const phaseDefinitions = [
     {
-      key: 'Basisdaten',
+      key: phaseText.basics,
       minFilled: 3,
       fields: [
         brief.eventName,
@@ -2146,43 +2512,43 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
         attendees ? `${attendees}` : brief.attendees,
         brief.checkInScenario
       ],
-      question: 'Wie heisst das Event, wo findet es statt, an welchen Tagen, mit wie vielen Teilnehmern, wie sieht das Check-in-Szenario aus, und gibt es bereits ein Budget oder einen Budgetrahmen?'
+      question: phaseText.basicsQuestion
     },
     {
-      key: 'Software',
+      key: phaseText.software,
       minFilled: 1,
       fields: [softwareNeeds.size ? 'ok' : '', brief.integrations.length ? 'ok' : '', brief.badgeType],
-      question: 'Welche Software-Funktionen werden benoetigt: Teilnehmerimport, Badge-Druck, Check-in, Scanning, Lead-Capture, Reporting oder Integrationen?'
+      question: phaseText.softwareQuestion
     },
     {
-      key: 'Projektmanagement',
+      key: phaseText.project,
       minFilled: 2,
       fields: [venues > 0 ? `${venues}` : '', entryPoints > 0 ? `${entryPoints}` : '', brief.onsiteDays || `${eventDays}`],
-      question: 'Wie komplex ist das Projekt organisatorisch: wie viele Venues, Eingangsbereiche, Stakeholder und Testlaeufe sind einzuplanen?'
+      question: phaseText.projectQuestion
     },
     {
-      key: 'Miettechnik',
+      key: phaseText.rental,
       minFilled: 1,
       fields: [stations > 0 ? `${stations}` : '', printers > 0 ? `${printers}` : '', scanners > 0 ? `${scanners}` : '', routers > 0 ? `${routers}` : ''],
-      question: 'Welche Miettechnik wird konkret benoetigt: Check-in-Stationen, Scanner, Badge-Drucker, Router oder Backup-Geraete?'
+      question: phaseText.rentalQuestion
     },
     {
-      key: 'Verbrauchsmaterial',
+      key: phaseText.consumables,
       minFilled: 1,
       fields: [requiresBadgePrint ? `${consumableUnits}` : '', brief.badgeType],
-      question: 'Welche Verbrauchsmaterialien werden benoetigt: Badge-Typ, Lanyards, Halter, Etiketten oder Druckerbaender?'
+      question: phaseText.consumablesQuestion
     },
     {
-      key: 'Support',
+      key: phaseText.support,
       minFilled: 1,
       fields: [brief.supportLevel || supportLevel, technicians > 0 ? `${technicians}` : ''],
-      question: 'Welches Support-Level wird vor Ort benoetigt: Basic, Extended, 24/7 oder doors-open critical?'
+      question: phaseText.supportQuestion
     },
     {
-      key: 'Transport',
+      key: phaseText.transport,
       minFilled: 1,
       fields: [brief.travelScope, requiresTravel ? 'ok' : '', eventDays > 1 ? `${eventDays}` : ''],
-      question: 'Gibt es Transport-, Reise- oder Hotelbedarf fuer Team, Hardware, Versand oder Logistikpuffer?'
+      question: phaseText.transportQuestion
     }
   ];
 
@@ -2193,78 +2559,90 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   const moduleBlueprints = [
     {
       key: 'software',
-      title: 'Software-Tools',
+      title: phaseText.softwareTools,
       enabled: softwareNeeds.size > 0 || attendeeVolume > 0,
-      summary: 'Teilnehmerplattform, Check-in-Workflow, Reporting und optionale Integrationen.',
-      rationale: `Empfohlen fuer ${attendeeVolume} Teilnehmer mit ${stations} Check-in-Stationen und ${brief.integrations.length || 0} Integrationen.`,
+      summary: phaseText.softwareSummary,
+      rationale: isEnglish
+        ? `Recommended for ${attendeeVolume} attendees with ${stations} check-in stations and ${brief.integrations.length || 0} integrations.`
+        : `Empfohlen fuer ${attendeeVolume} Teilnehmer mit ${stations} Check-in-Stationen und ${brief.integrations.length || 0} Integrationen.`,
       positions: [
-        createPosition('Event-Setup & Projekt-Workspace', 1, 'pauschal', 950, pricingEnabled),
-        createPosition('Teilnehmermanagement-Lizenz', attendeeVolume, 'Teilnehmer', attendeeVolume > 1500 ? 1.05 : 1.2, pricingEnabled),
-        ...(requiresBadgePrint ? [createPosition('Badge-/Print-on-Demand-Modul', eventDays, 'Eventtage', 390, pricingEnabled)] : []),
-        ...(requiresScanning ? [createPosition('Check-in & Scanning Workflow', eventDays, 'Eventtage', 320, pricingEnabled)] : []),
-        ...(brief.integrations.length ? [createPosition('Integrationspaket', brief.integrations.length, 'Integrationen', 480, pricingEnabled)] : []),
-        ...(requiresLeadCapture ? [createPosition('Lead-Capture Modul', eventDays, 'Eventtage', 260, pricingEnabled)] : [])
+        createPosition(isEnglish ? 'Event setup and project workspace' : 'Event-Setup & Projekt-Workspace', 1, isEnglish ? 'flat' : 'pauschal', 950, pricingEnabled),
+        createPosition(isEnglish ? 'Participant management license' : 'Teilnehmermanagement-Lizenz', attendeeVolume, isEnglish ? 'attendees' : 'Teilnehmer', attendeeVolume > 1500 ? 1.05 : 1.2, pricingEnabled),
+        ...(requiresBadgePrint ? [createPosition(isEnglish ? 'Badge / print-on-demand module' : 'Badge-/Print-on-Demand-Modul', eventDays, isEnglish ? 'event days' : 'Eventtage', 390, pricingEnabled)] : []),
+        ...(requiresScanning ? [createPosition(isEnglish ? 'Check-in and scanning workflow' : 'Check-in & Scanning Workflow', eventDays, isEnglish ? 'event days' : 'Eventtage', 320, pricingEnabled)] : []),
+        ...(brief.integrations.length ? [createPosition(isEnglish ? 'Integration package' : 'Integrationspaket', brief.integrations.length, isEnglish ? 'integrations' : 'Integrationen', 480, pricingEnabled)] : []),
+        ...(requiresLeadCapture ? [createPosition(isEnglish ? 'Lead capture module' : 'Lead-Capture Modul', eventDays, isEnglish ? 'event days' : 'Eventtage', 260, pricingEnabled)] : [])
       ]
     },
     {
       key: 'pm',
-      title: 'Projektmanagement & Vorbereitung',
+      title: phaseText.pmTitle,
       enabled: true,
-      summary: 'Kickoff, Datenchecks, Ablaufplanung, Testlaeufe und Abstimmung mit Stakeholdern.',
-      rationale: `Der Aufwand steigt mit ${venues} Venue(s), ${entryPoints} Eingangs-/Counter-Bereichen und ${brief.integrations.length || 0} Integrationen.`,
+      summary: phaseText.pmSummary,
+      rationale: isEnglish
+        ? `The delivery effort increases with ${venues} venue(s), ${entryPoints} entry or counter areas and ${brief.integrations.length || 0} integrations.`
+        : `Der Aufwand steigt mit ${venues} Venue(s), ${entryPoints} Eingangs-/Counter-Bereichen und ${brief.integrations.length || 0} Integrationen.`,
       positions: [
-        createPosition('Kickoff & Discovery', 1, 'pauschal', 420, pricingEnabled),
-        createPosition('Projektmanagement / Jour fixes', projectHours, 'Stunden', 110, pricingEnabled),
-        createPosition('Testlauf & Abnahmevorbereitung', Math.max(1, eventDays), 'Sessions', 240, pricingEnabled)
+        createPosition(isEnglish ? 'Kickoff and discovery' : 'Kickoff & Discovery', 1, isEnglish ? 'flat' : 'pauschal', 420, pricingEnabled),
+        createPosition(isEnglish ? 'Project management / status cadence' : 'Projektmanagement / Jour fixes', projectHours, isEnglish ? 'hours' : 'Stunden', 110, pricingEnabled),
+        createPosition(isEnglish ? 'Test run and acceptance prep' : 'Testlauf & Abnahmevorbereitung', Math.max(1, eventDays), isEnglish ? 'sessions' : 'Sessions', 240, pricingEnabled)
       ]
     },
     {
       key: 'rental',
-      title: 'Miettechnik',
+      title: phaseText.rentalTitle,
       enabled: stations > 0,
-      summary: 'Check-in-Stations, Drucker, Scanner, Router und Redundanzgeraete.',
-      rationale: `Fuers Peak-Handling werden ${stations} Stationen, ${printers} Drucker und ${scanners} Scanner empfohlen.`,
+      summary: phaseText.rentalSummary,
+      rationale: isEnglish
+        ? `${stations} stations, ${printers} printers and ${scanners} scanners are recommended for peak handling.`
+        : `Fuers Peak-Handling werden ${stations} Stationen, ${printers} Drucker und ${scanners} Scanner empfohlen.`,
       positions: [
-        createPosition('Tablet / Check-in Station', stations * eventDays, 'Geraetetage', 65, pricingEnabled),
-        ...(printers ? [createPosition('Badge-Drucker', printers * eventDays, 'Geraetetage', 140, pricingEnabled)] : []),
-        ...(scanners ? [createPosition('Scanner', scanners * eventDays, 'Geraetetage', 38, pricingEnabled)] : []),
-        ...(routers ? [createPosition('LTE / Netzwerk Backup', routers * eventDays, 'Geraetetage', 55, pricingEnabled)] : [])
+        createPosition(isEnglish ? 'Tablet / check-in station' : 'Tablet / Check-in Station', stations * eventDays, isEnglish ? 'device days' : 'Geraetetage', 65, pricingEnabled),
+        ...(printers ? [createPosition(isEnglish ? 'Badge printer' : 'Badge-Drucker', printers * eventDays, isEnglish ? 'device days' : 'Geraetetage', 140, pricingEnabled)] : []),
+        ...(scanners ? [createPosition(isEnglish ? 'Scanner' : 'Scanner', scanners * eventDays, isEnglish ? 'device days' : 'Geraetetage', 38, pricingEnabled)] : []),
+        ...(routers ? [createPosition(isEnglish ? 'LTE / network backup' : 'LTE / Netzwerk Backup', routers * eventDays, isEnglish ? 'device days' : 'Geraetetage', 55, pricingEnabled)] : [])
       ]
     },
     {
       key: 'consumables',
-      title: 'Verbrauchsmaterial',
+      title: phaseText.consumablesTitle,
       enabled: consumableUnits > 0,
-      summary: 'Badges, Lanyards, Etiketten und Druckerbaender inklusive Reserve.',
-      rationale: `Mit 8% Reserve werden ${consumableUnits} Einheiten fuer Teilnehmer, Walk-ins und Fehldrucke kalkuliert.`,
+      summary: phaseText.consumablesSummary,
+      rationale: isEnglish
+        ? `With an 8% reserve, ${consumableUnits} units are planned for attendees, walk-ins and reprints.`
+        : `Mit 8% Reserve werden ${consumableUnits} Einheiten fuer Teilnehmer, Walk-ins und Fehldrucke kalkuliert.`,
       positions: [
-        createPosition('Badge-Medien', consumableUnits, 'Stueck', brief.badgeType.toLowerCase().includes('pvc') ? 1.45 : 0.85, pricingEnabled),
-        createPosition('Lanyards / Halter', consumableUnits, 'Stueck', 0.65, pricingEnabled),
-        ...(printers ? [createPosition('Druckerbaender / Rollen', Math.max(1, Math.ceil(consumableUnits / 250)), 'Stueck', 48, pricingEnabled)] : [])
+        createPosition(isEnglish ? 'Badge media' : 'Badge-Medien', consumableUnits, isEnglish ? 'units' : 'Stueck', brief.badgeType.toLowerCase().includes('pvc') ? 1.45 : 0.85, pricingEnabled),
+        createPosition(isEnglish ? 'Lanyards / holders' : 'Lanyards / Halter', consumableUnits, isEnglish ? 'units' : 'Stueck', 0.65, pricingEnabled),
+        ...(printers ? [createPosition(isEnglish ? 'Printer ribbons / rolls' : 'Druckerbaender / Rollen', Math.max(1, Math.ceil(consumableUnits / 250)), isEnglish ? 'units' : 'Stueck', 48, pricingEnabled)] : [])
       ]
     },
     {
       key: 'support',
-      title: 'Technischer Support vor Ort',
+      title: phaseText.supportTitle,
       enabled: true,
-      summary: 'Onsite-Techniker, Supervisor, Briefing und Trouble-Shooting waehrend des Events.',
-      rationale: `${supportLevel}-Support fuer ${supportHours} Einsatzstunden mit ${technicians} Techniker(n).`,
+      summary: phaseText.supportSummary,
+      rationale: isEnglish
+        ? `${supportLevel} support across ${supportHours} operating hours with ${technicians} technician(s).`
+        : `${supportLevel}-Support fuer ${supportHours} Einsatzstunden mit ${technicians} Techniker(n).`,
       positions: [
-        createPosition('Onsite-Techniker', technicians * supportHours, 'Stunden', supportLevel === '24/7' ? 95 : supportLevel === 'Extended' ? 85 : 75, pricingEnabled),
-        createPosition('Supervisor / Event Lead', eventDays * 10, 'Stunden', 115, pricingEnabled),
-        createPosition('Crew Briefing / Schulung', Math.max(1, technicians), 'Session', 160, pricingEnabled)
+        createPosition(isEnglish ? 'Onsite technician' : 'Onsite-Techniker', technicians * supportHours, isEnglish ? 'hours' : 'Stunden', supportLevel === '24/7' ? 95 : supportLevel === 'Extended' ? 85 : 75, pricingEnabled),
+        createPosition(isEnglish ? 'Supervisor / event lead' : 'Supervisor / Event Lead', eventDays * 10, isEnglish ? 'hours' : 'Stunden', 115, pricingEnabled),
+        createPosition(isEnglish ? 'Crew briefing / training' : 'Crew Briefing / Schulung', Math.max(1, technicians), isEnglish ? 'sessions' : 'Session', 160, pricingEnabled)
       ]
     },
     {
       key: 'travel',
-      title: 'Transport & Reisekosten',
+      title: phaseText.travelTitle,
       enabled: requiresTravel || venues > 1 || stations > 3,
-      summary: 'Versand, Anlieferung, Hotel, Per-Diem und logistische Puffer.',
-      rationale: 'Logistik wird fuer Hardware, Vor-Ort-Team und zeitkritische Anlieferung separat abgesichert.',
+      summary: phaseText.travelSummary,
+      rationale: isEnglish
+        ? 'Logistics are covered separately for hardware, onsite team deployment and time-critical delivery windows.'
+        : 'Logistik wird fuer Hardware, Vor-Ort-Team und zeitkritische Anlieferung separat abgesichert.',
       positions: [
-        createPosition('Transport / Versand', Math.max(1, stations + printers), 'Handling-Einheiten', 28, pricingEnabled),
-        createPosition('Reisekosten-Pauschale Team', Math.max(1, technicians), 'Personen', 180, pricingEnabled),
-        ...(eventDays > 1 ? [createPosition('Hotel / Uebernachtung', technicians * (eventDays - 1), 'Naechte', 140, pricingEnabled)] : [])
+        createPosition(isEnglish ? 'Transport / shipping' : 'Transport / Versand', Math.max(1, stations + printers), isEnglish ? 'handling units' : 'Handling-Einheiten', 28, pricingEnabled),
+        createPosition(isEnglish ? 'Travel flat fee for team' : 'Reisekosten-Pauschale Team', Math.max(1, technicians), isEnglish ? 'persons' : 'Personen', 180, pricingEnabled),
+        ...(eventDays > 1 ? [createPosition(isEnglish ? 'Hotel / overnight stay' : 'Hotel / Uebernachtung', technicians * (eventDays - 1), isEnglish ? 'nights' : 'Naechte', 140, pricingEnabled)] : [])
       ]
     }
   ];
@@ -2287,42 +2665,48 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   const subtotal = pricingEnabled ? modules.reduce((sum, module) => sum + (module.subtotal || 0), 0) : null;
   const openQuestions = Array.from(new Set([
     ...brief.missingItems,
-    ...(brief.eventLocation ? [] : ['Event-Ort und Venue-Setup']),
-    ...(attendees ? [] : ['Erwartete Teilnehmerzahl und Peak-Check-in-Zeit']),
-    ...(brief.eventDates ? [] : ['Event-Datum sowie Aufbau-/Abbauzeiten']),
-    ...(requiresBadgePrint ? ['Badge-Typ und Druckvolumen final bestaetigen'] : [])
+    ...(brief.eventLocation ? [] : [isEnglish ? 'Event location and venue setup' : 'Event-Ort und Venue-Setup']),
+    ...(attendees ? [] : [isEnglish ? 'Expected attendance and peak check-in time' : 'Erwartete Teilnehmerzahl und Peak-Check-in-Zeit']),
+    ...(brief.eventDates ? [] : [isEnglish ? 'Event date plus setup and teardown timings' : 'Event-Datum sowie Aufbau-/Abbauzeiten']),
+    ...(requiresBadgePrint ? [isEnglish ? 'Confirm badge type and print volume' : 'Badge-Typ und Druckvolumen final bestaetigen'] : [])
   ]));
   const assumptions = Array.from(new Set([
     ...brief.assumptions,
-    ...(requiresRouter ? ['Fallback-Konnektivitaet wird ueber LTE / Router abgesichert.'] : ['Stabiles Internet wird vor Ort bereitgestellt.']),
-    ...(requiresBadgePrint ? ['Badge-Layout wird spaetestens 5 Werktage vor Event bereitgestellt.'] : []),
-    'Angebot basiert auf den aktuell bekannten Rahmenparametern und wird bei Scope-Aenderungen nachgeschaerft.'
+    ...(requiresRouter ? [isEnglish ? 'Fallback connectivity will be covered via LTE / router backup.' : 'Fallback-Konnektivitaet wird ueber LTE / Router abgesichert.'] : [isEnglish ? 'Stable internet access will be provided onsite.' : 'Stabiles Internet wird vor Ort bereitgestellt.']),
+    ...(requiresBadgePrint ? [isEnglish ? 'The badge layout will be delivered no later than 5 working days before the event.' : 'Badge-Layout wird spaetestens 5 Werktage vor Event bereitgestellt.'] : []),
+    isEnglish ? 'The offer is based on the currently known scope and will be refined if the scope changes.' : 'Angebot basiert auf den aktuell bekannten Rahmenparametern und wird bei Scope-Aenderungen nachgeschaerft.'
   ]));
 
   const knowledgeCards = [
     {
-      title: 'Software-Tools',
-      included: ['Teilnehmerverwaltung', 'Check-in-Workflow', 'Reporting-Grundsetup'],
-      missing: brief.integrations.length ? [] : ['Integrationen zu CRM / Eventplattform / SSO'],
-      options: ['Lead-Capture', 'Mehrsprachigkeit', 'Rollen & Rechte', 'Payment / Ticketing'],
-      risks: ['Unklare Datenqualitaet in Teilnehmerlisten', 'Zu spaete Freigabe des Badge-Layouts'],
-      recommendation: attendeeVolume >= 1500 ? 'Ab 1.500 Teilnehmern sollte mindestens ein separates Reporting- und Monitoring-Setup vorgesehen werden.' : 'Fuer mittelgrosse Events reicht meist ein zentrales Teilnehmer- und Check-in-Setup mit Reporting aus.'
+      title: phaseText.softwareTools,
+      included: isEnglish ? ['Participant management', 'Check-in workflow', 'Reporting baseline'] : ['Teilnehmerverwaltung', 'Check-in-Workflow', 'Reporting-Grundsetup'],
+      missing: brief.integrations.length ? [] : [isEnglish ? 'Integrations to CRM / event platform / SSO' : 'Integrationen zu CRM / Eventplattform / SSO'],
+      options: isEnglish ? ['Lead capture', 'Multilingual setup', 'Roles & permissions', 'Payment / ticketing'] : ['Lead-Capture', 'Mehrsprachigkeit', 'Rollen & Rechte', 'Payment / Ticketing'],
+      risks: isEnglish ? ['Unclear participant data quality', 'Badge layout approval comes too late'] : ['Unklare Datenqualitaet in Teilnehmerlisten', 'Zu spaete Freigabe des Badge-Layouts'],
+      recommendation: attendeeVolume >= 1500
+        ? (isEnglish ? 'From 1,500 attendees onward, a dedicated reporting and monitoring setup is recommended.' : 'Ab 1.500 Teilnehmern sollte mindestens ein separates Reporting- und Monitoring-Setup vorgesehen werden.')
+        : (isEnglish ? 'For mid-sized events, one central participant and check-in setup with reporting is usually sufficient.' : 'Fuer mittelgrosse Events reicht meist ein zentrales Teilnehmer- und Check-in-Setup mit Reporting aus.')
     },
     {
-      title: 'Miettechnik',
-      included: [`${stations} Check-in-Stationen`, `${printers} Badge-Drucker`, `${scanners} Scanner`],
-      missing: requiresRouter ? [] : ['Netzwerk- / Internet-Absicherung'],
-      options: ['Backup-Drucker', 'USV', 'Zusaetzliche Router', 'Express-Austauschgeraete'],
-      risks: ['Zu wenige Stationen fuer Peak-Zeiten', 'Vor-Ort-Netzwerk nicht stabil genug'],
-      recommendation: attendeeVolume >= 1500 ? 'Ab 1.500 Teilnehmern ist mindestens ein Backup-Drucker und ein separates LTE-Fallback sinnvoll.' : 'Die Hardware wurde auf den aktuellen Peak-Load konservativ dimensioniert.'
+      title: phaseText.rentalTitle,
+      included: isEnglish ? [`${stations} check-in stations`, `${printers} badge printers`, `${scanners} scanners`] : [`${stations} Check-in-Stationen`, `${printers} Badge-Drucker`, `${scanners} Scanner`],
+      missing: requiresRouter ? [] : [isEnglish ? 'Network / internet fallback coverage' : 'Netzwerk- / Internet-Absicherung'],
+      options: isEnglish ? ['Backup printers', 'UPS', 'Additional routers', 'Express swap devices'] : ['Backup-Drucker', 'USV', 'Zusaetzliche Router', 'Express-Austauschgeraete'],
+      risks: isEnglish ? ['Too few stations for peak times', 'Onsite network is not stable enough'] : ['Zu wenige Stationen fuer Peak-Zeiten', 'Vor-Ort-Netzwerk nicht stabil genug'],
+      recommendation: attendeeVolume >= 1500
+        ? (isEnglish ? 'From 1,500 attendees onward, at least one backup printer and a separate LTE fallback are recommended.' : 'Ab 1.500 Teilnehmern ist mindestens ein Backup-Drucker und ein separates LTE-Fallback sinnvoll.')
+        : (isEnglish ? 'The hardware was dimensioned conservatively for the current peak load.' : 'Die Hardware wurde auf den aktuellen Peak-Load konservativ dimensioniert.')
     },
     {
-      title: 'Support & Operations',
-      included: [`${technicians} Onsite-Techniker`, 'Supervisor / Event Lead', 'Crew-Briefing'],
-      missing: supportLevel ? [] : ['Gewuenschtes Support-Level final bestaetigen'],
-      options: ['24/7-Support', 'Doors-open critical coverage', 'Night shift coverage'],
-      risks: ['Zu kurze Aufbauzeit', 'Unklare Verantwortlichkeiten vor Ort'],
-      recommendation: eventDays > 1 ? 'Bei mehrtaegigen Events sollte eine Schicht- und Escalation-Logik explizit angeboten werden.' : 'Fuer eintaeige Events ist ein klarer doors-open Supportplan meist ausreichend.'
+      title: isEnglish ? 'Support & Operations' : 'Support & Operations',
+      included: isEnglish ? [`${technicians} onsite technicians`, 'Supervisor / event lead', 'Crew briefing'] : [`${technicians} Onsite-Techniker`, 'Supervisor / Event Lead', 'Crew-Briefing'],
+      missing: supportLevel ? [] : [isEnglish ? 'Confirm the preferred support level' : 'Gewuenschtes Support-Level final bestaetigen'],
+      options: isEnglish ? ['24/7 support', 'Doors-open critical coverage', 'Night shift coverage'] : ['24/7-Support', 'Doors-open critical coverage', 'Night shift coverage'],
+      risks: isEnglish ? ['Setup window is too short', 'Responsibilities onsite are unclear'] : ['Zu kurze Aufbauzeit', 'Unklare Verantwortlichkeiten vor Ort'],
+      recommendation: eventDays > 1
+        ? (isEnglish ? 'For multi-day events, an explicit shift and escalation model should be part of the offer.' : 'Bei mehrtaegigen Events sollte eine Schicht- und Escalation-Logik explizit angeboten werden.')
+        : (isEnglish ? 'For one-day events, a clear doors-open support plan is usually sufficient.' : 'Fuer eintaeige Events ist ein klarer doors-open Supportplan meist ausreichend.')
     }
   ];
 
@@ -2332,19 +2716,19 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
           name: 'Standard',
           multiplier: 1,
           total: subtotal,
-          description: 'Solides Basissetup mit den aktuell benoetigten Komponenten.'
+          description: isEnglish ? 'Solid base setup with the currently required components.' : 'Solides Basissetup mit den aktuell benoetigten Komponenten.'
         },
         {
           name: 'Plus',
           multiplier: 1.16,
           total: Math.round(subtotal * 1.16),
-          description: 'Mit mehr Redundanz, erweitertem Support und Sicherheitsreserven.'
+          description: isEnglish ? 'With more redundancy, extended support and operational reserve.' : 'Mit mehr Redundanz, erweitertem Support und Sicherheitsreserven.'
         },
         {
           name: 'Premium',
           multiplier: 1.33,
           total: Math.round(subtotal * 1.33),
-          description: 'High-availability Setup mit maximaler Betriebs- und Serviceabsicherung.'
+          description: isEnglish ? 'High-availability setup with maximum operational and service coverage.' : 'High-availability Setup mit maximaler Betriebs- und Serviceabsicherung.'
         }
       ]
     : [];
@@ -2352,21 +2736,21 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
   let budgetStatus = '';
   if (pricingEnabled && subtotal != null && budgetValue) {
     if (subtotal <= budgetValue.max) {
-      budgetStatus = `Im Budgetrahmen (${formatEuro(budgetValue.max)})`;
+      budgetStatus = `${phaseText.budgetIn} (${formatEuro(budgetValue.max, locale)})`;
     } else {
-      budgetStatus = `Ueber Budget (${formatEuro(budgetValue.max)})`;
+      budgetStatus = `${phaseText.budgetOver} (${formatEuro(budgetValue.max, locale)})`;
     }
   }
 
   const enrichedBrief = {
     ...brief,
-    customerName: brief.customerName || 'Veranstalter',
+    customerName: brief.customerName || (isEnglish ? 'Organizer' : 'Veranstalter'),
     eventName: normalizeEventNameValue(brief.eventName) || brief.eventName,
     budget: budgetText,
     currentPhase: currentPhaseDefinition.key,
     currentQuestion: currentPhaseDefinition.question,
     progressPercent,
-    progressLabel: `${completedPhases.length}/${phaseDefinitions.length} Phasen erfasst`,
+    progressLabel: `${completedPhases.length}/${phaseDefinitions.length} ${phaseText.progressLabel}`,
     phaseOrder: phaseDefinitions.map((phase) => phase.key),
     attendees: attendees ? `${attendees}` : brief.attendees,
     venues: venues ? `${venues}` : brief.venues,
@@ -2375,15 +2759,15 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
     serviceModules: modules.map((item) => item.title),
     costDrivers: Array.from(new Set([
       ...brief.costDrivers,
-      `${attendeeVolume} Teilnehmer`,
-      `${stations} Check-in-Stationen`,
-      `${eventDays} Eventtag(e)`,
+      isEnglish ? `${attendeeVolume} attendees` : `${attendeeVolume} Teilnehmer`,
+      isEnglish ? `${stations} check-in stations` : `${stations} Check-in-Stationen`,
+      isEnglish ? `${eventDays} event day(s)` : `${eventDays} Eventtag(e)`,
       supportLevel,
-      requiresBadgePrint ? 'Badge- / Print-on-Demand' : 'Digitales Check-in Setup'
+      requiresBadgePrint ? 'Badge- / Print-on-Demand' : (isEnglish ? 'Digital check-in setup' : 'Digitales Check-in Setup')
     ].filter(Boolean))),
     assumptions,
     missingItems: openQuestions,
-    nextStep: brief.nextStep || 'Naechster Schritt: offene Event-Parameter bestaetigen, Angebotsvariante waehlen und daraus ein freigabefaehiges Angebot erzeugen.'
+    nextStep: brief.nextStep || phaseText.nextStep
   };
 
   return {
@@ -2392,13 +2776,13 @@ function buildAiExplorerOffer(rawBrief, history, userMessage) {
       currency: 'EUR',
       hasPricing: pricingEnabled,
       subtotal,
-      subtotalFormatted: pricingEnabled && subtotal != null ? formatEuro(subtotal) : undefined,
+      subtotalFormatted: pricingEnabled && subtotal != null ? formatEuro(subtotal, locale) : undefined,
       budget: budgetText || undefined,
       budgetStatus: budgetStatus || undefined,
       modules,
       variants: variants.map((variant) => ({
         ...variant,
-        totalFormatted: variant.total == null ? undefined : formatEuro(variant.total)
+        totalFormatted: variant.total == null ? undefined : formatEuro(variant.total, locale)
       })),
       knowledgeCards,
       assumptions,
@@ -2831,7 +3215,12 @@ async function handleApi(req, res) {
     try {
       const existing = getFrontendTranslationEntry(target);
       const currentSourceHash = createContentHash(getSiteContent());
-      if (existing?.meta?.sourceHash === currentSourceHash && isPlainObject(existing.copy)) {
+      const validation = existing ? validateFrontendTranslation(target) : null;
+      const isHealthyTranslation = validation
+        ? !validation.stale && validation.missingCount === 0 && validation.identicalCount === 0
+        : false;
+
+      if (existing?.meta?.sourceHash === currentSourceHash && isPlainObject(existing.copy) && isHealthyTranslation) {
         const job = createFrontendTranslationJob(target);
         job.status = 'completed';
         job.progress = 100;
@@ -2873,6 +3262,7 @@ async function handleApi(req, res) {
     const body = rawBody ? JSON.parse(rawBody) : {};
     const source = String(body.source ?? '').trim();
     const intent = body.intent === 'phase-completion' ? 'phase-completion' : 'structured-brief';
+    const locale = normalizeAiLocale(body.locale);
 
     if (!source) {
       sendJson(res, 400, { message: 'source is required.' });
@@ -2881,8 +3271,8 @@ async function handleApi(req, res) {
 
     try {
       const text = intent === 'phase-completion'
-        ? await generateStudioPromptFromEasySeed(source)
-        : await generateStudioPromptFromStructuredSource(source);
+        ? await generateStudioPromptFromEasySeed(source, locale)
+        : await generateStudioPromptFromStructuredSource(source, locale);
       sendJson(res, 200, {
         text,
         model: `${OLLAMA_MODEL} (promptize:${intent})`
@@ -2900,24 +3290,30 @@ async function handleApi(req, res) {
     const rawBody = await readBody(req);
     const body = rawBody ? JSON.parse(rawBody) : {};
     const history = Array.isArray(body.history) ? body.history : [];
+    const workspaceBrief = normalizeModelBrief(body.brief);
     const userMessage = String(body.userMessage ?? '').trim();
-    const requestedMode = ['easy', 'prompt', 'consulting'].includes(String(body.mode ?? ''))
+    const requestedMode = ['easy', 'prompt', 'widget', 'consulting'].includes(String(body.mode ?? ''))
       ? String(body.mode)
       : '';
+    const locale = normalizeAiLocale(body.locale);
 
     if (!userMessage) {
       sendJson(res, 400, { message: 'userMessage is required.' });
       return true;
     }
 
-    const consultingMode = requestedMode === 'consulting' || isConsultingQuestion(userMessage);
-    const shouldUseAiExtraction = !consultingMode && (requestedMode === 'prompt' || userMessage.length >= 180);
+    const widgetMode = requestedMode === 'widget';
+    const widgetFreshStart = widgetMode && isWidgetFreshStartRequest(userMessage);
+    const widgetBaseBrief = widgetMode ? (widgetFreshStart ? {} : (workspaceBrief ?? {})) : null;
+    const consultingMode = requestedMode === 'consulting' || (!requestedMode && isConsultingQuestion(userMessage));
+    const shouldUseAiExtraction = !consultingMode && (requestedMode === 'prompt' || requestedMode === 'widget' || userMessage.length >= 180);
+    const extractionHistory = widgetMode ? [] : history;
     const extractedBrief = shouldUseAiExtraction
-      ? normalizeModelBrief(await extractBriefWithOllama(history, userMessage))
+      ? normalizeModelBrief(await extractBriefWithOllama(extractionHistory, userMessage, locale))
       : null;
     if (isPromptAuthoringMessage(userMessage) && !consultingMode) {
-      const computed = buildAiExplorerOffer({}, history, '');
-      const helperText = buildPromptAuthoringHelpReply();
+      const computed = buildAiExplorerOffer({}, history, '', locale);
+      const helperText = buildPromptAuthoringHelpReply(locale);
 
       createAiExplorerLog({
         model: `${OLLAMA_MODEL} (guidance)`,
@@ -2944,47 +3340,117 @@ async function handleApi(req, res) {
     }
 
     const systemPrompt = consultingMode
-      ? `Du bist ein deutschsprachiger Pre-Sales- und Solution-Consulting-Assistent fuer Teilnehmermanagement-Services auf Events.
+      ? locale === 'en'
+        ? `You are an English-speaking pre-sales and solution consulting assistant for attendee-management services at events.
+Respond in a structured, practical and professional way.
+If the user asks about architecture, interview flow, pricing logic, product catalog, modules, MVP or AI-agent rules, provide concrete consulting instead of follow-up questions.
+Work with clear sections and concise bullet points.
+No marketing language and no repetition of the user's wording.
+When useful, propose robust system architecture, data structures, logic blocks and implementation steps.
+Only add a JSON block between <brief_json> and </brief_json> if the user has provided real event data.`
+        : `Du bist ein deutschsprachiger Pre-Sales- und Solution-Consulting-Assistent fuer Teilnehmermanagement-Services auf Events.
 Antworte strukturiert, praxisnah und professionell.
 Wenn der Nutzer nach Aufbau, Architektur, Interview-Flow, Preislogik, Produktkatalog, Modulen, MVP oder Regeln fuer einen KI-Agenten fragt, liefere konkrete Beratung statt Rueckfragen.
 Arbeite mit klaren Abschnitten und knappen Bulletpoints.
 Keine Marketingfloskeln, keine Wiederholung des Nutzertexts.
 Wenn sinnvoll, schlage eine robuste Systemarchitektur, Datenstruktur, Logikbausteine und Umsetzungsschritte vor.
 Fuege am Ende nur dann einen JSON-Block zwischen <brief_json> und </brief_json> ein, wenn der Nutzer echte Eventdaten geliefert hat.`
-      : `Du bist ein deutschsprachiger Event-Scoping-Assistent.
+      : widgetMode
+        ? locale === 'en'
+          ? `You are an English-speaking FastLane Chat workspace copilot for event scoping.
+Respond briefly, concretely and operationally.
+Treat every user message as a live update request for the workspace whenever possible.
+If the user greets you, asks for help or wants to start a new event, answer naturally and guide them into the event planning flow.
+When the user clearly wants to start a new event or start over, ignore older chat context unless they repeat those facts.
+If the user changes attendees, budget, venue, timing, hardware, support level or scope, apply that change immediately in the structured brief and commercial model.
+Prefer confirming what was updated over asking unnecessary follow-up questions.
+Only ask a follow-up question when a missing detail blocks a meaningful next calculation.
+Never invent an event name, location or date that the user did not explicitly provide.
+Do not turn section headers such as "Participants", "Event Management", "Support" or "Logistics" into event facts.
+No marketing and no meta commentary.
+Always add a JSON block between <brief_json> and </brief_json>.
+Use only this schema and leave unknown values empty:
+{"customerName":"","eventName":"","eventLocation":"","eventDates":"","attendees":"","budget":"","checkInScenario":"","venues":"","entryPoints":"","onsiteDays":"","softwareNeeds":[],"rentalNeeds":[],"supportLevel":"","travelScope":"","integrations":[],"badgeType":"","serviceModules":[],"costDrivers":[],"assumptions":[],"missingItems":[],"nextStep":""}`
+          : `Du bist ein deutschsprachiger FastLane-Chat-Workspace-Copilot fuer Event-Scoping.
+Antworte kurz, konkret und operativ.
+Behandle jede Nutzernachricht wenn moeglich als Live-Aenderung fuer den Workspace.
+Wenn der Nutzer dich begruesst, um Hilfe bittet oder ein neues Event starten will, antworte natuerlich und fuehre in den Event-Planungsflow.
+Wenn der Nutzer klar signalisiert, dass ein neues Event oder ein Neustart gewuenscht ist, ignoriere aelteren Chat-Kontext, sofern diese Fakten nicht erneut genannt werden.
+Wenn der Nutzer Teilnehmerzahl, Budget, Venue, Timing, Hardware, Support-Level oder Scope aendert, uebernimm diese Aenderung sofort in Briefing und kommerzielles Modell.
+Bestaetige bevorzugt, was aktualisiert wurde, statt unnötige Rueckfragen zu stellen.
+Stelle nur dann eine Rueckfrage, wenn ohne diese Information keine sinnvolle naechste Kalkulation moeglich ist.
+Erfinde niemals Eventname, Ort oder Datum, wenn der Nutzer diese nicht explizit genannt hat.
+Wandle Abschnittsueberschriften wie "Participants", "Event Management", "Support" oder "Logistics" nicht in Event-Fakten um.
+Kein Marketing, keine Meta-Kommentare.
+Fuege am Ende immer einen JSON-Block zwischen <brief_json> und </brief_json> ein.
+Nutze nur dieses Schema und lasse unbekannte Werte leer:
+{"customerName":"","eventName":"","eventLocation":"","eventDates":"","attendees":"","budget":"","checkInScenario":"","venues":"","entryPoints":"","onsiteDays":"","softwareNeeds":[],"rentalNeeds":[],"supportLevel":"","travelScope":"","integrations":[],"badgeType":"","serviceModules":[],"costDrivers":[],"assumptions":[],"missingItems":[],"nextStep":""}`
+        : locale === 'en'
+        ? `You are an English-speaking event scoping assistant.
+Respond briefly, professionally and concretely.
+If the user provides event details, summarize them briefly and ask exactly one next question.
+If the user asks for a direct answer, answer directly without follow-up questions.
+Never repeat the user's instructions or prompt text verbatim.
+Never invent an event name, location or date that the user did not explicitly provide.
+Do not turn section headers such as "Participants", "Event Management", "Support" or "Logistics" into event facts.
+If the user sends only an instruction or template instead of event data, state briefly that you need real event details and ask directly for event name, location, date, attendee count and the check-in flow.
+No marketing and no meta commentary.
+Always add a JSON block between <brief_json> and </brief_json>.
+Use only this schema and leave unknown values empty:
+{"customerName":"","eventName":"","eventLocation":"","eventDates":"","attendees":"","budget":"","checkInScenario":"","venues":"","entryPoints":"","onsiteDays":"","softwareNeeds":[],"rentalNeeds":[],"supportLevel":"","travelScope":"","integrations":[],"badgeType":"","serviceModules":[],"costDrivers":[],"assumptions":[],"missingItems":[],"nextStep":""}`
+        : `Du bist ein deutschsprachiger Event-Scoping-Assistent.
 Antworte kurz, professionell und konkret.
 Wenn der Nutzer Eventdetails nennt, fasse sie knapp zusammen und stelle genau eine naechste Frage.
 Wenn der Nutzer verlangt, dass du alles direkt beantwortest, dann antworte direkt ohne Rueckfragen.
 Wiederhole niemals die Nutzervorgaben oder Prompt-Texte wortwoertlich.
+Erfinde niemals Eventname, Ort oder Datum, wenn der Nutzer diese nicht explizit genannt hat.
+Wandle Abschnittsueberschriften wie "Participants", "Event Management", "Support" oder "Logistics" nicht in Event-Fakten um.
 Wenn der Nutzer statt Eventdaten nur eine Anweisung oder Vorlage sendet, sage kurz, dass du echte Eventangaben brauchst, und stelle direkt die Frage nach Eventname, Ort, Datum, Teilnehmerzahl und Check-in-Ablauf.
 Kein Marketing, keine Meta-Kommentare.
 Fuege am Ende immer einen JSON-Block zwischen <brief_json> und </brief_json> ein.
 Nutze nur dieses Schema und lasse unbekannte Werte leer:
 {"customerName":"","eventName":"","eventLocation":"","eventDates":"","attendees":"","budget":"","checkInScenario":"","venues":"","entryPoints":"","onsiteDays":"","softwareNeeds":[],"rentalNeeds":[],"supportLevel":"","travelScope":"","integrations":[],"badgeType":"","serviceModules":[],"costDrivers":[],"assumptions":[],"missingItems":[],"nextStep":""}`;
 
-    const recentHistory = history.slice(-3);
+    const recentHistory = widgetMode
+      ? (widgetFreshStart ? [] : history.slice(-4))
+      : history.slice(-3);
     const prompt = [
       systemPrompt,
-      '',
-      'Bisheriger Verlauf:'
+      ''
     ];
 
+    if (widgetMode) {
+      prompt.push(locale === 'en' ? 'Current workspace brief:' : 'Aktuelles Workspace-Briefing:');
+      prompt.push(JSON.stringify(briefOrNullIfEmpty(widgetBaseBrief) ?? {}, null, 2));
+      prompt.push('');
+    }
+
+    prompt.push(locale === 'en' ? 'Previous conversation:' : 'Bisheriger Verlauf:');
+
     for (const message of recentHistory) {
-      const role = message.role === 'model' ? 'Assistent' : 'Nutzer';
+      const role = message.role === 'model' ? (locale === 'en' ? 'Assistant' : 'Assistent') : (locale === 'en' ? 'User' : 'Nutzer');
       prompt.push(`${role}: ${String(message.text ?? '')}`);
     }
 
-    prompt.push(`Nutzer: ${userMessage}`);
-    prompt.push('Assistent:');
+    prompt.push(`${locale === 'en' ? 'User' : 'Nutzer'}: ${userMessage}`);
+    prompt.push(`${locale === 'en' ? 'Assistant' : 'Assistent'}:`);
 
     try {
+      const previousComputed = widgetMode
+        ? buildAiExplorerOffer(widgetBaseBrief ?? {}, [], '', locale)
+        : null;
       const content = await generateWithOllama(prompt.join('\n'));
       const parsed = extractAiExplorerBrief(content);
-      const mergedBrief = mergeBriefs(extractedBrief ?? {}, normalizeModelBrief(parsed.brief) ?? {});
-      const computed = buildAiExplorerOffer(mergedBrief, history, userMessage);
-      const assistantText = looksLikeJsonOnlyReply(parsed.text)
-        ? buildAssistantReplyFromBrief(computed.brief)
-        : parsed.text || buildAssistantReplyFromBrief(computed.brief);
+      const widgetOverrides = widgetMode ? normalizeModelBrief(extractWidgetFieldOverrides(userMessage)) : null;
+      const mergedBrief = widgetMode
+        ? mergeBriefs(widgetBaseBrief ?? {}, normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {}, widgetOverrides ?? {})
+        : mergeBriefs(normalizeModelBrief(parsed.brief) ?? {}, extractedBrief ?? {});
+      const computed = buildAiExplorerOffer(mergedBrief, widgetMode ? [] : history, userMessage, locale);
+      const assistantText = widgetMode
+        ? buildWidgetAssistantReply(previousComputed?.brief ?? null, computed.brief, userMessage, locale, parsed.text)
+        : looksLikeJsonOnlyReply(parsed.text)
+          ? buildAssistantReplyFromBrief(computed.brief, locale)
+          : parsed.text || buildAssistantReplyFromBrief(computed.brief, locale);
 
       createAiExplorerLog({
         model: OLLAMA_MODEL,

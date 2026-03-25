@@ -22,6 +22,8 @@ const LanguagePicker: React.FC<{ compact?: boolean }> = ({ compact = false }) =>
     isTranslatingLocale, 
     translationJob 
   } = useSiteContent();
+  const languageLabel = locale === 'en' ? 'Select language' : 'Sprache waehlen';
+  const syncingLabel = locale === 'en' ? 'Syncing' : 'Synchronisiert';
   
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ const LanguagePicker: React.FC<{ compact?: boolean }> = ({ compact = false }) =>
           hover:shadow-md active:scale-[0.98] focus:outline-none
           ${compact ? 'h-9 px-3 text-[12px]' : 'h-10 px-4 text-[13px]'}
         `}
-        aria-label="Select Language"
+        aria-label={languageLabel}
       >
         <div className="flex shrink-0 shadow-sm rounded-full overflow-hidden border border-black/5 dark:border-white/10 w-5 h-5">
           <CircleFlagIcon countryCode={currentOption.flagCode} height="20" />
@@ -126,7 +128,7 @@ const LanguagePicker: React.FC<{ compact?: boolean }> = ({ compact = false }) =>
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1">
                   <span className="flex h-1.5 w-1.5 rounded-full bg-sap-gold"></span>
-                  Syncing {translationJob.target.toUpperCase()}
+                  {syncingLabel} {translationJob.target.toUpperCase()}
                 </span>
                 <span className="text-[11px] font-bold text-sap-gold">
                   {Math.max(1, translationJob.progress)}%

@@ -169,6 +169,9 @@ export interface SiteContent {
               completed: string;
               analyzing: string;
               ready: string;
+              done: string;
+              busy: string;
+              wait: string;
             };
             neuralEngine: {
               label: string;
@@ -185,6 +188,7 @@ export interface SiteContent {
             };
             reasoningLogs: string[];
             assetsTitle: string;
+            assets: Array<{ name: string; type: string }>;
             efficiency: string;
             genAiSystem: string;
             plannerCta: string;

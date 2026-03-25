@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Blocks,
   Briefcase,
@@ -1527,7 +1527,7 @@ const ObjectEditor: React.FC<{
 };
 
 const ContentAdminPage: React.FC = () => {
-  const { sourceContent: content, editableDocumentKeys, saveDocument, restoreDocument, lastSavedAt } = useSiteContent();
+  const { sourceContent: content, editableDocumentKeys, saveDocument, restoreDocument, syncFrontendTranslation, lastSavedAt } = useSiteContent();
   const [locale, setLocale] = useState<AdminLocale>(() => {
     if (typeof window === 'undefined') {
       return 'de';
@@ -1620,6 +1620,7 @@ const ContentAdminPage: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [toast, setToast] = useState<AdminToastState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const englishFetchRequestRef = useRef(0);
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -1807,9 +1808,25 @@ const ContentAdminPage: React.FC = () => {
     let cancelled = false;
     const englishSuggestion = applyFrontendLocaleOverrides('en', normalizeSiteContent(cloneJson(content as JsonValue) as unknown as SiteContent) as SiteContent);
 
+    if (englishContent) {
+      const enriched = normalizeSiteContent(
+        enrichEnglishDraft(content as unknown as JsonValue, englishContent as unknown as JsonValue, englishSuggestion as unknown as JsonValue) as unknown as SiteContent
+      ) as SiteContent;
+
+      if (!valuesAreEqual(englishContent, enriched)) {
+        setEnglishContent(enriched);
+      }
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const requestId = ++englishFetchRequestRef.current;
+
     void fetchFrontendTranslation('en')
       .then((result) => {
-        if (!cancelled) {
+        if (!cancelled && englishFetchRequestRef.current === requestId) {
           const fetchedEnglish = normalizeSiteContent(result.copy) as SiteContent;
           const enriched = normalizeSiteContent(
             enrichEnglishDraft(content as unknown as JsonValue, fetchedEnglish as unknown as JsonValue, englishSuggestion as unknown as JsonValue) as unknown as SiteContent
@@ -1818,7 +1835,7 @@ const ContentAdminPage: React.FC = () => {
         }
       })
       .catch(() => {
-        if (!cancelled) {
+        if (!cancelled && englishFetchRequestRef.current === requestId) {
           setEnglishContent(englishSuggestion);
         }
       });
@@ -2058,7 +2075,10 @@ const ContentAdminPage: React.FC = () => {
         saveDocument(selectedKey, draft),
         saveFrontendTranslationDocument('en', selectedKey, englishDraft)
       ]);
-      setEnglishContent(normalizeSiteContent(englishResult.copy) as SiteContent);
+      englishFetchRequestRef.current += 1;
+      const normalizedEnglishCopy = normalizeSiteContent(englishResult.copy) as SiteContent;
+      setEnglishContent(normalizedEnglishCopy);
+      syncFrontendTranslation('en', normalizedEnglishCopy);
       handleStatusUpdate(copy.savedSuccessfully, 'success');
     } catch (error) {
       handleStatusUpdate(error instanceof Error ? error.message : copy.saveFailed, 'error');

@@ -7,7 +7,8 @@ import {
   restoreSiteDocument,
   saveSiteDocument,
   startFrontendTranslationJob,
-  type FrontendTranslationJob
+  type FrontendTranslationJob,
+  type FrontendTranslationResponse
 } from '../services/siteContentService';
 import { SiteContent } from '../types';
 
@@ -34,6 +35,7 @@ interface SiteContentContextValue {
   localeStatus: FrontendLocaleStatus | null;
   saveDocument: (key: string, value: unknown) => Promise<void>;
   restoreDocument: (key: string, revisionId: number) => Promise<{ value: unknown; updatedAt: string }>;
+  syncFrontendTranslation: (target: string, copy: SiteContent) => void;
   setLocale: (locale: FrontendLocale) => void;
   clearLocaleStatus: () => void;
 }
@@ -244,6 +246,10 @@ const applyExplicitOverrides = <T,>(base: T, override: unknown): T => {
 };
 
 export const applyFrontendLocaleOverrides = (target: string, value: SiteContent): SiteContent => {
+  if (target === 'en') {
+    return applyExplicitOverrides(value, englishFrontendOverrides);
+  }
+
   return value;
 };
 
@@ -340,6 +346,16 @@ const getInitialTranslationSupport = (): boolean => {
 
   const stored = window.localStorage.getItem(FRONTEND_TRANSLATION_SUPPORT_STORAGE_KEY);
   return stored !== '0';
+};
+
+const translationNeedsRefresh = (meta?: FrontendTranslationResponse['meta']) => {
+  const validation = meta?.validation;
+
+  if (!validation) {
+    return false;
+  }
+
+  return Boolean(validation.stale) || (validation.missingCount ?? 0) > 0 || (validation.identicalCount ?? 0) > 0;
 };
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -456,6 +472,16 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           normalizeSiteContent(sanitizeTranslatedCopyValue(existing.copy)) as SiteContent
         );
         setTranslationCache((prev) => ({ ...prev, [FRONTEND_DEFAULT_AUTO_LOCALE]: normalized }));
+
+        if (translationSupportEnabled && translationNeedsRefresh(existing.meta)) {
+          const result = await startFrontendTranslationJob(FRONTEND_DEFAULT_AUTO_LOCALE, sourceContent);
+          setTranslationJob(result.job);
+          setLocaleStatus({
+            tone: 'info',
+            message: result.job.message,
+            progress: result.job.progress
+          });
+        }
       } catch {
         try {
           const result = await startFrontendTranslationJob(FRONTEND_DEFAULT_AUTO_LOCALE, sourceContent);
@@ -578,12 +604,25 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   };
 
+  const syncFrontendTranslation = (target: string, copy: SiteContent) => {
+    const normalizedTarget = String(target ?? '').trim().toLowerCase();
+    if (!normalizedTarget || normalizedTarget === 'de') {
+      return;
+    }
+
+    const normalizedCopy = applyFrontendLocaleOverrides(
+      normalizedTarget,
+      normalizeSiteContent(sanitizeTranslatedCopyValue(copy)) as SiteContent
+    );
+
+    setTranslationCache((prev) => ({
+      ...prev,
+      [normalizedTarget]: normalizedCopy
+    }));
+  };
+
   const ensureTranslation = async (target: string) => {
-    if (!target || target === 'en') {
-      const staticTranslation = await fetchStaticFrontendTranslation('en');
-      if (staticTranslation) {
-        setTranslationCache((prev) => ({ ...prev, en: staticTranslation }));
-      }
+    if (!target || target === 'de') {
       return;
     }
 
@@ -608,6 +647,18 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         normalizeSiteContent(sanitizeTranslatedCopyValue(existing.copy)) as SiteContent
       );
       setTranslationCache((prev) => ({ ...prev, [target]: normalized }));
+
+      if (translationSupportEnabled && translationNeedsRefresh(existing.meta)) {
+        const result = await startFrontendTranslationJob(target, sourceContent);
+        setTranslationJob(result.job);
+        setTranslationSupportEnabled(true);
+        setLocaleStatus({
+          tone: 'info',
+          message: result.job.message,
+          progress: result.job.progress
+        });
+      }
+
       return;
     } catch (fetchError) {
       try {
@@ -674,6 +725,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         localeStatus,
         saveDocument,
         restoreDocument,
+        syncFrontendTranslation,
         setLocale,
         clearLocaleStatus
       }}

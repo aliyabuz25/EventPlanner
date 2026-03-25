@@ -217,7 +217,7 @@ const Hero: React.FC = () => {
                        <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-[#febc2e] shadow-[0_0_8px_rgba(254,188,46,0.4)]"></div>
                        <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-[#28c840] shadow-[0_0_8px_rgba(40,200,64,0.4)]"></div>
                     </div>
-                    <div className="text-[10px] sm:text-sm font-black text-sap-blue dark:text-white tracking-[0.2em] sm:tracking-[0.3em] uppercase opacity-90 px-2 sm:px-4">{companyName} Core Terminal</div>
+                    <div className="text-[10px] sm:text-sm font-black text-sap-blue dark:text-white tracking-[0.2em] sm:tracking-[0.3em] uppercase opacity-90 px-2 sm:px-4">{terminal.title || `${companyName} Core Terminal`}</div>
                     <div className={`flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-white shadow-xl transition-all duration-500 scale-90 sm:scale-95 origin-right ${phase === 'result' ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-sap-blue shadow-sap-blue/30'}`}>
                       <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white ${phase !== 'result' ? 'animate-pulse' : ''}`}></div>
                       <span className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] shrink-0">
@@ -257,7 +257,7 @@ const Hero: React.FC = () => {
                                <div className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${isDone ? 'bg-emerald-500 brightness-125' : isCurrent ? 'bg-sap-gold animate-pulse' : 'bg-slate-300'}`}></div>
                                <span className="text-slate-700 dark:text-slate-300 truncate font-medium">{log}</span>
                                <span className={`ml-auto font-black text-[8px] sm:text-xs tracking-tighter ${isDone ? 'text-emerald-500' : isCurrent ? 'text-sap-gold' : 'text-slate-400'}`}>
-                                 {isDone ? 'DONE' : isCurrent ? 'BUSY' : 'WAIT'}
+                                 {isDone ? statusLabels.done : isCurrent ? statusLabels.busy : statusLabels.wait}
                                </span>
                              </div>
                            );
@@ -270,16 +270,14 @@ const Hero: React.FC = () => {
                          {terminal.assetsTitle}
                        </div>
                        <div className="space-y-2 sm:space-y-3">
-                         {[
-                           { name: 'Plan.v2', type: 'PDF', color: 'bg-emerald-500' },
-                           { name: 'Matrix', type: 'XLSX', color: 'bg-sap-blue' },
-                           { name: 'Cards', type: 'JSON', color: 'bg-sap-gold' }
-                         ].map((file, i) => {
+                         {terminal.assets.map((file, i) => {
                            const isVisible = (phase === 'result') || (phase === 'thinking' && i === 0);
+                           const fileColorClass = i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-sap-blue' : 'bg-sap-gold';
+                           const fileShadowClass = i === 0 ? 'shadow-emerald-500/30' : i === 1 ? 'shadow-sap-blue/30' : 'shadow-sap-gold/30';
                            return (
                              <div key={file.name} className={`flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-100 dark:border-white/5 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-                                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl ${file.color} bg-opacity-15 flex items-center justify-center shrink-0`}>
-                                  <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${file.color} rounded shadow-[0_0_10px_${file.color}] opacity-80`}></div>
+                                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl ${fileColorClass} bg-opacity-15 flex items-center justify-center shrink-0`}>
+                                  <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${fileColorClass} rounded shadow-lg ${fileShadowClass} opacity-80`}></div>
                                 </div>
                                 <div className="flex flex-col min-w-0">
                                   <span className="text-[10px] sm:text-xs font-black text-slate-900 dark:text-white truncate tracking-tight">{file.name}</span>

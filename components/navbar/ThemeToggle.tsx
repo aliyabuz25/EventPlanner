@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useSiteContent } from '../../contexts/SiteContentContext';
 
 interface ThemeToggleProps {
   theme: 'light' | 'dark';
@@ -8,11 +9,13 @@ interface ThemeToggleProps {
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, toggleTheme, className = "" }) => {
+  const { locale } = useSiteContent();
+
   return (
     <button 
       onClick={toggleTheme}
       className={`p-2 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white bg-slate-200 dark:bg-white/5 transition-colors ${className}`}
-      aria-label="Toggle Dark Mode"
+      aria-label={locale === 'en' ? 'Toggle theme' : 'Theme wechseln'}
     >
       {theme === 'dark' ? (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
