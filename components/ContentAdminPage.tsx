@@ -76,6 +76,16 @@ interface SearchResultItem {
   snippet: string;
 }
 
+interface RouteOption {
+  label: string;
+  value: string;
+}
+
+interface RouteOptionGroup {
+  label: string;
+  options: RouteOption[];
+}
+
 interface SmtpDraftConfig {
   enabled: boolean;
   host: string;
@@ -877,6 +887,20 @@ const isMediaField = (label: string, value: JsonValue) => typeof value === 'stri
 const isIconField = (label: string, value: JsonValue) => typeof value === 'string' && /icon/i.test(label);
 const isUrlField = (label: string, value: JsonValue) => typeof value === 'string' && /(href|url|link|route|path)$/i.test(label) && !isMediaField(label, value);
 const isVideoValue = (value: string) => /\.(mp4|webm|mov|m4v|ogv|ogg)(\?.*)?$/i.test(value);
+const solutionRouteIds: SiteContent['solutionDetails'] extends Record<infer K, unknown> ? K[] : never = [
+  'sap-business-one',
+  'sap-s4hana',
+  'sap-ariba',
+  'sap-successfactors',
+  'sap-sam',
+  'sap-fsm',
+  'sap-bw4hana',
+  'sap-analytics',
+  'sap-bydesign',
+  'microsoft-power-bi',
+  'opentext',
+  'bimser'
+];
 const getByPath = (value: JsonValue, path: Array<string | number>): JsonValue =>
   path.reduce<JsonValue>((current, part) => {
     if (Array.isArray(current) && typeof part === 'number') {
@@ -1141,31 +1165,25 @@ const UrlField: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
-  routeOptions: Array<{ label: string; value: string }>;
+  routeOptionGroups: RouteOptionGroup[];
   copy: typeof adminCopy.en;
   pathKey?: string;
   isHighlighted?: boolean;
   helpText?: string | null;
-}> = ({ label, value, onChange, routeOptions, copy, pathKey, isHighlighted, helpText }) => {
-  const matchingOption = routeOptions.find((option) => option.value === value)?.value ?? '';
-  const uniqueRouteOptions = useMemo(
+}> = ({ label, value, onChange, routeOptionGroups, copy, pathKey, isHighlighted, helpText }) => {
+  const flattenedOptions = useMemo(
     () =>
-      routeOptions.filter((option, index, allOptions) =>
+      routeOptionGroups.flatMap((group) => group.options).filter((option, index, allOptions) =>
         allOptions.findIndex((candidate) => candidate.value === option.value && candidate.label === option.label) === index
       ),
-    [routeOptions]
+    [routeOptionGroups]
   );
+  const matchingOption = flattenedOptions.find((option) => option.value === value)?.value ?? '';
 
   return (
     <label data-oc-field-path={pathKey} className={`d-block oc-admin-field-shell ${isHighlighted ? 'oc-admin-search-hit' : ''}`}>
       <div className="oc-admin-section-title mb-2">{label}</div>
       {helpText ? <div className="oc-admin-field-help mb-2">{helpText}</div> : null}
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="form-control"
-        placeholder={copy.urlOrRoute}
-      />
       <select
         value={matchingOption}
         onChange={(e) => {
@@ -1173,15 +1191,25 @@ const UrlField: React.FC<{
             onChange(e.target.value);
           }
         }}
-        className="form-select mt-2"
+        className="form-select mb-2"
       >
         <option value="">{copy.selectExistingPath}</option>
-        {uniqueRouteOptions.map((option, index) => (
-          <option key={`${pathKey ?? label}-${option.value}-${index}`} value={option.value}>
-            {option.label}
-          </option>
+        {routeOptionGroups.map((group) => (
+          <optgroup key={`${pathKey ?? label}-${group.label}`} label={group.label}>
+            {group.options.map((option, index) => (
+              <option key={`${pathKey ?? label}-${group.label}-${option.value}-${index}`} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="form-control"
+        placeholder={copy.urlOrRoute}
+      />
     </label>
   );
 };
@@ -1340,10 +1368,10 @@ const ObjectEditor: React.FC<{
   copy: typeof adminCopy.en;
   depth?: number;
   highlightedPath?: string | null;
-  routeOptions: Array<{ label: string; value: string }>;
+  routeOptionGroups: RouteOptionGroup[];
   secondaryValue?: JsonValue;
   onSecondaryChange?: (path: Array<string | number>, value: JsonValue) => void;
-}> = ({ value, path = [], label, onChange, onRemove, onAddArrayItem, getDefaultArrayItem, copy, depth = 0, highlightedPath = null, routeOptions, secondaryValue, onSecondaryChange }) => {
+}> = ({ value, path = [], label, onChange, onRemove, onAddArrayItem, getDefaultArrayItem, copy, depth = 0, highlightedPath = null, routeOptionGroups, secondaryValue, onSecondaryChange }) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   if (Array.isArray(value)) {
@@ -1391,7 +1419,7 @@ const ObjectEditor: React.FC<{
                     onChange={(next) => onChange([...path, index], next)}
                   />
                 ) : (
-                  <ObjectEditor value={item} secondaryValue={Array.isArray(secondaryValue) ? secondaryValue[index] as JsonValue : undefined} path={[...path, index]} onChange={onChange} onSecondaryChange={onSecondaryChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} getDefaultArrayItem={getDefaultArrayItem} copy={copy} depth={depth + 1} highlightedPath={highlightedPath} routeOptions={routeOptions} />
+                  <ObjectEditor value={item} secondaryValue={Array.isArray(secondaryValue) ? secondaryValue[index] as JsonValue : undefined} path={[...path, index]} onChange={onChange} onSecondaryChange={onSecondaryChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} getDefaultArrayItem={getDefaultArrayItem} copy={copy} depth={depth + 1} highlightedPath={highlightedPath} routeOptionGroups={routeOptionGroups} />
                 )}
               </div>
             ))}
@@ -1438,7 +1466,7 @@ const ObjectEditor: React.FC<{
                   pathKey={childPath.join('.')}
                   isHighlighted={highlightedPath === childPath.join('.')}
                   helpText={fieldHelpText(path, key)}
-                  routeOptions={routeOptions}
+                  routeOptionGroups={routeOptionGroups}
                   onChange={(next) => onChange(childPath, next)}
                 />
               );
@@ -1485,7 +1513,7 @@ const ObjectEditor: React.FC<{
               </button>
               {isOpen && (
                 <div className="card-body border-top oc-admin-collapsible-body">
-                <ObjectEditor value={child} secondaryValue={isObject(secondaryValue) ? secondaryValue[key] as JsonValue : undefined} path={childPath} label={friendlyFieldLabel(path, key)} onChange={onChange} onSecondaryChange={onSecondaryChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} getDefaultArrayItem={getDefaultArrayItem} copy={copy} depth={depth + 1} highlightedPath={highlightedPath} routeOptions={routeOptions} />
+                <ObjectEditor value={child} secondaryValue={isObject(secondaryValue) ? secondaryValue[key] as JsonValue : undefined} path={childPath} label={friendlyFieldLabel(path, key)} onChange={onChange} onSecondaryChange={onSecondaryChange} onRemove={onRemove} onAddArrayItem={onAddArrayItem} getDefaultArrayItem={getDefaultArrayItem} copy={copy} depth={depth + 1} highlightedPath={highlightedPath} routeOptionGroups={routeOptionGroups} />
                 </div>
               )}
             </div>
@@ -1603,21 +1631,56 @@ const ContentAdminPage: React.FC = () => {
   const [isLoadingAiReports, setIsLoadingAiReports] = useState(false);
   const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
   const [isRestoringRevisionId, setIsRestoringRevisionId] = useState<number | null>(null);
-  const routeOptions = useMemo(
-    () => [
-      ...content.siteMap.map((entry) => ({
-        label: `${entry.title} (${entry.slug === 'home' ? '/' : `/${entry.slug}`})`,
-        value: entry.slug === 'home' ? '/' : `/${entry.slug}`
-      })),
+  const routeOptionGroups = useMemo<RouteOptionGroup[]>(() => {
+    const contactPage = content.siteMap.find((entry) => entry.view === 'contact');
+    const pageOptions: RouteOption[] = content.siteMap
+      .filter((entry) => entry.view !== 'content-admin')
+      .map((entry) => {
+        const value = entry.view === 'studio'
+          ? '/studio'
+          : entry.slug === 'home'
+            ? '/'
+            : `/${entry.slug}`;
+
+        return {
+          label: `${entry.title} (${value})`,
+          value
+        };
+      });
+
+    const solutionOptions: RouteOption[] = solutionRouteIds.map((id) => ({
+      label: `${content.solutionDetails[id]?.title ?? id} (/${id})`,
+      value: `/${id}`
+    }));
+
+    const customPageOptions: RouteOption[] = content.customPages.map((page) => ({
+      label: `${page.title} (/${page.slug})`,
+      value: `/${page.slug}`
+    }));
+
+    const sectionOptions: RouteOption[] = [
       { label: `${copy.aboutSection} (/#about)`, value: '/#about' },
       { label: `${copy.servicesSection} (/#services)`, value: '/#services' },
       { label: `${copy.solutionsSection} (/#solutions)`, value: '/#solutions' },
-      { label: `${copy.contactPage} (/kontakt)`, value: '/kontakt' },
-      { label: 'mailto:', value: 'mailto:' },
-      { label: 'https://', value: 'https://' }
-    ],
-    [content.siteMap, copy.aboutSection, copy.contactPage, copy.servicesSection, copy.solutionsSection]
-  );
+      { label: `${copy.contactPage} (/#contact)`, value: '/#contact' },
+      ...(contactPage ? [{ label: `${contactPage.title} (${contactPage.slug === 'home' ? '/' : `/${contactPage.slug}`})`, value: contactPage.slug === 'home' ? '/' : `/${contactPage.slug}` }] : [])
+    ];
+
+    return [
+      { label: 'Pages', options: pageOptions },
+      { label: 'Solution Pages', options: solutionOptions },
+      ...(customPageOptions.length > 0 ? [{ label: 'Custom Pages', options: customPageOptions }] : []),
+      { label: 'Page Sections', options: sectionOptions },
+      {
+        label: 'Actions',
+        options: [
+          { label: 'Email (mailto:)', value: 'mailto:' },
+          { label: 'Phone (tel:)', value: 'tel:' },
+          { label: 'External Link (https://)', value: 'https://' }
+        ]
+      }
+    ];
+  }, [content.customPages, content.siteMap, content.solutionDetails, copy.aboutSection, copy.contactPage, copy.servicesSection, copy.solutionsSection]);
 
   useEffect(() => {
     const link = document.createElement('link');
@@ -2461,7 +2524,7 @@ const ContentAdminPage: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <ObjectEditor key={`${selectedKey}:${editorResetToken}`} value={draft} secondaryValue={englishDraft} onChange={handleChange} onSecondaryChange={handleEnglishChange} onRemove={handleRemove} onAddArrayItem={handleAddArrayItem} getDefaultArrayItem={getDefaultArrayItemForPath} copy={copy} highlightedPath={activeSearchPath} routeOptions={routeOptions} />
+                  <ObjectEditor key={`${selectedKey}:${editorResetToken}`} value={draft} secondaryValue={englishDraft} onChange={handleChange} onSecondaryChange={handleEnglishChange} onRemove={handleRemove} onAddArrayItem={handleAddArrayItem} getDefaultArrayItem={getDefaultArrayItemForPath} copy={copy} highlightedPath={activeSearchPath} routeOptionGroups={routeOptionGroups} />
                 )}
               </div>
               </div>

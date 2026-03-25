@@ -26,6 +26,13 @@ const ContentAdminPage = lazy(() => import('./components/ContentAdminPage'));
 
 const adminPath = '/oc-admin';
 const studioPath = '/studio';
+const solutionIds: SolutionId[] = [
+  'sap-business-one',
+  'sap-s4hana', 'sap-ariba', 'sap-successfactors',
+  'sap-sam', 'sap-fsm',
+  'sap-bw4hana', 'sap-analytics', 'sap-bydesign',
+  'microsoft-power-bi', 'opentext', 'bimser'
+];
 
 const viewToPath = (view: ViewType, content: ReturnType<typeof useSiteContent>['content']) => {
   if (view === 'content-admin') {
@@ -34,6 +41,17 @@ const viewToPath = (view: ViewType, content: ReturnType<typeof useSiteContent>['
 
   if (view === 'studio') {
     return studioPath;
+  }
+
+  if (solutionIds.includes(view as SolutionId)) {
+    return `/${view}`;
+  }
+
+  if (String(view).startsWith('custom:')) {
+    const customPage = content.customPages.find((page) => page.view === view);
+    if (customPage) {
+      return `/${customPage.slug}`;
+    }
   }
 
   const mapped = content.siteMap.find((entry) => entry.view === view);
@@ -54,6 +72,15 @@ const pathToView = (pathname: string, content: ReturnType<typeof useSiteContent>
   }
 
   const normalized = pathname.replace(/^\/+|\/+$/g, '') || 'home';
+  const customPage = content.customPages.find((entry) => entry.slug === normalized);
+  if (customPage) {
+    return customPage.view;
+  }
+
+  if (solutionIds.includes(normalized as SolutionId)) {
+    return normalized as SolutionId;
+  }
+
   const mapped = content.siteMap.find((entry) => entry.slug === normalized);
   if (mapped) {
     return mapped.view;
@@ -251,14 +278,6 @@ const App: React.FC = () => {
     if (String(currentView).startsWith('custom:')) {
       return <GenericContentPage view={currentView as CustomPageView} />;
     }
-
-    const solutionIds: SolutionId[] = [
-      'sap-business-one',
-      'sap-s4hana', 'sap-ariba', 'sap-successfactors', 
-      'sap-sam', 'sap-fsm', 
-      'sap-bw4hana', 'sap-analytics', 'sap-bydesign', 
-      'microsoft-power-bi', 'opentext', 'bimser'
-    ];
 
     if (solutionIds.includes(currentView as SolutionId)) {
       return <SolutionDetailPage id={currentView as SolutionId} />;
